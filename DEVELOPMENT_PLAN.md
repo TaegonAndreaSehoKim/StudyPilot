@@ -289,7 +289,7 @@ npx expo start
 - [x] User can submit quiz answers and see score, missed topics, and explanations.
 - [x] Weak topics update after missed quiz questions.
 - [x] Dashboard shows useful counts and recent activity.
-- [ ] Mobile app starts with `npx expo start`.
+- [x] Mobile app starts with `npx expo start`.
 - [x] Mobile app can connect to backend.
 - [x] README files explain setup clearly.
 - [x] No API key is required for local demo.

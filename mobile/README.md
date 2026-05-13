@@ -43,6 +43,12 @@ uvicorn app.main:app --host 0.0.0.0 --reload
 npm run typecheck
 ```
 
+Check Expo SDK dependency compatibility:
+
+```bash
+npx expo install --check
+```
+
 ## Main Screens
 
 - Dashboard: counts, recent courses, recent documents, weak topics

@@ -15,7 +15,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `12 passed`; mobile TypeScript check passes
+- **Quality checkpoint:** backend pytest suite currently passes at `14 passed`; mobile TypeScript check passes
 
 ## Current Status
 
@@ -36,10 +36,13 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `12 passed`
+- `python -m pytest -q` from `backend/` -> `14 passed`
 - `npm run typecheck` from `mobile/` -> passed
+- `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
+- `npx expo start --localhost --port 8085` reached `Waiting on http://localhost:8085`
 - backend `/health` smoke check returned `{"status":"ok","app":"StudyPilot"}`
+- backend demo smoke flow passed with course, upload, summary, flashcards, quiz, attempt, weak topics, and dashboard verification
 
 ---
 
@@ -201,7 +204,7 @@ Backend variables are documented in `backend/.env.example`.
 ```text
 APP_NAME=StudyPilot
 DATABASE_URL=sqlite:///./studypilot.db
-STORAGE_DIR=backend/app/storage
+STORAGE_DIR=app/storage
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false
@@ -343,7 +346,7 @@ python -m pytest -q
 Current status:
 
 ```text
-12 passed
+14 passed
 ```
 
 The backend tests use:
@@ -365,6 +368,20 @@ Check Expo config loading:
 ```bash
 cd mobile
 npx expo config --type public
+```
+
+Run the backend demo smoke flow against a running backend:
+
+```bash
+cd backend
+python scripts/smoke_demo.py --base-url http://127.0.0.1:8000 --cleanup
+```
+
+Check Expo dependency compatibility:
+
+```bash
+cd mobile
+npx expo install --check
 ```
 
 ---

@@ -151,6 +151,9 @@ Lower priority for now:
 6. MVP quiz responses include correct answers.
    This is acceptable for local mobile simplicity, but production should hide answers until submission.
 
+7. Relative backend storage paths are resolved from `backend/`.
+   Keep this behavior intact so `cd backend && uvicorn app.main:app --reload` stores uploads under `backend/app/storage`.
+
 ## Editing Guidance
 
 - Prefer changing backend behavior in service modules before duplicating logic in routers.
@@ -185,8 +188,15 @@ cd backend
 uvicorn app.main:app --reload
 ```
 
+With the backend running:
+
+```powershell
+python scripts/smoke_demo.py --base-url http://127.0.0.1:8000 --cleanup
+```
+
 ```powershell
 cd mobile
+npx expo install --check
 npx expo config --type public
 npx expo start
 ```

@@ -120,7 +120,7 @@ Stored records include:
 - quiz attempts
 - weak topics
 
-Uploaded files are stored under `backend/app/storage/documents/` by default.
+Uploaded files are stored under `backend/app/storage/documents/` by default. Relative `STORAGE_DIR` values are resolved from the `backend/` directory.
 
 ## Testing Strategy
 

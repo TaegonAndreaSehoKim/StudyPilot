@@ -27,13 +27,23 @@ python -m pytest -q
 
 The test suite forces fake AI behavior and uses temporary SQLite/storage paths.
 
+## Demo Smoke
+
+With the backend running, execute the full API demo flow:
+
+```bash
+python scripts/smoke_demo.py --base-url http://127.0.0.1:8000 --cleanup
+```
+
+The smoke flow creates a course, uploads the sample notes from `docs/demo/`, generates a summary, flashcards, and quiz, submits intentionally wrong answers, verifies weak topics, and optionally deletes the smoke course.
+
 ## Environment
 
 Copy `.env.example` to `.env` if you want custom values.
 
 ```text
 DATABASE_URL=sqlite:///./studypilot.db
-STORAGE_DIR=backend/app/storage
+STORAGE_DIR=app/storage
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false

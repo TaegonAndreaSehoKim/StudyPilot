@@ -292,8 +292,6 @@ StudyPilot became a working local MVP foundation with backend tests, mobile Type
 - Add mobile test coverage.
 - Improve OpenAI structured-output parsing and validation.
 
----
-
 ## Day 8 - Demo Materials and PDF Upload Coverage
 
 ### Focus
@@ -348,6 +346,89 @@ The project also has a small sample note file that can be used for consistent mo
 
 ### Remaining next steps
 - Run `npx expo start` and complete a real device/simulator smoke test.
+- Capture any mobile layout issues from screenshots.
+- Improve mobile empty/error states after manual testing.
+- Add mobile test coverage.
+- Improve OpenAI structured-output parsing and validation.
+
+---
+
+## Day 9 - Backend Demo Smoke and Expo Startup Check
+
+### Focus
+Make the demo flow easier to verify repeatedly and confirm the mobile project can start under Expo.
+
+### What was done
+- Added `backend/scripts/smoke_demo.py`.
+- The smoke script verifies the full backend demo path against a running API:
+  - health check
+  - course creation
+  - sample note upload
+  - summary generation
+  - flashcard generation
+  - quiz generation
+  - intentionally wrong quiz attempt
+  - weak-topic update
+  - dashboard counts
+- Added backend README instructions for the smoke script.
+- Fixed backend storage path handling so relative `STORAGE_DIR` values resolve from `backend/`.
+- Added config tests for storage path resolution.
+- Fixed Expo SDK dependency drift by aligning packages with `npx expo install`.
+- Added explicit `react-dom` and `react-native-web` dependencies so Expo Router/runtime dependency resolution stays consistent.
+- Confirmed Expo dependency compatibility with `npx expo install --check`.
+- Smoke-checked Metro startup with `npx expo start --localhost --port 8085`.
+
+### Smoke result
+
+```json
+{
+  "health": {
+    "status": "ok",
+    "app": "StudyPilot"
+  },
+  "document_status": "extracted",
+  "flashcard_count": 5,
+  "question_count": 3,
+  "attempt_score": 0.0,
+  "weak_topic_count": 3,
+  "cleanup": true
+}
+```
+
+Metro startup reached:
+
+```text
+Waiting on http://localhost:8085
+```
+
+### Validation
+
+```text
+python -m pytest -q -> 14 passed
+npm run typecheck -> passed
+npx expo install --check -> Dependencies are up to date
+npx expo config --type public -> passed
+```
+
+### Result
+The backend demo flow is now repeatable through a single command, default upload storage resolves correctly, and the mobile dependency set is aligned with Expo SDK 55.
+
+---
+
+## Week 1 Latest Snapshot
+
+### Current project state
+- Backend starts successfully.
+- Backend test suite passes at **14 passed**.
+- Backend demo smoke flow passes against a running API.
+- Mobile TypeScript check passes.
+- Expo dependency compatibility check passes.
+- Expo config loads successfully.
+- Expo Metro starts and reaches `Waiting on http://localhost:8085`.
+- Demo materials exist under `docs/demo/`.
+
+### Remaining next steps
+- Complete an interactive simulator or physical-device pass through the mobile UI.
 - Capture any mobile layout issues from screenshots.
 - Improve mobile empty/error states after manual testing.
 - Add mobile test coverage.
