@@ -416,7 +416,6 @@ Planned follow-up improvements:
 - add sample notes for repeatable demos
 - add mobile component or interaction tests
 - improve OpenAI JSON schema handling
-- add a text-based PDF fixture test
 - improve document-generation error states
 - hide quiz correct answers until submission in a production-oriented API mode
 - prepare deployment notes after the local MVP flow is stable
