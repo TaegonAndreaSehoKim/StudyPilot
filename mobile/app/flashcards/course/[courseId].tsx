@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
@@ -33,9 +33,9 @@ export default function CourseFlashcardsScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(useCallback(() => {
+    void load();
+  }, [load]));
 
   async function shareFlashcards() {
     try {
