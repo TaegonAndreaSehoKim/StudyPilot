@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 SummaryType = Literal["concise", "detailed", "exam"]
 Difficulty = Literal["easy", "medium", "hard"]
+ScheduleEventType = Literal["assignment", "exam", "reading", "project", "other"]
 
 
 class CourseCreate(BaseModel):
@@ -16,6 +17,36 @@ class CourseCreate(BaseModel):
 class CourseUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
+
+
+class ScheduleItemCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    event_type: ScheduleEventType = "assignment"
+    due_at: datetime
+    notes: str | None = None
+
+
+class ScheduleItemUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    event_type: ScheduleEventType | None = None
+    due_at: datetime | None = None
+    notes: str | None = None
+    is_completed: bool | None = None
+
+
+class ScheduleItemOut(BaseModel):
+    id: int
+    course_id: int
+    title: str
+    event_type: str
+    due_at: datetime
+    notes: str | None
+    is_completed: bool
+    completed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class CourseOut(BaseModel):

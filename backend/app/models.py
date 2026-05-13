@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -27,6 +27,10 @@ class Course(TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     weak_topics: Mapped[list["WeakTopic"]] = relationship(
+        back_populates="course",
+        cascade="all, delete-orphan",
+    )
+    schedule_items: Mapped[list["ScheduleItem"]] = relationship(
         back_populates="course",
         cascade="all, delete-orphan",
     )
@@ -134,3 +138,18 @@ class WeakTopic(Base):
     last_missed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     course: Mapped["Course"] = relationship(back_populates="weak_topics")
+
+
+class ScheduleItem(TimestampMixin, Base):
+    __tablename__ = "schedule_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(40), nullable=False, default="assignment")
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    course: Mapped["Course"] = relationship(back_populates="schedule_items")

@@ -15,7 +15,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `30 passed`; mobile TypeScript check passes
+- **Quality checkpoint:** backend pytest suite currently passes at `33 passed`; mobile TypeScript check passes
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -25,6 +25,7 @@ StudyPilot currently supports:
 
 - course creation and listing
 - course detail dashboards
+- course schedule tracking for assignments, exams, readings, projects, and milestones
 - document upload and extraction
 - document previews, full extracted-text reading, and original-file download
 - fake-AI summary generation
@@ -42,7 +43,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `30 passed`
+- `python -m pytest -q` from `backend/` -> `33 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -252,6 +253,11 @@ Main endpoints:
 - `GET /quizzes/{quiz_id}/attempts`
 - `GET /courses/{course_id}/attempts`
 - `POST /quizzes/{quiz_id}/attempts`
+- `POST /courses/{course_id}/schedule`
+- `GET /courses/{course_id}/schedule`
+- `GET /schedule/{item_id}`
+- `PATCH /schedule/{item_id}`
+- `DELETE /schedule/{item_id}`
 - `GET /courses/{course_id}/weak-topics`
 - `GET /dashboard`
 - `GET /courses/{course_id}/dashboard`
@@ -357,7 +363,7 @@ python -m pytest -q
 Current status:
 
 ```text
-30 passed
+33 passed
 ```
 
 The backend tests use:

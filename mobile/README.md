@@ -60,6 +60,7 @@ npx expo install --check
 - Dashboard: counts, recent courses, recent documents, weak topics
 - Courses: course list and course creation
 - Course detail: document list and upload flow
+- Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
 - Document detail: extracted preview, full extracted text link, original file link, generated summary, flashcards, quizzes
 - Full text: complete extracted document text with Save / Share support
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support

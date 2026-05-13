@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import create_db_and_tables
-from app.routers import courses, dashboard, documents, flashcards, health, quizzes, summaries
+from app.routers import courses, dashboard, documents, flashcards, health, quizzes, schedule, summaries
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(summaries.router)
     app.include_router(flashcards.router)
     app.include_router(quizzes.router)
+    app.include_router(schedule.router)
     app.include_router(dashboard.router)
     return app
 

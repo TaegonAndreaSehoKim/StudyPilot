@@ -11,6 +11,8 @@ import type {
   Flashcard,
   Quiz,
   QuizAttemptResult,
+  ScheduleEventType,
+  ScheduleItem,
   Summary,
 } from './types';
 
@@ -89,6 +91,19 @@ export const api = {
   quiz: (quizId: number) => request<Quiz>(`/quizzes/${quizId}`),
   quizAttempts: (quizId: number) => request<QuizAttemptResult[]>(`/quizzes/${quizId}/attempts`),
   courseAttempts: (courseId: number) => request<CourseQuizAttempt[]>(`/courses/${courseId}/attempts`),
+  courseSchedule: (courseId: number, includeCompleted = true) =>
+    request<ScheduleItem[]>(`/courses/${courseId}/schedule?include_completed=${includeCompleted}`),
+  createScheduleItem: (courseId: number, payload: { title: string; event_type: ScheduleEventType; due_at: string; notes?: string }) =>
+    request<ScheduleItem>(`/courses/${courseId}/schedule`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateScheduleItem: (itemId: number, payload: Partial<{ title: string; event_type: ScheduleEventType; due_at: string; notes: string | null; is_completed: boolean }>) =>
+    request<ScheduleItem>(`/schedule/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteScheduleItem: (itemId: number) => request<void>(`/schedule/${itemId}`, { method: 'DELETE' }),
   submitQuiz: (quizId: number, answers: { question_id: number; selected_answer: string }[]) =>
     request<QuizAttemptResult>(`/quizzes/${quizId}/attempts`, {
       method: 'POST',

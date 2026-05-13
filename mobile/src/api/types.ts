@@ -111,6 +111,21 @@ export interface CourseQuizAttempt {
   created_at: string;
 }
 
+export type ScheduleEventType = 'assignment' | 'exam' | 'reading' | 'project' | 'other';
+
+export interface ScheduleItem {
+  id: number;
+  course_id: number;
+  title: string;
+  event_type: ScheduleEventType;
+  due_at: string;
+  notes: string | null;
+  is_completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface WeakTopic {
   id: number;
   course_id: number;

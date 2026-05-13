@@ -5,13 +5,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { CourseDashboard, CourseQuizAttempt, Document, Flashcard, Quiz, Summary } from '@/api/types';
+import type { CourseDashboard, CourseQuizAttempt, Document, Flashcard, Quiz, ScheduleItem, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { colors } from '@/constants/colors';
+import { formatDateTime, formatTimeRemaining } from '@/utils/format';
 
 export default function CourseDetailScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
@@ -22,6 +23,7 @@ export default function CourseDetailScreen() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [attempts, setAttempts] = useState<CourseQuizAttempt[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -31,13 +33,14 @@ export default function CourseDetailScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [courseDashboard, docs, summaryList, cardList, quizList, attemptList] = await Promise.all([
+      const [courseDashboard, docs, summaryList, cardList, quizList, attemptList, scheduleList] = await Promise.all([
         api.courseDashboard(id),
         api.courseDocuments(id),
         api.courseSummaries(id),
         api.courseFlashcards(id),
         api.courseQuizzes(id),
         api.courseAttempts(id),
+        api.courseSchedule(id, false),
       ]);
       setDashboard(courseDashboard);
       setDocuments(docs);
@@ -45,6 +48,7 @@ export default function CourseDetailScreen() {
       setFlashcards(cardList);
       setQuizzes(quizList);
       setAttempts(attemptList);
+      setSchedule(scheduleList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load course');
     } finally {
@@ -130,8 +134,27 @@ export default function CourseDetailScreen() {
           </View>
           <View style={styles.actions}>
             <Button title={uploading ? 'Uploading...' : 'Upload Document'} disabled={uploading || deleting} onPress={upload} />
+            <Button title="Manage Schedule" disabled={uploading || deleting} variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
             <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
           </View>
+
+          <Section title="Upcoming Schedule">
+            {schedule.length ? (
+              schedule.slice(0, 3).map((item) => (
+                <Link key={item.id} href={`/schedule/course/${id}` as Href} asChild>
+                  <Card>
+                    <Text style={styles.itemTitle}>{item.title}</Text>
+                    <Text style={styles.itemMeta}>
+                      {item.event_type} - {formatTimeRemaining(item.due_at, item.is_completed)}
+                    </Text>
+                    <Text style={styles.itemMeta}>{formatDateTime(item.due_at)}</Text>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <EmptyState title="No schedule items" message="Add assignment deadlines, exams, and course milestones." />
+            )}
+          </Section>
 
           <Section title="Documents">
             {documents.length ? (

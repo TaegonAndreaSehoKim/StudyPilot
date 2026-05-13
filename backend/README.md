@@ -80,6 +80,11 @@ When `OPENAI_API_KEY` is missing or `USE_FAKE_AI=true`, the backend uses `FakeAI
 - `GET /quizzes/{quiz_id}/attempts`
 - `GET /courses/{course_id}/attempts`
 - `POST /quizzes/{quiz_id}/attempts`
+- `POST /courses/{course_id}/schedule`
+- `GET /courses/{course_id}/schedule`
+- `GET /schedule/{item_id}`
+- `PATCH /schedule/{item_id}`
+- `DELETE /schedule/{item_id}`
 - `GET /courses/{course_id}/weak-topics`
 - `GET /dashboard`
 - `GET /courses/{course_id}/dashboard`
