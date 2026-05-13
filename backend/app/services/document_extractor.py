@@ -10,6 +10,8 @@ from app.services.text_normalization import normalize_extracted_text
 NO_EXTRACTABLE_TEXT_MESSAGE = (
     "[No extractable text found on this page. This page may be scanned or image-only and may need OCR.]"
 )
+MIN_RELIABLE_EMBEDDED_CHARS = 100
+MIN_RELIABLE_PAGE_COVERAGE = 0.5
 
 
 @dataclass(frozen=True)
@@ -93,25 +95,33 @@ def extract_text_from_pdf(path: Path) -> ExtractionResult:
             pages.append(f"--- Page {index} of {page_count} ---\n\n{NO_EXTRACTABLE_TEXT_MESSAGE}")
 
     text = "\n\n".join(pages).strip()
-    if extracted_char_count < 100:
+    extracted_page_count = page_count - empty_page_count
+    extraction_coverage = extracted_page_count / page_count if page_count else 0
+    if extracted_page_count == 0 or extraction_coverage < MIN_RELIABLE_PAGE_COVERAGE:
         note = (
             f"No reliable embedded text was found in this PDF. Checked {page_count} pages and extracted "
-            f"{extracted_char_count} characters from {page_count - empty_page_count} pages. "
+            f"{extracted_char_count} characters from {extracted_page_count} pages. "
             "This usually means the PDF is scanned/image-only or uses encoding that pypdf cannot read. OCR is required."
         )
         return ExtractionResult(
             text=note,
             status="needs_ocr",
             page_count=page_count,
-            extracted_page_count=page_count - empty_page_count,
+            extracted_page_count=extracted_page_count,
             extraction_method="pypdf",
             extraction_notes=note,
             ocr_status="available",
         )
-    if empty_page_count:
+    if empty_page_count or extracted_char_count < MIN_RELIABLE_EMBEDDED_CHARS:
+        details = []
+        if empty_page_count:
+            details.append(f"{empty_page_count} of {page_count} pages had no extractable text")
+        if extracted_char_count < MIN_RELIABLE_EMBEDDED_CHARS:
+            details.append(f"only {extracted_char_count} embedded characters were extracted")
+        details_text = "; ".join(details)
         note = (
-            f"\n\nExtraction note: {empty_page_count} of {page_count} pages had no extractable text. "
-            "Those pages may be scanned images or use PDF encoding that pypdf cannot read. OCR may improve this document."
+            f"\n\nExtraction note: {details_text}. "
+            "The PDF may be scanned, partially image-only, or use PDF encoding that pypdf cannot fully read. OCR may improve this document."
         )
         text += note
         ocr_status = "recommended"
@@ -124,7 +134,7 @@ def extract_text_from_pdf(path: Path) -> ExtractionResult:
         text=normalize_extracted_text(text),
         status="extracted",
         page_count=page_count,
-        extracted_page_count=page_count - empty_page_count,
+        extracted_page_count=extracted_page_count,
         extraction_method="pypdf",
         extraction_notes=extraction_notes,
         ocr_status=ocr_status,

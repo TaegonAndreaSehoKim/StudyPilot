@@ -19,6 +19,8 @@ def test_upload_txt_document(client: TestClient, course_id: int) -> None:
     assert body["status"] == "extracted"
     assert body["page_count"] == 1
     assert body["extracted_page_count"] == 1
+    assert body["extraction_coverage"] == 1.0
+    assert body["extraction_quality"] == "good"
     assert body["extraction_method"] == "text"
     assert body["ocr_status"] == "not_required"
 
@@ -60,6 +62,8 @@ def test_upload_text_based_pdf_document(client: TestClient, course_id: int) -> N
     assert body["char_count"] > 100
     assert body["page_count"] >= 1
     assert body["extracted_page_count"] >= 1
+    assert body["extraction_coverage"] == 1.0
+    assert body["extraction_quality"] == "good"
     assert body["extraction_method"] == "pypdf"
 
     detail = client.get(f"/documents/{body['id']}")
@@ -86,6 +90,8 @@ def test_scanned_pdf_can_be_marked_for_ocr_and_processed(client: TestClient, cou
     uploaded = upload_response.json()
     assert uploaded["status"] == "needs_ocr"
     assert uploaded["ocr_status"] == "available"
+    assert uploaded["extraction_quality"] == "poor"
+    assert uploaded["extraction_coverage"] == 0.0
     assert uploaded["page_count"] == 2
     assert uploaded["extracted_page_count"] == 0
 
@@ -107,6 +113,8 @@ def test_scanned_pdf_can_be_marked_for_ocr_and_processed(client: TestClient, cou
     ocr_body = document_response.json()
     assert ocr_body["status"] == "extracted"
     assert ocr_body["ocr_status"] == "completed"
+    assert ocr_body["extraction_quality"] == "ocr"
+    assert ocr_body["extraction_coverage"] == 1.0
     assert ocr_body["extraction_method"] == "fake_ocr"
     assert ocr_body["extracted_page_count"] == 2
     assert "Fake OCR extracted study text" in ocr_body["text"]

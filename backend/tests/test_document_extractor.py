@@ -55,3 +55,21 @@ def test_pdf_extraction_errors_when_no_pages_have_text(monkeypatch) -> None:
     assert result.ocr_status == "available"
     assert "Checked 2 pages" in result.text
     assert "OCR" in result.text
+
+
+def test_pdf_extraction_requires_ocr_when_page_coverage_is_low(monkeypatch) -> None:
+    pages = [
+        FakePdfPage("Planning uses actions, preconditions, effects, and goals."),
+        FakePdfPage(""),
+        FakePdfPage(""),
+        FakePdfPage(""),
+    ]
+    monkeypatch.setattr(document_extractor, "PdfReader", lambda _: FakePdfReader(pages))
+
+    result = document_extractor.extract_text_from_pdf(Path("unused.pdf"))
+
+    assert result.status == "needs_ocr"
+    assert result.page_count == 4
+    assert result.extracted_page_count == 1
+    assert result.ocr_status == "available"
+    assert "from 1 pages" in result.text

@@ -59,6 +59,22 @@ class Document(TimestampMixin, Base):
     quizzes: Mapped[list["Quiz"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     ocr_jobs: Mapped[list["OcrJob"]] = relationship(back_populates="document", cascade="all, delete-orphan")
 
+    @property
+    def extraction_coverage(self) -> float:
+        if self.page_count <= 0:
+            return 1.0 if self.status == "extracted" else 0.0
+        return round(min(self.extracted_page_count / self.page_count, 1.0), 3)
+
+    @property
+    def extraction_quality(self) -> str:
+        if self.ocr_status == "completed":
+            return "ocr"
+        if self.status == "needs_ocr":
+            return "poor"
+        if self.ocr_status == "recommended":
+            return "partial"
+        return "good"
+
 
 class OcrJob(TimestampMixin, Base):
     __tablename__ = "ocr_jobs"

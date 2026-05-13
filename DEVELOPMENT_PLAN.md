@@ -98,6 +98,8 @@ StudyPilot/
 - [x] Extract text from text and markdown files.
 - [x] Extract text from text-based PDFs using `pypdf`.
 - [x] Mark scanned or image-only PDFs as `needs_ocr`.
+- [x] Mark low page-coverage PDF extraction as OCR-required.
+- [x] Expose extraction quality and coverage in document APIs.
 - [x] Add fake OCR and optional Amazon Textract OCR provider path.
 - [x] Implement async `POST /documents/{document_id}/ocr` job creation.
 - [x] Implement `GET /ocr-jobs/{job_id}` status polling.

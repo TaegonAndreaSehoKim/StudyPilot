@@ -35,7 +35,9 @@ Fields:
 - `status`
 - `page_count`
 - `extracted_page_count`
+- `extraction_coverage`
 - `extraction_method`
+- `extraction_quality`
 - `extraction_notes`
 - `ocr_status`
 - `created_at`
@@ -51,8 +53,10 @@ Notes:
 
 - `.txt` and `.md` files are decoded as UTF-8 with replacement.
 - `.pdf` files are parsed with `pypdf`.
-- text-poor PDFs are marked `needs_ocr`.
+- text-poor PDFs and low page-coverage PDFs are marked `needs_ocr`.
 - partially extracted PDFs stay `extracted` but can set `ocr_status=recommended`.
+- `extraction_coverage` is computed from extracted pages divided by total pages.
+- `extraction_quality` is computed as `good`, `partial`, `poor`, or `ocr`.
 - `POST /documents/{document_id}/ocr` creates an OCR job; completed jobs update the document text through the configured OCR provider.
 
 ## OcrJob

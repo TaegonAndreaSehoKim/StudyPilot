@@ -14,7 +14,7 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - SQLite-backed local persistence
 - local uploaded-document storage
 - course creation and listing
-- document upload for `.txt`, `.md`, text-based `.pdf`, and OCR-required scanned PDFs
+- document upload for `.txt`, `.md`, text-based `.pdf`, OCR-required scanned PDFs, and low-coverage partial PDFs
 - text-based PDF upload regression coverage
 - fake OCR provider for local tests and optional Textract provider for deployment
 - backend OCR job records with mobile polling
@@ -150,7 +150,7 @@ Lower priority for now:
    Do not treat missing API keys as an error. Missing keys should route to `FakeAIProvider`.
 
 2. PDF extraction is embedded-text first.
-   Scanned or image-only PDFs should be marked `needs_ocr`; OCR runs only when explicitly requested through the backend.
+   Scanned, image-only, or low page-coverage PDFs should be marked `needs_ocr`; OCR runs only when explicitly requested through the backend.
 
 3. OCR jobs are FastAPI background tasks.
    This is enough for the single-server MVP. Use a durable worker queue before relying on OCR jobs for production-scale large PDFs.

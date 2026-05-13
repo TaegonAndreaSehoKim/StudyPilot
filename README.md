@@ -30,7 +30,7 @@ StudyPilot currently supports:
 - course schedule tracking for assignments, exams, readings, projects, and milestones
 - global upcoming schedule view across all courses
 - document upload and extraction
-- PDF extraction diagnostics with `needs_ocr`, page counts, and optional OCR execution
+- PDF extraction diagnostics with `needs_ocr`, quality labels, page coverage, and optional OCR execution
 - document previews, full extracted-text reading, original-file download, and guided generation options
 - fake-AI summary generation
 - saved summary detail screens with share/export support
@@ -481,7 +481,7 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 
 - No authentication or multi-user support.
 - SQLite and local file storage are intended for local MVP persistence. The Docker deployment keeps them in EC2-local volumes.
-- PDF extraction first uses embedded text. Scanned/image-only PDFs are marked `needs_ocr` and can be processed through a backend OCR job using the configured OCR provider.
+- PDF extraction first uses embedded text. Scanned/image-only PDFs and low-coverage partial extractions are marked `needs_ocr` and can be processed through a backend OCR job using the configured OCR provider.
 - The built-in fake OCR provider is for demos/tests; real OCR requires Amazon Textract configuration and AWS credentials.
 - The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
 - OCR jobs use FastAPI background tasks for the single-server MVP. A production deployment should move OCR work to a durable queue.

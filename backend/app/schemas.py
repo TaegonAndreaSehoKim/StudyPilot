@@ -72,7 +72,9 @@ class DocumentOut(BaseModel):
     status: str
     page_count: int
     extracted_page_count: int
+    extraction_coverage: float
     extraction_method: str
+    extraction_quality: str
     extraction_notes: str | None
     ocr_status: str
     created_at: datetime

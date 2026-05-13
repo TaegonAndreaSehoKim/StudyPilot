@@ -15,7 +15,9 @@ export interface Document {
   status: string;
   page_count: number;
   extracted_page_count: number;
+  extraction_coverage: number;
   extraction_method: string;
+  extraction_quality: 'good' | 'partial' | 'poor' | 'ocr';
   extraction_notes: string | null;
   ocr_status: string;
   created_at: string;

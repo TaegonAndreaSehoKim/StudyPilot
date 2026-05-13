@@ -83,7 +83,7 @@ npm run export:web
 - Course detail: tabbed overview, materials, practice, schedule, document upload, and course actions
 - Weak-topic review quiz: generate focused practice from missed quiz topics on the course Practice tab
 - Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
-- Document detail: extraction diagnostics, OCR-required guidance, extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
+- Document detail: extraction quality and coverage diagnostics, OCR-required guidance, extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
 - Full text: complete extracted document text with Save / Share support
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support

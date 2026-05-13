@@ -221,6 +221,7 @@ export default function DocumentDetailScreen() {
   const canGenerate = document?.status === 'extracted';
   const actionDisabled = !!working || deleting || !canGenerate;
   const canRunOcr = document?.file_type === '.pdf' && ['available', 'recommended', 'error', 'queued', 'running'].includes(document.ocr_status);
+  const extractionLabel = document ? extractionQualityLabel(document) : '';
 
   return (
     <ScreenScrollView
@@ -244,7 +245,7 @@ export default function DocumentDetailScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{document.filename}</Text>
             <Text style={styles.subtitle}>
-              {document.char_count} chars - {document.status}
+              {document.char_count} chars - {document.status} - {extractionLabel}
               {document.page_count ? ` - ${document.extracted_page_count}/${document.page_count} pages with embedded text` : ''}
             </Text>
           </View>
@@ -252,7 +253,10 @@ export default function DocumentDetailScreen() {
           {document.ocr_status !== 'not_required' ? (
             <Card style={styles.ocrCard}>
               <Text style={styles.optionTitle}>
-                {document.status === 'needs_ocr' ? 'OCR required' : 'OCR may improve this PDF'}
+                {document.status === 'needs_ocr' ? 'OCR required' : document.ocr_status === 'completed' ? 'OCR completed' : 'OCR recommended'}
+              </Text>
+              <Text style={styles.qualityText}>
+                Extraction quality: {extractionLabel}. Coverage: {Math.round(document.extraction_coverage * 100)}%.
               </Text>
               <Text style={styles.optionDescription}>
                 {document.extraction_notes ||
@@ -385,6 +389,19 @@ function delay(milliseconds: number): Promise<void> {
   });
 }
 
+function extractionQualityLabel(document: DocumentDetail): string {
+  if (document.extraction_quality === 'ocr') {
+    return 'OCR text';
+  }
+  if (document.extraction_quality === 'poor') {
+    return 'poor extraction';
+  }
+  if (document.extraction_quality === 'partial') {
+    return 'partial extraction';
+  }
+  return 'good extraction';
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -470,6 +487,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  qualityText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
   },
   ocrCard: {
     backgroundColor: colors.warningSurface,

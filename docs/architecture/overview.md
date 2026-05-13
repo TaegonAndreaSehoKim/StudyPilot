@@ -128,7 +128,7 @@ OCR_PROVIDER=disabled
   -> OCR endpoint returns an error
 ```
 
-The backend first tries embedded PDF text with `pypdf`. If too little text is found, the document is saved as `needs_ocr`. Partially extracted PDFs remain usable but can show `ocr_status=recommended`.
+The backend first tries embedded PDF text with `pypdf`. If too little text is found or too few pages have readable text, the document is saved as `needs_ocr`. Partially extracted PDFs remain usable but can show `ocr_status=recommended`, `extraction_quality=partial`, and a page coverage value for the mobile UI.
 
 OCR execution uses an `ocr_jobs` record. `POST /documents/{document_id}/ocr` queues work with a FastAPI background task and returns the job status. The mobile app polls `GET /ocr-jobs/{job_id}` until the job completes or fails.
 
