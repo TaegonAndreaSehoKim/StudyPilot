@@ -20,6 +20,7 @@ import type {
 
 const API_BASE_URL_KEY = 'studypilot.apiBaseUrl';
 const ACCESS_TOKEN_KEY = 'studypilot.accessToken';
+const REQUEST_TIMEOUT_MS = 10000;
 export const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export async function getApiBaseUrl(): Promise<string> {
@@ -47,6 +48,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = await getApiBaseUrl();
   const accessToken = await getAccessToken();
   const headers = new Headers(options.headers);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
@@ -54,22 +59,31 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set('X-StudyPilot-Key', accessToken);
   }
 
-  const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
-  if (!response.ok) {
-    let message = `Request failed with ${response.status}`;
-    try {
-      const body = await response.json();
-      message = body.detail || message;
-    } catch {
-      // Keep the status-based fallback.
+  try {
+    const response = await fetch(`${baseUrl}${path}`, { ...options, headers, signal: controller.signal });
+    if (!response.ok) {
+      let message = `Request failed with ${response.status}`;
+      try {
+        const body = await response.json();
+        message = body.detail || message;
+      } catch {
+        // Keep the status-based fallback.
+      }
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  if (response.status === 204) {
-    return undefined as T;
+    if (response.status === 204) {
+      return undefined as T;
+    }
+    return response.json() as Promise<T>;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Request timed out. Check the API Base URL in Settings: ${baseUrl}`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
-  return response.json() as Promise<T>;
 }
 
 export const api = {

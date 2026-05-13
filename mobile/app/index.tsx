@@ -43,10 +43,6 @@ export default function DashboardScreen() {
     void load();
   }, [load]));
 
-  if (loading) {
-    return <LoadingState message="Loading dashboard" />;
-  }
-
   return (
     <ScreenScrollView
       contentContainerStyle={styles.container}
@@ -64,6 +60,8 @@ export default function DashboardScreen() {
         <Button title="View Courses" variant="secondary" onPress={() => router.push('/courses')} />
         <Button title="Settings" variant="secondary" onPress={() => router.push('/settings')} />
       </View>
+
+      {loading ? <LoadingState message="Loading dashboard" /> : null}
 
       {dashboard ? (
         <>
