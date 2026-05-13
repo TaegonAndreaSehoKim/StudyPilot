@@ -166,4 +166,4 @@ docker compose logs -f backend
 - Rate limits are in-memory per backend process. Use Redis or an API gateway for multi-instance production.
 - SQLite and local EC2 file storage are not high-availability.
 - No HTTPS is configured by this Compose file.
-- Textract OCR uses a synchronous backend request in this MVP. Large documents should move to an async OCR job queue.
+- Textract OCR starts a FastAPI background task in this MVP. Large documents and multi-instance deployments should move to a durable queue such as SQS plus a worker.

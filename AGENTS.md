@@ -17,6 +17,7 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - document upload for `.txt`, `.md`, text-based `.pdf`, and OCR-required scanned PDFs
 - text-based PDF upload regression coverage
 - fake OCR provider for local tests and optional Textract provider for deployment
+- backend OCR job records with mobile polling
 - section-aware document preparation before AI generation
 - backend-only AI provider abstraction
 - deterministic `FakeAIProvider` fallback when `OPENAI_API_KEY` is absent
@@ -65,7 +66,6 @@ What is not built yet:
 - authentication
 - cloud deployment
 - managed database persistence
-- asynchronous OCR job processing for large scanned PDFs
 - push notifications
 - vector search, embeddings, or RAG
 - spaced repetition scheduling
@@ -152,19 +152,22 @@ Lower priority for now:
 2. PDF extraction is embedded-text first.
    Scanned or image-only PDFs should be marked `needs_ocr`; OCR runs only when explicitly requested through the backend.
 
-3. SQLite is local MVP persistence.
+3. OCR jobs are FastAPI background tasks.
+   This is enough for the single-server MVP. Use a durable worker queue before relying on OCR jobs for production-scale large PDFs.
+
+4. SQLite is local MVP persistence.
    Do not overfit the code to multi-user production assumptions before auth and database migration are planned.
 
-4. Mobile localhost differs by target.
+5. Mobile localhost differs by target.
    iOS simulator, Android emulator, and physical devices need different API base URLs. Keep the Settings screen working.
 
-5. Tests should not call real OpenAI APIs.
+6. Tests should not call real OpenAI APIs.
    Test setup must keep fake AI and fake OCR forced and should avoid network-dependent assertions.
 
-6. `BACKEND_ACCESS_TOKEN` is a shared backend guard, not user authentication.
+7. `BACKEND_ACCESS_TOKEN` is a shared backend guard, not user authentication.
    Keep it out of source control. Mobile stores this token only for backend access; never store `OPENAI_API_KEY` in mobile.
 
-7. Rate limits are in-memory and per process.
+8. Rate limits are in-memory and per process.
    They are appropriate for the single-container EC2 MVP, but should move to Redis, a gateway, or managed protection before multi-instance deployment.
 
 8. MVP quiz responses include correct answers.

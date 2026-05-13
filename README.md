@@ -243,7 +243,7 @@ API access behavior:
 - If `BACKEND_ACCESS_TOKEN` is set, every `POST`, `PATCH`, and `DELETE` request must include `X-StudyPilot-Key`.
 - In `ENVIRONMENT=production`, mutating requests fail unless `BACKEND_ACCESS_TOKEN` is configured.
 - Mutating requests are rate-limited in memory. OCR and AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` limit.
-- OCR uses `OCR_PROVIDER=fake` for local demos/tests. Set `OCR_PROVIDER=textract` and configure AWS credentials on the backend host for real scanned PDFs.
+- OCR uses `OCR_PROVIDER=fake` for local demos/tests. Set `OCR_PROVIDER=textract` and configure AWS credentials on the backend host for real scanned PDFs. `POST /documents/{document_id}/ocr` starts a backend OCR job and returns a job record; poll `GET /ocr-jobs/{job_id}` until it is completed or failed.
 
 ---
 
@@ -278,6 +278,7 @@ Main endpoints:
 - `GET /documents/{document_id}/text`
 - `GET /documents/{document_id}/download`
 - `POST /documents/{document_id}/ocr`
+- `GET /ocr-jobs/{job_id}`
 - `GET /courses/{course_id}/documents`
 - `DELETE /documents/{document_id}`
 - `POST /documents/{document_id}/summaries`
@@ -480,9 +481,10 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 
 - No authentication or multi-user support.
 - SQLite and local file storage are intended for local MVP persistence. The Docker deployment keeps them in EC2-local volumes.
-- PDF extraction first uses embedded text. Scanned/image-only PDFs are marked `needs_ocr` and can be processed through the configured OCR provider.
+- PDF extraction first uses embedded text. Scanned/image-only PDFs are marked `needs_ocr` and can be processed through a backend OCR job using the configured OCR provider.
 - The built-in fake OCR provider is for demos/tests; real OCR requires Amazon Textract configuration and AWS credentials.
 - The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
+- OCR jobs use FastAPI background tasks for the single-server MVP. A production deployment should move OCR work to a durable queue.
 - AI calls are synchronous.
 - The OpenAI provider validates required summary, flashcard, and quiz fields before accepting model output, then falls back to fake AI if the response shape is unsafe.
 - Quiz responses include correct answers in the MVP API for mobile simplicity.

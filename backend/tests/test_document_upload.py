@@ -93,8 +93,18 @@ def test_scanned_pdf_can_be_marked_for_ocr_and_processed(client: TestClient, cou
     assert summary_response.status_code == 400
 
     ocr_response = client.post(f"/documents/{uploaded['id']}/ocr")
-    assert ocr_response.status_code == 200
-    ocr_body = ocr_response.json()
+    assert ocr_response.status_code == 202
+    ocr_job = ocr_response.json()
+    assert ocr_job["document_id"] == uploaded["id"]
+    assert ocr_job["provider"] == "fake"
+
+    job_response = client.get(f"/ocr-jobs/{ocr_job['id']}")
+    assert job_response.status_code == 200
+    assert job_response.json()["status"] == "completed"
+
+    document_response = client.get(f"/documents/{uploaded['id']}/text")
+    assert document_response.status_code == 200
+    ocr_body = document_response.json()
     assert ocr_body["status"] == "extracted"
     assert ocr_body["ocr_status"] == "completed"
     assert ocr_body["extraction_method"] == "fake_ocr"

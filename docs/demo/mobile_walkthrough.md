@@ -57,5 +57,5 @@ http://192.168.1.25:8000
 
 - If the iPhone cannot connect, confirm both devices are on the same network.
 - If the backend URL uses `127.0.0.1`, replace it with the computer LAN IP for physical devices.
-- If a PDF extracts little or no text, it may be scanned or image-only. OCR is not part of the MVP.
+- If a PDF extracts little or no text, it may be scanned or image-only. Use the document screen's Run OCR action when the backend has OCR enabled.
 - If Expo Go shows stale UI, pull to refresh or navigate away and back; primary screens reload on focus.

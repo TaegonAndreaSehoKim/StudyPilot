@@ -69,7 +69,7 @@ In `ENVIRONMENT=production`, the backend rejects mutating requests unless `BACKE
 
 Rate limiting is enabled by default. `POST`, `PATCH`, and `DELETE` requests use `MUTATION_RATE_LIMIT_PER_MINUTE`; OCR and AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE`. Limits are in-memory and intended for the single-container EC2 MVP.
 
-PDF extraction first uses embedded text through `pypdf`. If a PDF has too little embedded text, it is saved with `status=needs_ocr` and `ocr_status=available`. `POST /documents/{document_id}/ocr` runs the configured OCR provider. Use `OCR_PROVIDER=fake` for local demos/tests, `OCR_PROVIDER=textract` for Amazon Textract, or `OCR_PROVIDER=disabled` to turn OCR off.
+PDF extraction first uses embedded text through `pypdf`. If a PDF has too little embedded text, it is saved with `status=needs_ocr` and `ocr_status=available`. `POST /documents/{document_id}/ocr` starts a backend OCR job and returns a job record; use `GET /ocr-jobs/{job_id}` to poll completion. Use `OCR_PROVIDER=fake` for local demos/tests, `OCR_PROVIDER=textract` for Amazon Textract, or `OCR_PROVIDER=disabled` to turn OCR off.
 
 ## Docker
 
@@ -95,6 +95,7 @@ The Compose setup stores SQLite data in the `studypilot_data` volume and uploade
 - `GET /documents/{document_id}/text`
 - `GET /documents/{document_id}/download`
 - `POST /documents/{document_id}/ocr`
+- `GET /ocr-jobs/{job_id}`
 - `GET /courses/{course_id}/documents`
 - `DELETE /documents/{document_id}`
 - `POST /documents/{document_id}/summaries`

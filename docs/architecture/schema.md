@@ -53,7 +53,35 @@ Notes:
 - `.pdf` files are parsed with `pypdf`.
 - text-poor PDFs are marked `needs_ocr`.
 - partially extracted PDFs stay `extracted` but can set `ocr_status=recommended`.
-- `POST /documents/{document_id}/ocr` updates the document text through the configured OCR provider.
+- `POST /documents/{document_id}/ocr` creates an OCR job; completed jobs update the document text through the configured OCR provider.
+
+## OcrJob
+
+Represents one backend OCR processing request for a PDF document.
+
+Fields:
+
+- `id`
+- `document_id`
+- `status`
+- `provider`
+- `error_message`
+- `completed_at`
+- `created_at`
+- `updated_at`
+
+Status values:
+
+- `queued`
+- `running`
+- `completed`
+- `failed`
+
+Notes:
+
+- only one queued or running OCR job is allowed per document
+- `GET /ocr-jobs/{job_id}` returns the latest job state for mobile polling
+- completed jobs set the document `ocr_status=completed` and replace extracted text with OCR output
 
 ## Summary
 
@@ -191,6 +219,8 @@ Document responses:
 
 - `DocumentOut`
 - `DocumentDetailOut`
+- `DocumentTextOut`
+- `OcrJobOut`
 
 Generated material responses:
 

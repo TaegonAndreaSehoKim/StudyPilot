@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { DocumentDetail, Flashcard, Quiz, Summary } from '@/api/types';
+import type { DocumentDetail, Flashcard, OcrJob, Quiz, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -39,6 +39,8 @@ const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }
 
 const QUIZ_COUNTS = [5, 10, 15];
 const QUIZ_DIFFICULTIES: QuizDifficulty[] = ['mixed', 'easy', 'medium', 'hard'];
+const OCR_POLL_ATTEMPTS = 80;
+const OCR_POLL_INTERVAL_MS = 1500;
 
 export default function DocumentDetailScreen() {
   const { documentId } = useLocalSearchParams<{ documentId: string }>();
@@ -139,17 +141,40 @@ export default function DocumentDetailScreen() {
       setWorking('ocr');
       setError(null);
       setNotice(null);
-      const result = await api.runDocumentOcr(id);
-      await load();
+      const startedJob = await api.runDocumentOcr(id);
+      const completedJob = await waitForOcrJob(startedJob);
+      const refreshedDocument = await api.document(id);
+      setDocument(refreshedDocument);
       setNotice({
         title: 'OCR completed',
-        message: `StudyPilot extracted ${result.char_count} characters with ${result.extraction_method}. You can now generate study materials.`,
+        message: `StudyPilot extracted ${refreshedDocument.char_count} characters with ${refreshedDocument.extraction_method}. Job #${completedJob.id} is complete.`,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to run OCR');
     } finally {
       setWorking(null);
     }
+  }
+
+  async function waitForOcrJob(startedJob: OcrJob): Promise<OcrJob> {
+    if (startedJob.status === 'completed') {
+      return startedJob;
+    }
+    if (startedJob.status === 'failed') {
+      throw new Error(startedJob.error_message || 'OCR failed');
+    }
+
+    for (let attempt = 0; attempt < OCR_POLL_ATTEMPTS; attempt += 1) {
+      await delay(OCR_POLL_INTERVAL_MS);
+      const job = await api.ocrJob(startedJob.id);
+      if (job.status === 'completed') {
+        return job;
+      }
+      if (job.status === 'failed') {
+        throw new Error(job.error_message || 'OCR failed');
+      }
+    }
+    throw new Error('OCR is still running. Pull to refresh this document in a moment.');
   }
 
   async function openOriginalFile() {
@@ -195,7 +220,7 @@ export default function DocumentDetailScreen() {
 
   const canGenerate = document?.status === 'extracted';
   const actionDisabled = !!working || deleting || !canGenerate;
-  const canRunOcr = document?.file_type === '.pdf' && ['available', 'recommended', 'error'].includes(document.ocr_status);
+  const canRunOcr = document?.file_type === '.pdf' && ['available', 'recommended', 'error', 'queued', 'running'].includes(document.ocr_status);
 
   return (
     <ScreenScrollView
@@ -236,7 +261,11 @@ export default function DocumentDetailScreen() {
               {document.ocr_status === 'completed' ? (
                 <Text style={styles.ocrDone}>OCR completed</Text>
               ) : canRunOcr ? (
-                <Button title={working === 'ocr' ? 'Running OCR...' : 'Run OCR'} disabled={!!working || deleting} onPress={runOcr} />
+                <Button
+                  title={working === 'ocr' ? 'Running OCR...' : document.ocr_status === 'queued' || document.ocr_status === 'running' ? 'Check OCR Status' : 'Run OCR'}
+                  disabled={!!working || deleting}
+                  onPress={runOcr}
+                />
               ) : null}
             </Card>
           ) : null}
@@ -348,6 +377,12 @@ export default function DocumentDetailScreen() {
       ) : null}
     </ScreenScrollView>
   );
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

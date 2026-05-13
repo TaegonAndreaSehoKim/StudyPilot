@@ -91,8 +91,17 @@ class DocumentTextOut(DocumentOut):
     text: str
 
 
-class DocumentOcrRunOut(DocumentOut):
-    text: str
+class OcrJobOut(BaseModel):
+    id: int
+    document_id: int
+    status: str
+    provider: str
+    error_message: str | None
+    completed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class CourseDetailOut(CourseOut):

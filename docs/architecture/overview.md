@@ -130,6 +130,8 @@ OCR_PROVIDER=disabled
 
 The backend first tries embedded PDF text with `pypdf`. If too little text is found, the document is saved as `needs_ocr`. Partially extracted PDFs remain usable but can show `ocr_status=recommended`.
 
+OCR execution uses an `ocr_jobs` record. `POST /documents/{document_id}/ocr` queues work with a FastAPI background task and returns the job status. The mobile app polls `GET /ocr-jobs/{job_id}` until the job completes or fails.
+
 ## Persistence
 
 SQLite is used for local MVP persistence.
@@ -144,6 +146,7 @@ Stored records include:
 - quiz questions
 - quiz attempts
 - weak topics
+- OCR jobs
 
 Uploaded files are stored under `backend/app/storage/documents/` by default. Relative `STORAGE_DIR` values are resolved from the `backend/` directory.
 
@@ -179,8 +182,8 @@ npm run typecheck
 - no authentication
 - no cloud storage
 - no production database migrations
-- OCR is synchronous in the MVP and should move to a background job for large PDFs
-- no background job queue
+- OCR uses FastAPI background tasks in the MVP; production should use a durable queue for large PDFs
+- no durable background job queue
 - no mobile automated tests yet
 - correct quiz answers are included in MVP quiz payloads
 

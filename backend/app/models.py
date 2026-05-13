@@ -57,6 +57,20 @@ class Document(TimestampMixin, Base):
     summaries: Mapped[list["Summary"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     flashcards: Mapped[list["Flashcard"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     quizzes: Mapped[list["Quiz"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    ocr_jobs: Mapped[list["OcrJob"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+
+
+class OcrJob(TimestampMixin, Base):
+    __tablename__ = "ocr_jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="queued")
+    provider: Mapped[str] = mapped_column(String(40), nullable=False, default="fake")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    document: Mapped["Document"] = relationship(back_populates="ocr_jobs")
 
 
 class Summary(Base):

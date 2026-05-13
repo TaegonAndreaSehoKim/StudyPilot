@@ -97,5 +97,5 @@ npm run export:web
 - If health check fails, confirm the backend is running.
 - If Android cannot connect to `127.0.0.1`, use `10.0.2.2`.
 - If a physical device cannot connect, use the computer's LAN IP and allow local firewall access.
-- Scanned PDFs are marked as requiring OCR. Use the document screen's Run OCR action when the backend has OCR enabled.
+- Scanned PDFs are marked as requiring OCR. Use the document screen's Run OCR action when the backend has OCR enabled; the app starts an OCR job and polls until it completes or fails.
 - On tablets, rotate between portrait and landscape during manual testing because dashboard, course, document, schedule, quiz history, and saved-material screens use responsive grids.

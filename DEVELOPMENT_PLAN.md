@@ -99,7 +99,8 @@ StudyPilot/
 - [x] Extract text from text-based PDFs using `pypdf`.
 - [x] Mark scanned or image-only PDFs as `needs_ocr`.
 - [x] Add fake OCR and optional Amazon Textract OCR provider path.
-- [x] Implement `POST /documents/{document_id}/ocr`.
+- [x] Implement async `POST /documents/{document_id}/ocr` job creation.
+- [x] Implement `GET /ocr-jobs/{job_id}` status polling.
 - [x] Implement `POST /documents/upload`.
 - [x] Implement `GET /documents/{document_id}`.
 - [x] Implement `GET /courses/{course_id}/documents`.
@@ -237,6 +238,7 @@ StudyPilot/
 - [x] `GET /documents/{document_id}/text`
 - [x] `GET /documents/{document_id}/download`
 - [x] `POST /documents/{document_id}/ocr`
+- [x] `GET /ocr-jobs/{job_id}`
 - [x] `GET /courses/{course_id}/documents`
 - [x] `DELETE /documents/{document_id}`
 

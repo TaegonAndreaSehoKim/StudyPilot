@@ -32,8 +32,15 @@ export interface DocumentText extends Document {
   text: string;
 }
 
-export interface DocumentOcrResult extends Document {
-  text: string;
+export interface OcrJob {
+  id: number;
+  document_id: number;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  provider: string;
+  error_message: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface KeyTerm {
