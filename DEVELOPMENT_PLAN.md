@@ -63,179 +63,179 @@ StudyPilot/
 
 ### Phase 1: Monorepo Foundation
 
-- [ ] Create root `.gitignore`.
-- [ ] Create root `README.md`.
-- [ ] Create `backend/` structure.
-- [ ] Create `mobile/` structure.
-- [ ] Add `.env.example` files for backend and mobile.
+- [x] Create root `.gitignore`.
+- [x] Create root `README.md`.
+- [x] Create `backend/` structure.
+- [x] Create `mobile/` structure.
+- [x] Add `.env.example` files for backend and mobile.
 
 ### Phase 2: Backend Core
 
-- [ ] Add `backend/requirements.txt`.
-- [ ] Implement `app/config.py` with `pydantic-settings`.
-- [ ] Implement `app/database.py` with SQLAlchemy engine, session, and startup table creation.
-- [ ] Implement `app/models.py`.
-- [ ] Implement `app/schemas.py`.
-- [ ] Implement dependency helpers in `app/deps.py`.
-- [ ] Implement FastAPI app in `app/main.py`.
-- [ ] Implement `GET /health`.
+- [x] Add `backend/requirements.txt`.
+- [x] Implement `app/config.py` with `pydantic-settings`.
+- [x] Implement `app/database.py` with SQLAlchemy engine, session, and startup table creation.
+- [x] Implement `app/models.py`.
+- [x] Implement `app/schemas.py`.
+- [x] Implement dependency helpers in `app/deps.py`.
+- [x] Implement FastAPI app in `app/main.py`.
+- [x] Implement `GET /health`.
 
 ### Phase 3: Course API
 
-- [ ] Implement `POST /courses`.
-- [ ] Implement `GET /courses`.
-- [ ] Implement `GET /courses/{course_id}`.
-- [ ] Implement `PATCH /courses/{course_id}`.
-- [ ] Implement `DELETE /courses/{course_id}`.
-- [ ] Include course detail counts where practical.
+- [x] Implement `POST /courses`.
+- [x] Implement `GET /courses`.
+- [x] Implement `GET /courses/{course_id}`.
+- [x] Implement `PATCH /courses/{course_id}`.
+- [x] Implement `DELETE /courses/{course_id}`.
+- [x] Include course detail counts where practical.
 
 ### Phase 4: Document Upload and Extraction
 
-- [ ] Implement upload validation for `.txt`, `.md`, and `.pdf`.
-- [ ] Enforce max upload size.
-- [ ] Save files under backend storage.
-- [ ] Extract text from text and markdown files.
-- [ ] Extract text from text-based PDFs using `pypdf`.
-- [ ] Mark scanned or image-only PDFs as unsupported.
-- [ ] Implement `POST /documents/upload`.
-- [ ] Implement `GET /documents/{document_id}`.
-- [ ] Implement `GET /courses/{course_id}/documents`.
-- [ ] Implement `DELETE /documents/{document_id}`.
+- [x] Implement upload validation for `.txt`, `.md`, and `.pdf`.
+- [x] Enforce max upload size.
+- [x] Save files under backend storage.
+- [x] Extract text from text and markdown files.
+- [x] Extract text from text-based PDFs using `pypdf`.
+- [x] Mark scanned or image-only PDFs as unsupported.
+- [x] Implement `POST /documents/upload`.
+- [x] Implement `GET /documents/{document_id}`.
+- [x] Implement `GET /courses/{course_id}/documents`.
+- [x] Implement `DELETE /documents/{document_id}`.
 
 ### Phase 5: AI Provider Layer
 
-- [ ] Define `AIProvider`.
-- [ ] Implement deterministic `FakeAIProvider`.
-- [ ] Implement `OpenAIProvider`.
-- [ ] Select fake provider when `USE_FAKE_AI=true` or `OPENAI_API_KEY` is missing.
-- [ ] Add robust JSON parsing and fallback behavior.
-- [ ] Keep prompts source-grounded.
+- [x] Define `AIProvider`.
+- [x] Implement deterministic `FakeAIProvider`.
+- [x] Implement `OpenAIProvider`.
+- [x] Select fake provider when `USE_FAKE_AI=true` or `OPENAI_API_KEY` is missing.
+- [x] Add robust JSON parsing and fallback behavior.
+- [x] Keep prompts source-grounded.
 
 ### Phase 6: Study Material Generation
 
-- [ ] Implement text chunking.
-- [ ] Implement summary generation service.
-- [ ] Implement flashcard generation service.
-- [ ] Implement quiz generation service.
-- [ ] Implement `POST /documents/{document_id}/summaries`.
-- [ ] Implement `GET /documents/{document_id}/summaries`.
-- [ ] Implement `POST /documents/{document_id}/flashcards`.
-- [ ] Implement `GET /documents/{document_id}/flashcards`.
-- [ ] Implement `POST /documents/{document_id}/quizzes`.
-- [ ] Implement `GET /quizzes/{quiz_id}`.
+- [x] Implement text chunking.
+- [x] Implement summary generation service.
+- [x] Implement flashcard generation service.
+- [x] Implement quiz generation service.
+- [x] Implement `POST /documents/{document_id}/summaries`.
+- [x] Implement `GET /documents/{document_id}/summaries`.
+- [x] Implement `POST /documents/{document_id}/flashcards`.
+- [x] Implement `GET /documents/{document_id}/flashcards`.
+- [x] Implement `POST /documents/{document_id}/quizzes`.
+- [x] Implement `GET /quizzes/{quiz_id}`.
 
 ### Phase 7: Quiz Attempts and Weak Topics
 
-- [ ] Implement quiz attempt scoring.
-- [ ] Store submitted answers and explanations.
-- [ ] Update weak topics for missed questions.
-- [ ] Implement `POST /quizzes/{quiz_id}/attempts`.
-- [ ] Implement `GET /courses/{course_id}/weak-topics`.
+- [x] Implement quiz attempt scoring.
+- [x] Store submitted answers and explanations.
+- [x] Update weak topics for missed questions.
+- [x] Implement `POST /quizzes/{quiz_id}/attempts`.
+- [x] Implement `GET /courses/{course_id}/weak-topics`.
 
 ### Phase 8: Dashboard API
 
-- [ ] Implement `GET /dashboard`.
-- [ ] Implement `GET /courses/{course_id}/dashboard`.
-- [ ] Include counts, recent courses, recent documents, recent quizzes, and weak topics.
+- [x] Implement `GET /dashboard`.
+- [x] Implement `GET /courses/{course_id}/dashboard`.
+- [x] Include counts, recent courses, recent documents, recent quizzes, and weak topics.
 
 ### Phase 9: Backend Tests
 
-- [ ] Use temporary SQLite database in tests.
-- [ ] Use temporary storage directory in tests.
-- [ ] Force fake AI in tests.
-- [ ] Add health tests.
-- [ ] Add course CRUD tests.
-- [ ] Add document upload tests.
-- [ ] Add summary generation tests.
-- [ ] Add flashcard generation tests.
-- [ ] Add quiz and attempt tests.
-- [ ] Add dashboard tests.
-- [ ] Ensure `pytest -q` passes.
+- [x] Use temporary SQLite database in tests.
+- [x] Use temporary storage directory in tests.
+- [x] Force fake AI in tests.
+- [x] Add health tests.
+- [x] Add course CRUD tests.
+- [x] Add document upload tests.
+- [x] Add summary generation tests.
+- [x] Add flashcard generation tests.
+- [x] Add quiz and attempt tests.
+- [x] Add dashboard tests.
+- [x] Ensure `pytest -q` passes.
 
 ### Phase 10: Mobile Foundation
 
-- [ ] Add Expo app configuration.
-- [ ] Add TypeScript configuration.
-- [ ] Add Expo Router layout.
-- [ ] Implement `src/api/client.ts`.
-- [ ] Implement `src/api/types.ts`.
-- [ ] Implement shared UI components.
-- [ ] Add API base URL setting with AsyncStorage.
+- [x] Add Expo app configuration.
+- [x] Add TypeScript configuration.
+- [x] Add Expo Router layout.
+- [x] Implement `src/api/client.ts`.
+- [x] Implement `src/api/types.ts`.
+- [x] Implement shared UI components.
+- [x] Add API base URL setting with AsyncStorage.
 
 ### Phase 11: Mobile Screens
 
-- [ ] Implement dashboard screen.
-- [ ] Implement courses list screen.
-- [ ] Implement new course screen.
-- [ ] Implement course detail screen.
-- [ ] Implement document upload flow with `expo-document-picker`.
-- [ ] Implement document detail screen.
-- [ ] Implement summary display.
-- [ ] Implement flashcard display.
-- [ ] Implement quiz taking screen.
-- [ ] Implement settings screen.
-- [ ] Handle loading, empty, and error states.
+- [x] Implement dashboard screen.
+- [x] Implement courses list screen.
+- [x] Implement new course screen.
+- [x] Implement course detail screen.
+- [x] Implement document upload flow with `expo-document-picker`.
+- [x] Implement document detail screen.
+- [x] Implement summary display.
+- [x] Implement flashcard display.
+- [x] Implement quiz taking screen.
+- [x] Implement settings screen.
+- [x] Handle loading, empty, and error states.
 
 ### Phase 12: Documentation
 
-- [ ] Write root README with overview, setup, architecture, demo flow, testing, limitations, and resume bullets.
-- [ ] Write backend README.
-- [ ] Write mobile README.
-- [ ] Document API base URL notes for iOS simulator, Android emulator, and physical devices.
-- [ ] Document that generated content may contain mistakes and should be verified against source materials.
+- [x] Write root README with overview, setup, architecture, demo flow, testing, limitations, and resume bullets.
+- [x] Write backend README.
+- [x] Write mobile README.
+- [x] Document API base URL notes for iOS simulator, Android emulator, and physical devices.
+- [x] Document that generated content may contain mistakes and should be verified against source materials.
 
 ## Backend Endpoint Checklist
 
 ### Health
 
-- [ ] `GET /health`
+- [x] `GET /health`
 
 ### Courses
 
-- [ ] `POST /courses`
-- [ ] `GET /courses`
-- [ ] `GET /courses/{course_id}`
-- [ ] `PATCH /courses/{course_id}`
-- [ ] `DELETE /courses/{course_id}`
+- [x] `POST /courses`
+- [x] `GET /courses`
+- [x] `GET /courses/{course_id}`
+- [x] `PATCH /courses/{course_id}`
+- [x] `DELETE /courses/{course_id}`
 
 ### Documents
 
-- [ ] `POST /documents/upload`
-- [ ] `GET /documents/{document_id}`
-- [ ] `GET /courses/{course_id}/documents`
-- [ ] `DELETE /documents/{document_id}`
+- [x] `POST /documents/upload`
+- [x] `GET /documents/{document_id}`
+- [x] `GET /courses/{course_id}/documents`
+- [x] `DELETE /documents/{document_id}`
 
 ### Summaries
 
-- [ ] `POST /documents/{document_id}/summaries`
-- [ ] `GET /documents/{document_id}/summaries`
+- [x] `POST /documents/{document_id}/summaries`
+- [x] `GET /documents/{document_id}/summaries`
 
 ### Flashcards
 
-- [ ] `POST /documents/{document_id}/flashcards`
-- [ ] `GET /documents/{document_id}/flashcards`
+- [x] `POST /documents/{document_id}/flashcards`
+- [x] `GET /documents/{document_id}/flashcards`
 
 ### Quizzes
 
-- [ ] `POST /documents/{document_id}/quizzes`
-- [ ] `GET /quizzes/{quiz_id}`
-- [ ] `POST /quizzes/{quiz_id}/attempts`
+- [x] `POST /documents/{document_id}/quizzes`
+- [x] `GET /quizzes/{quiz_id}`
+- [x] `POST /quizzes/{quiz_id}/attempts`
 
 ### Weak Topics and Dashboard
 
-- [ ] `GET /courses/{course_id}/weak-topics`
-- [ ] `GET /dashboard`
-- [ ] `GET /courses/{course_id}/dashboard`
+- [x] `GET /courses/{course_id}/weak-topics`
+- [x] `GET /dashboard`
+- [x] `GET /courses/{course_id}/dashboard`
 
 ## Mobile Screen Checklist
 
-- [ ] `app/index.tsx`: dashboard
-- [ ] `app/courses/index.tsx`: courses list
-- [ ] `app/courses/new.tsx`: create course
-- [ ] `app/courses/[courseId].tsx`: course detail and upload
-- [ ] `app/documents/[documentId].tsx`: document detail and generated materials
-- [ ] `app/quiz/[quizId].tsx`: quiz taking
-- [ ] `app/settings.tsx`: API base URL and connection test
+- [x] `app/index.tsx`: dashboard
+- [x] `app/courses/index.tsx`: courses list
+- [x] `app/courses/new.tsx`: create course
+- [x] `app/courses/[courseId].tsx`: course detail and upload
+- [x] `app/documents/[documentId].tsx`: document detail and generated materials
+- [x] `app/quiz/[quizId].tsx`: quiz taking
+- [x] `app/settings.tsx`: API base URL and connection test
 
 ## Test Gate
 
@@ -278,18 +278,18 @@ npx expo start
 
 ## Acceptance Criteria
 
-- [ ] Backend starts with `uvicorn app.main:app --reload`.
-- [ ] `GET /health` returns ok.
-- [ ] Backend tests pass with `pytest -q`.
-- [ ] User can create a course.
-- [ ] User can upload `.txt`, `.md`, and text-based `.pdf` files.
-- [ ] User can generate summaries.
-- [ ] User can generate flashcards.
-- [ ] User can generate quizzes.
-- [ ] User can submit quiz answers and see score, missed topics, and explanations.
-- [ ] Weak topics update after missed quiz questions.
-- [ ] Dashboard shows useful counts and recent activity.
+- [x] Backend starts with `uvicorn app.main:app --reload`.
+- [x] `GET /health` returns ok.
+- [x] Backend tests pass with `pytest -q`.
+- [x] User can create a course.
+- [x] User can upload `.txt`, `.md`, and text-based `.pdf` files.
+- [x] User can generate summaries.
+- [x] User can generate flashcards.
+- [x] User can generate quizzes.
+- [x] User can submit quiz answers and see score, missed topics, and explanations.
+- [x] Weak topics update after missed quiz questions.
+- [x] Dashboard shows useful counts and recent activity.
 - [ ] Mobile app starts with `npx expo start`.
-- [ ] Mobile app can connect to backend.
-- [ ] README files explain setup clearly.
-- [ ] No API key is required for local demo.
+- [x] Mobile app can connect to backend.
+- [x] README files explain setup clearly.
+- [x] No API key is required for local demo.

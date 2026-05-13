@@ -1,0 +1,148 @@
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.deps import get_ai_provider
+from app.models import Document, Quiz, QuizAttempt, QuizQuestion
+from app.schemas import QuizAttemptCreate, QuizAttemptResult, QuizCreate, QuizOut, QuizQuestionOut
+from app.services.study_generator import StudyGenerator
+from app.services.weak_topics import update_weak_topics
+
+router = APIRouter(tags=["quizzes"])
+
+
+def _document_ready(db: Session, document_id: int) -> Document:
+    document = db.get(Document, document_id)
+    if document is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if document.status != "extracted":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Document text is not available for generation")
+    return document
+
+
+def _quiz_out(quiz: Quiz) -> QuizOut:
+    questions = [
+        QuizQuestionOut(
+            id=question.id,
+            quiz_id=question.quiz_id,
+            question=question.question,
+            choices=json.loads(question.choices_json),
+            correct_answer=question.correct_answer,
+            explanation=question.explanation,
+            topic=question.topic,
+            difficulty=question.difficulty,
+        )
+        for question in quiz.questions
+    ]
+    return QuizOut(
+        id=quiz.id,
+        document_id=quiz.document_id,
+        title=quiz.title,
+        created_at=quiz.created_at,
+        questions=questions,
+    )
+
+
+@router.post("/documents/{document_id}/quizzes", response_model=QuizOut, status_code=status.HTTP_201_CREATED)
+def create_quiz(document_id: int, payload: QuizCreate, db: Session = Depends(get_db)) -> QuizOut:
+    document = _document_ready(db, document_id)
+    generator = StudyGenerator(get_ai_provider())
+    result = generator.generate_quiz(document.extracted_text, payload.question_count, payload.difficulty)
+    quiz = Quiz(document_id=document_id, title=str(result.get("title") or "Study Quiz"))
+    db.add(quiz)
+    db.flush()
+
+    for item in result.get("questions") or []:
+        db.add(
+            QuizQuestion(
+                quiz_id=quiz.id,
+                question=str(item.get("question") or "Question"),
+                choices_json=json.dumps(item.get("choices") or []),
+                correct_answer=str(item.get("correct_answer") or "A").upper()[:1],
+                explanation=str(item.get("explanation") or ""),
+                topic=str(item.get("topic") or "General"),
+                difficulty=str(item.get("difficulty") or "medium"),
+            )
+        )
+
+    db.commit()
+    db.refresh(quiz)
+    return _quiz_out(quiz)
+
+
+@router.get("/documents/{document_id}/quizzes", response_model=list[QuizOut])
+def list_document_quizzes(document_id: int, db: Session = Depends(get_db)) -> list[QuizOut]:
+    if db.get(Document, document_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    quizzes = db.query(Quiz).filter(Quiz.document_id == document_id).order_by(Quiz.created_at.desc()).all()
+    return [_quiz_out(quiz) for quiz in quizzes]
+
+
+@router.get("/quizzes/{quiz_id}", response_model=QuizOut)
+def get_quiz(quiz_id: int, db: Session = Depends(get_db)) -> QuizOut:
+    quiz = db.get(Quiz, quiz_id)
+    if quiz is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+    return _quiz_out(quiz)
+
+
+@router.post("/quizzes/{quiz_id}/attempts", response_model=QuizAttemptResult, status_code=status.HTTP_201_CREATED)
+def submit_attempt(quiz_id: int, payload: QuizAttemptCreate, db: Session = Depends(get_db)) -> QuizAttemptResult:
+    quiz = db.get(Quiz, quiz_id)
+    if quiz is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+
+    submitted = {answer.question_id: answer.selected_answer.upper()[:1] for answer in payload.answers}
+    results = []
+    missed_topics: list[str] = []
+    correct_count = 0
+
+    for question in quiz.questions:
+        selected = submitted.get(question.id)
+        is_correct = selected == question.correct_answer
+        if is_correct:
+            correct_count += 1
+        else:
+            missed_topics.append(question.topic)
+        results.append(
+            {
+                "question_id": question.id,
+                "selected_answer": selected,
+                "correct_answer": question.correct_answer,
+                "is_correct": is_correct,
+                "explanation": question.explanation,
+                "topic": question.topic,
+            }
+        )
+
+    total = len(quiz.questions)
+    score = correct_count / total if total else 0.0
+    attempt = QuizAttempt(
+        quiz_id=quiz.id,
+        score=score,
+        total_questions=total,
+        correct_count=correct_count,
+        missed_topics_json=json.dumps(missed_topics),
+        answers_json=json.dumps(results),
+    )
+    db.add(attempt)
+
+    document = db.get(Document, quiz.document_id)
+    if document is not None:
+        update_weak_topics(db, document.course_id, missed_topics)
+
+    db.commit()
+    db.refresh(attempt)
+
+    return QuizAttemptResult(
+        id=attempt.id,
+        quiz_id=quiz.id,
+        score=attempt.score,
+        total_questions=attempt.total_questions,
+        correct_count=attempt.correct_count,
+        missed_topics=missed_topics,
+        answers=results,
+        created_at=attempt.created_at,
+    )
