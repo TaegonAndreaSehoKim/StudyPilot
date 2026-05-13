@@ -49,6 +49,10 @@ class ScheduleItemOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ScheduleItemWithCourseOut(ScheduleItemOut):
+    course_title: str
+
+
 class CourseOut(BaseModel):
     id: int
     title: str

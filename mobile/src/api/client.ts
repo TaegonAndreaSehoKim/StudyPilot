@@ -9,6 +9,7 @@ import type {
   DocumentDetail,
   DocumentText,
   Flashcard,
+  GlobalScheduleItem,
   Quiz,
   QuizAttemptResult,
   ScheduleEventType,
@@ -93,6 +94,8 @@ export const api = {
   courseAttempts: (courseId: number) => request<CourseQuizAttempt[]>(`/courses/${courseId}/attempts`),
   courseSchedule: (courseId: number, includeCompleted = true) =>
     request<ScheduleItem[]>(`/courses/${courseId}/schedule?include_completed=${includeCompleted}`),
+  globalSchedule: (includeCompleted = false, limit = 20) =>
+    request<GlobalScheduleItem[]>(`/schedule?include_completed=${includeCompleted}&limit=${limit}`),
   createScheduleItem: (courseId: number, payload: { title: string; event_type: ScheduleEventType; due_at: string; notes?: string }) =>
     request<ScheduleItem>(`/courses/${courseId}/schedule`, {
       method: 'POST',

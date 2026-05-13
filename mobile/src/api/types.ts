@@ -126,6 +126,10 @@ export interface ScheduleItem {
   updated_at: string;
 }
 
+export interface GlobalScheduleItem extends ScheduleItem {
+  course_title: string;
+}
+
 export interface WeakTopic {
   id: number;
   course_id: number;

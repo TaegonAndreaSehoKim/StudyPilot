@@ -58,6 +58,7 @@ npx expo install --check
 ## Main Screens
 
 - Dashboard: counts, recent courses, recent documents, weak topics
+- Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation
 - Course detail: document list and upload flow
 - Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions

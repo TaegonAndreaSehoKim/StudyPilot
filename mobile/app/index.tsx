@@ -1,19 +1,21 @@
 import { Link, router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { Dashboard } from '@/api/types';
+import type { Dashboard, GlobalScheduleItem } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { colors } from '@/constants/colors';
-import { formatDate } from '@/utils/format';
+import { formatDate, formatDateTime, formatTimeRemaining } from '@/utils/format';
 
 export default function DashboardScreen() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [schedule, setSchedule] = useState<GlobalScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,12 @@ export default function DashboardScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setDashboard(await api.dashboard());
+      const [dashboardData, scheduleData] = await Promise.all([
+        api.dashboard(),
+        api.globalSchedule(false, 10),
+      ]);
+      setDashboard(dashboardData);
+      setSchedule(scheduleData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load dashboard');
     } finally {
@@ -64,6 +71,25 @@ export default function DashboardScreen() {
             <Metric label="Summaries" value={dashboard.summary_count} />
             <Metric label="Quizzes" value={dashboard.quiz_count} />
           </View>
+
+          <Section title="Upcoming Schedule">
+            {schedule.length ? (
+              schedule.map((item) => (
+                <Link key={item.id} href={`/schedule/course/${item.course_id}` as Href} asChild>
+                  <Card>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.itemTitle}>{item.title}</Text>
+                      <Text style={styles.itemBadge}>{item.event_type}</Text>
+                    </View>
+                    <Text style={styles.itemMeta}>{item.course_title}</Text>
+                    <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)} - {formatDateTime(item.due_at)}</Text>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <EmptyState title="No upcoming schedule" message="Add deadlines or exam dates from a course schedule screen." />
+            )}
+          </Section>
 
           <Section title="Recent Courses">
             {dashboard.recent_courses.length ? (
@@ -183,8 +209,25 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     color: colors.text,
+    flex: 1,
     fontSize: 16,
     fontWeight: '800',
+  },
+  itemHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  itemBadge: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   itemMeta: {
     color: colors.textMuted,

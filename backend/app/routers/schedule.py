@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Course, ScheduleItem, utc_now
-from app.schemas import ScheduleItemCreate, ScheduleItemOut, ScheduleItemUpdate
+from app.schemas import ScheduleItemCreate, ScheduleItemOut, ScheduleItemUpdate, ScheduleItemWithCourseOut
 
 router = APIRouter(tags=["schedule"])
 
@@ -13,6 +13,13 @@ def _schedule_item_or_404(db: Session, item_id: int) -> ScheduleItem:
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found")
     return item
+
+
+def _schedule_item_with_course_out(item: ScheduleItem) -> ScheduleItemWithCourseOut:
+    return ScheduleItemWithCourseOut(
+        **ScheduleItemOut.model_validate(item).model_dump(),
+        course_title=item.course.title,
+    )
 
 
 @router.post("/courses/{course_id}/schedule", response_model=ScheduleItemOut, status_code=status.HTTP_201_CREATED)
@@ -45,6 +52,19 @@ def list_course_schedule(
     if not include_completed:
         query = query.filter(ScheduleItem.is_completed.is_(False))
     return query.order_by(ScheduleItem.is_completed.asc(), ScheduleItem.due_at.asc()).all()
+
+
+@router.get("/schedule", response_model=list[ScheduleItemWithCourseOut])
+def list_global_schedule(
+    include_completed: bool = False,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+) -> list[ScheduleItemWithCourseOut]:
+    query = db.query(ScheduleItem).join(Course, ScheduleItem.course_id == Course.id)
+    if not include_completed:
+        query = query.filter(ScheduleItem.is_completed.is_(False))
+    items = query.order_by(ScheduleItem.is_completed.asc(), ScheduleItem.due_at.asc()).limit(max(1, min(limit, 100))).all()
+    return [_schedule_item_with_course_out(item) for item in items]
 
 
 @router.get("/schedule/{item_id}", response_model=ScheduleItemOut)

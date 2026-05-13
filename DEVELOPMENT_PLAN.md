@@ -2,7 +2,7 @@
 
 ## Purpose
 
-StudyPilot is an AI-powered mobile study assistant MVP. It lets students create courses, upload study materials, generate summaries, flashcards, and quizzes, take quizzes, and track weak topics.
+StudyPilot is an AI-powered mobile study assistant MVP. It lets students create courses, manage course deadlines, upload study materials, generate summaries, flashcards, and quizzes, take quizzes, and track weak topics.
 
 This document preserves the implementation plan so the project can be built in a controlled order instead of drifting into partial features.
 
@@ -18,7 +18,8 @@ Build a full-stack monorepo that works locally after cloning:
 6. Generate flashcards.
 7. Generate a quiz.
 8. Submit quiz answers.
-9. View weak topics and dashboard activity.
+9. Add assignment deadlines or exam dates.
+10. View weak topics, upcoming schedule, and dashboard activity.
 
 The MVP must work without `OPENAI_API_KEY` by using a deterministic fake AI provider.
 
@@ -138,6 +139,15 @@ StudyPilot/
 - [x] Implement `GET /courses/{course_id}/dashboard`.
 - [x] Include counts, recent courses, recent documents, recent quizzes, and weak topics.
 
+### Phase 8A: Course Schedule Management
+
+- [x] Add course schedule persistence for assignments, exams, readings, projects, and other milestones.
+- [x] Implement course-specific schedule CRUD.
+- [x] Implement global upcoming schedule aggregation across all courses.
+- [x] Track completion state for schedule items.
+- [x] Show countdown/overdue status in the mobile app.
+- [x] Surface upcoming schedule items on the main dashboard regardless of course.
+
 ### Phase 9: Backend Tests
 
 - [x] Use temporary SQLite database in tests.
@@ -173,6 +183,8 @@ StudyPilot/
 - [x] Implement summary display.
 - [x] Implement flashcard display.
 - [x] Implement quiz taking screen.
+- [x] Implement course schedule management screen.
+- [x] Show upcoming schedule on the dashboard screen.
 - [x] Implement settings screen.
 - [x] Handle loading, empty, and error states.
 
@@ -221,6 +233,15 @@ StudyPilot/
 - [x] `GET /quizzes/{quiz_id}`
 - [x] `POST /quizzes/{quiz_id}/attempts`
 
+### Schedule
+
+- [x] `POST /courses/{course_id}/schedule`
+- [x] `GET /courses/{course_id}/schedule`
+- [x] `GET /schedule`
+- [x] `GET /schedule/{item_id}`
+- [x] `PATCH /schedule/{item_id}`
+- [x] `DELETE /schedule/{item_id}`
+
 ### Weak Topics and Dashboard
 
 - [x] `GET /courses/{course_id}/weak-topics`
@@ -230,11 +251,13 @@ StudyPilot/
 ## Mobile Screen Checklist
 
 - [x] `app/index.tsx`: dashboard
+- [x] `app/index.tsx`: global upcoming schedule
 - [x] `app/courses/index.tsx`: courses list
 - [x] `app/courses/new.tsx`: create course
 - [x] `app/courses/[courseId].tsx`: course detail and upload
 - [x] `app/documents/[documentId].tsx`: document detail and generated materials
 - [x] `app/quiz/[quizId].tsx`: quiz taking
+- [x] `app/schedule/course/[courseId].tsx`: course schedule management
 - [x] `app/settings.tsx`: API base URL and connection test
 
 ## Test Gate
@@ -287,6 +310,8 @@ npx expo start
 - [x] User can generate flashcards.
 - [x] User can generate quizzes.
 - [x] User can submit quiz answers and see score, missed topics, and explanations.
+- [x] User can add assignment deadlines or exam dates for a course.
+- [x] Dashboard shows upcoming schedule items across all courses.
 - [x] Weak topics update after missed quiz questions.
 - [x] Dashboard shows useful counts and recent activity.
 - [x] Mobile app starts with `npx expo start`.

@@ -51,6 +51,29 @@ def test_course_schedule_orders_active_items_by_due_date(client: TestClient, cou
     assert [item["title"] for item in response.json()] == ["Sooner reading", "Later exam"]
 
 
+def test_global_schedule_lists_all_courses_with_course_title(client: TestClient, course_id: int) -> None:
+    second_course = client.post("/courses", json={"title": "Databases", "description": None}).json()
+    later = (datetime.now(timezone.utc) + timedelta(days=4)).isoformat()
+    sooner = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+    completed = client.post(
+        f"/courses/{course_id}/schedule",
+        json={"title": "Completed milestone", "event_type": "project", "due_at": sooner},
+    ).json()
+    client.patch(f"/schedule/{completed['id']}", json={"is_completed": True})
+    client.post(f"/courses/{course_id}/schedule", json={"title": "AI exam", "event_type": "exam", "due_at": later})
+    client.post(
+        f"/courses/{second_course['id']}/schedule",
+        json={"title": "DB project", "event_type": "project", "due_at": sooner},
+    )
+
+    response = client.get("/schedule")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["title"] for item in body] == ["DB project", "AI exam"]
+    assert body[0]["course_title"] == "Databases"
+
+
 def test_create_schedule_missing_course(client: TestClient) -> None:
     response = client.post(
         "/courses/999999/schedule",
