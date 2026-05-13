@@ -29,7 +29,7 @@ StudyPilot currently supports:
 - course schedule tracking for assignments, exams, readings, projects, and milestones
 - global upcoming schedule view across all courses
 - document upload and extraction
-- document previews, full extracted-text reading, and original-file download
+- document previews, full extracted-text reading, original-file download, and guided generation options
 - fake-AI summary generation
 - saved summary detail screens with share/export support
 - fake-AI flashcard generation

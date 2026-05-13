@@ -1,7 +1,7 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Flashcard, Quiz, Summary } from '@/api/types';
@@ -15,6 +15,30 @@ import { StatusBanner } from '@/components/StatusBanner';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
 
+type SummaryType = 'concise' | 'detailed' | 'exam';
+type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'mixed';
+
+const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }[] = [
+  {
+    type: 'concise',
+    title: 'Concise',
+    description: 'Core concepts and the broad flow of the material.',
+  },
+  {
+    type: 'detailed',
+    title: 'Detailed',
+    description: 'General conceptual explanation, principles, and relationships over examples.',
+  },
+  {
+    type: 'exam',
+    title: 'Exam',
+    description: 'Likely test points, similar-concept comparisons, and memorization anchors.',
+  },
+];
+
+const QUIZ_COUNTS = [5, 10, 15];
+const QUIZ_DIFFICULTIES: QuizDifficulty[] = ['mixed', 'easy', 'medium', 'hard'];
+
 export default function DocumentDetailScreen() {
   const { documentId } = useLocalSearchParams<{ documentId: string }>();
   const id = Number(documentId);
@@ -26,6 +50,8 @@ export default function DocumentDetailScreen() {
   const [working, setWorking] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [quizCount, setQuizCount] = useState(5);
+  const [quizDifficulty, setQuizDifficulty] = useState<QuizDifficulty>('mixed');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
 
@@ -54,7 +80,7 @@ export default function DocumentDetailScreen() {
     void load();
   }, [load]));
 
-  async function generateSummary(summaryType: 'concise' | 'detailed' | 'exam') {
+  async function generateSummary(summaryType: SummaryType) {
     try {
       setWorking(summaryType);
       setError(null);
@@ -63,8 +89,9 @@ export default function DocumentDetailScreen() {
       setSummaries((current) => [summary, ...current]);
       setNotice({
         title: 'Summary saved',
-        message: `${summary.title} is saved. Open it from Latest Summary here or from the course Materials tab later.`,
+        message: `${summary.title} is saved. Opening the full saved summary now.`,
       });
+      router.push(`/summaries/${summary.id}` as Href);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate summary');
     } finally {
@@ -95,7 +122,7 @@ export default function DocumentDetailScreen() {
       setWorking('quiz');
       setError(null);
       setNotice(null);
-      const quiz = await api.createQuiz(id, 5, 'mixed');
+      const quiz = await api.createQuiz(id, quizCount, quizDifficulty);
       setQuizzes((current) => [quiz, ...current]);
       router.push(`/quiz/${quiz.id}`);
     } catch (err) {
@@ -189,13 +216,53 @@ export default function DocumentDetailScreen() {
           <View style={styles.actions}>
             <Button title="Open Full Extracted Text" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
             <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
-            <Button title={working === 'concise' ? 'Generating...' : 'Generate Concise Summary'} disabled={actionDisabled} onPress={() => generateSummary('concise')} />
-            <Button title={working === 'detailed' ? 'Generating...' : 'Generate Detailed Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('detailed')} />
-            <Button title={working === 'exam' ? 'Generating...' : 'Generate Exam Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('exam')} />
-            <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
-            <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} variant="secondary" onPress={generateQuiz} />
             <Button title={deleting ? 'Deleting...' : 'Delete Document'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
           </View>
+
+          <Section title="Generate Summaries">
+            <View style={styles.optionGrid}>
+              {SUMMARY_OPTIONS.map((option) => (
+                <Card key={option.type}>
+                  <Text style={styles.optionTitle}>{option.title} Summary</Text>
+                  <Text style={styles.optionDescription}>{option.description}</Text>
+                  <Button
+                    title={working === option.type ? 'Generating...' : `Generate ${option.title}`}
+                    disabled={actionDisabled}
+                    variant={option.type === 'concise' ? 'primary' : 'secondary'}
+                    onPress={() => generateSummary(option.type)}
+                  />
+                </Card>
+              ))}
+            </View>
+          </Section>
+
+          <Section title="Generate Practice">
+            <Card>
+              <Text style={styles.optionTitle}>Flashcards</Text>
+              <Text style={styles.optionDescription}>Create quick recall cards from the document concepts.</Text>
+              <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
+            </Card>
+
+            <Card>
+              <Text style={styles.optionTitle}>Quiz</Text>
+              <Text style={styles.optionDescription}>Choose question count and difficulty before generating a quiz.</Text>
+              <SegmentedControl
+                label="Questions"
+                options={QUIZ_COUNTS}
+                value={quizCount}
+                format={(value) => `${value}`}
+                onChange={setQuizCount}
+              />
+              <SegmentedControl
+                label="Difficulty"
+                options={QUIZ_DIFFICULTIES}
+                value={quizDifficulty}
+                format={(value) => value}
+                onChange={setQuizDifficulty}
+              />
+              <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
+            </Card>
+          </Section>
 
           <Section title="Latest Summary">
             {summaries.length ? (
@@ -245,6 +312,41 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function SegmentedControl<T extends string | number>({
+  label,
+  options,
+  value,
+  format,
+  onChange,
+}: {
+  label: string;
+  options: T[];
+  value: T;
+  format: (value: T) => string;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View style={styles.segmentGroup}>
+      <Text style={styles.segmentLabel}>{label}</Text>
+      <View style={styles.segmented}>
+        {options.map((option) => {
+          const active = option === value;
+          return (
+            <Pressable
+              key={String(option)}
+              accessibilityRole="button"
+              onPress={() => onChange(option)}
+              style={[styles.segment, active && styles.activeSegment]}
+            >
+              <Text style={[styles.segmentText, active && styles.activeSegmentText]}>{format(option)}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     gap: 16,
@@ -273,6 +375,55 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 10,
+  },
+  optionGrid: {
+    gap: 10,
+  },
+  optionTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  optionDescription: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  segmentGroup: {
+    gap: 8,
+  },
+  segmentLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  segmented: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    padding: 4,
+  },
+  segment: {
+    alignItems: 'center',
+    borderRadius: 6,
+    flex: 1,
+    minHeight: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  activeSegment: {
+    backgroundColor: colors.surface,
+  },
+  segmentText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+  },
+  activeSegmentText: {
+    color: colors.text,
   },
   section: {
     gap: 10,
