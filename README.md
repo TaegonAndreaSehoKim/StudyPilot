@@ -259,7 +259,7 @@ docker compose logs -f backend
 
 The Compose setup stores SQLite in the `studypilot_data` volume and uploaded files in the `studypilot_storage` volume.
 
-Full deployment notes are in `docs/deployment/aws_ec2_docker.md`.
+For a stable mobile API URL, associate an Elastic IP with the EC2 instance and use `http://<elastic-ip>:8000` in the mobile Settings screen. Full deployment notes are in `docs/deployment/aws_ec2_docker.md`.
 
 ---
 
@@ -397,7 +397,7 @@ For a detailed Expo Go checklist, see [`docs/demo/mobile_walkthrough.md`](docs/d
 3. Open Settings and test the backend connection.
 4. Create a course such as `OMSCS AI`.
 5. Open the course.
-6. Upload a `.txt`, `.md`, or text-based `.pdf` file. For a repeatable demo, use `docs/demo/omscs_ai_sample_notes.md`.
+6. Upload a `.txt`, `.md`, or text-based `.pdf` file. For a repeatable text upload demo, use `docs/demo/sample-study-notes.txt`; for markdown, use `docs/demo/omscs_ai_sample_notes.md`.
 7. Open the uploaded document.
 8. Open the full extracted text or original file if you need to inspect the source.
 9. Generate a concise summary.

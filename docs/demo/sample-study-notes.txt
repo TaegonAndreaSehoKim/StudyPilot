@@ -1,0 +1,18 @@
+Artificial Intelligence Study Notes
+
+Artificial intelligence studies agents that perceive their environment and choose actions to achieve goals. A rational agent selects actions that maximize expected performance based on available evidence and constraints.
+
+Search problems are defined by an initial state, possible actions, a transition model, a goal test, and a path cost. Uninformed search methods such as breadth-first search explore without domain-specific guidance. Informed search methods use heuristics to estimate distance to a goal and prioritize promising states.
+
+A heuristic is useful when it is admissible, meaning it never overestimates the true cost to reach a goal. A consistent heuristic also satisfies a triangle-inequality-like condition across neighboring states. A* search uses path cost plus heuristic estimate to find optimal solutions when the heuristic is admissible and the search conditions are appropriate.
+
+Adversarial search models competitive environments such as two-player games. Minimax assumes that the opponent acts optimally. Alpha-beta pruning improves minimax by avoiding branches that cannot affect the final decision.
+
+Constraint satisfaction problems represent states as variables with domains and constraints. Backtracking search assigns values while checking constraints. Forward checking and constraint propagation reduce the search space by removing values that cannot participate in a valid solution.
+
+Key exam points:
+- Explain the difference between uninformed and informed search.
+- Compare admissible and consistent heuristics.
+- Describe why A* can be optimal under the right assumptions.
+- Explain how alpha-beta pruning preserves the minimax result while reducing work.
+- Identify variables, domains, and constraints in a constraint satisfaction problem.

@@ -36,6 +36,7 @@ Use the Settings screen to update and test the backend URL.
 - iOS simulator usually works with `http://127.0.0.1:8000`.
 - Android emulator usually needs `http://10.0.2.2:8000`.
 - Physical devices need your computer's LAN IP, such as `http://192.168.1.25:8000`.
+- EC2 deployments should use the associated Elastic IP, such as `http://<elastic-ip>:8000`.
 
 If using a physical device, start the backend with a host that accepts LAN traffic:
 

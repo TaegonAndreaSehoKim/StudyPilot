@@ -23,6 +23,7 @@ Recommended starter instance:
 - Ubuntu LTS
 - `t3.small` or larger for PDF extraction and LLM request handling
 - at least 20 GB disk
+- Elastic IP associated to the instance so the mobile app does not break after stop/start
 
 Security group for a first private demo:
 
@@ -30,6 +31,18 @@ Security group for a first private demo:
 - Backend: TCP 8000 from your IP or testing device network only
 
 For a public demo, put HTTPS and a reverse proxy in front before widening access.
+
+## Elastic IP
+
+Allocate and associate an Elastic IP before sharing the backend URL:
+
+1. Open EC2 -> Network & Security -> Elastic IPs.
+2. Choose `Allocate Elastic IP address`.
+3. Select the new address, then choose Actions -> Associate Elastic IP address.
+4. Associate it with the `studypilot-backend` instance.
+5. Use `http://<elastic-ip>:8000` as the mobile API base URL.
+
+If the instance is in `us-east-2`, set `AWS_REGION=us-east-2` in `backend/.env` so Textract calls use the same region.
 
 ## Install Docker
 
@@ -102,6 +115,12 @@ Health check:
 curl http://<ec2-public-ip>:8000/health
 ```
 
+From Windows PowerShell:
+
+```powershell
+Invoke-RestMethod -Uri "http://<elastic-ip>:8000/health"
+```
+
 Write requests require the access token:
 
 ```bash
@@ -111,17 +130,35 @@ curl -X POST http://<ec2-public-ip>:8000/courses \
   -d '{"title":"OMSCS AI"}'
 ```
 
+From Windows PowerShell:
+
+```powershell
+$headers = @{
+  "Content-Type" = "application/json"
+  "X-StudyPilot-Key" = "<BACKEND_ACCESS_TOKEN>"
+}
+$body = @{ title = "AWS Test Course" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "http://<elastic-ip>:8000/courses" -Headers $headers -Body $body
+```
+
 ## Mobile Settings
 
 In Expo Go:
 
 1. Open Settings.
-2. Set API Base URL to `http://<ec2-public-ip>:8000`.
+2. Set API Base URL to `http://<elastic-ip>:8000`.
 3. Set Backend Access Token to the same `BACKEND_ACCESS_TOKEN` from `backend/.env`.
 4. Test connection.
 
 The health check is public, but course creation, upload, generation, quiz attempts, and schedule writes require the token.
 Write requests are rate-limited. OCR and AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` setting to reduce accidental Textract/OpenAI spend from repeated taps or scripts.
+
+If Expo Go opens a stale local bundle, restart the mobile dev server with:
+
+```powershell
+cd mobile
+npx expo start -c
+```
 
 ## Data And Backups
 
@@ -157,6 +194,14 @@ For production, move the database to a managed service and uploaded files to S3.
 git pull
 docker compose up -d --build
 docker compose logs -f backend
+```
+
+Useful operations:
+
+```bash
+docker compose ps
+docker compose logs --tail=100 backend
+docker compose restart backend
 ```
 
 ## Current Limitations
