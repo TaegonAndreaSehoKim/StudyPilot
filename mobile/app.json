@@ -7,6 +7,13 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.sehokim1212.studypilot",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.sehokim1212.studypilot"
+    },
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
