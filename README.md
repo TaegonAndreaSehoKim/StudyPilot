@@ -365,6 +365,13 @@ cd mobile
 npx expo config --type public
 ```
 
+Run the Expo web bundle smoke:
+
+```bash
+cd mobile
+npx expo export --platform web --output-dir .expo-export-smoke
+```
+
 Run the backend demo smoke flow against a running backend:
 
 ```bash
@@ -378,6 +385,8 @@ Check Expo dependency compatibility:
 cd mobile
 npx expo install --check
 ```
+
+GitHub Actions runs backend tests and mobile checks on pushes and pull requests to `main`.
 
 ---
 

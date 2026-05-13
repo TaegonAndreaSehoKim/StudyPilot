@@ -181,6 +181,13 @@ cd mobile
 npm run typecheck
 ```
 
+For mobile changes that touch routing, dependencies, or imports, also run:
+
+```powershell
+npx expo install --check
+npx expo export --platform web --output-dir .expo-export-smoke
+```
+
 Useful smoke checks:
 
 ```powershell
@@ -198,6 +205,7 @@ python scripts/smoke_demo.py --base-url http://127.0.0.1:8000 --cleanup
 cd mobile
 npx expo install --check
 npx expo config --type public
+npx expo export --platform web --output-dir .expo-export-smoke
 npx expo start
 ```
 
