@@ -62,6 +62,8 @@ When `OPENAI_API_KEY` is missing or `USE_FAKE_AI=true`, the backend uses `FakeAI
 - `DELETE /courses/{course_id}`
 - `POST /documents/upload`
 - `GET /documents/{document_id}`
+- `GET /documents/{document_id}/text`
+- `GET /documents/{document_id}/download`
 - `GET /courses/{course_id}/documents`
 - `DELETE /documents/{document_id}`
 - `POST /documents/{document_id}/summaries`

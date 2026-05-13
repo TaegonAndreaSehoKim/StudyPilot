@@ -1,12 +1,14 @@
 from pathlib import Path
+import mimetypes
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import Course, Document
-from app.schemas import DocumentDetailOut, DocumentOut
+from app.schemas import DocumentDetailOut, DocumentOut, DocumentTextOut
 from app.services.document_extractor import extract_text_from_path, save_upload_file, validate_upload
 from app.services.storage_cleanup import remove_document_files
 
@@ -70,11 +72,42 @@ def get_document(document_id: int, db: Session = Depends(get_db)) -> DocumentDet
     )
 
 
+@router.get("/documents/{document_id}/text", response_model=DocumentTextOut)
+def get_document_text(document_id: int, db: Session = Depends(get_db)) -> DocumentTextOut:
+    document = get_document_or_404(db, document_id)
+    return DocumentTextOut(**DocumentOut.model_validate(document).model_dump(), text=document.extracted_text)
+
+
+@router.get("/documents/{document_id}/download")
+def download_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> FileResponse:
+    document = get_document_or_404(db, document_id)
+    path = _safe_stored_document_path(document, Path(settings.storage_dir))
+    media_type = mimetypes.guess_type(document.filename)[0] or "application/octet-stream"
+    return FileResponse(path=path, media_type=media_type, filename=document.filename)
+
+
 @router.get("/courses/{course_id}/documents", response_model=list[DocumentOut])
 def list_course_documents(course_id: int, db: Session = Depends(get_db)) -> list[Document]:
     if db.get(Course, course_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     return db.query(Document).filter(Document.course_id == course_id).order_by(Document.created_at.desc()).all()
+
+
+def _safe_stored_document_path(document: Document, storage_dir: Path) -> Path:
+    try:
+        path = Path(document.storage_path).resolve()
+        root = storage_dir.resolve()
+        path.relative_to(root)
+    except (OSError, ValueError):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stored file is unavailable") from None
+
+    if not path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stored file is unavailable")
+    return path
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

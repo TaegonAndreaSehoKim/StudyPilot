@@ -1,14 +1,16 @@
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Summary } from '@/api/types';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
+import { summaryToMarkdown } from '@/utils/exportText';
 
 export default function SummaryDetailScreen() {
   const { summaryId } = useLocalSearchParams<{ summaryId: string }>();
@@ -17,6 +19,7 @@ export default function SummaryDetailScreen() {
   const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -36,6 +39,23 @@ export default function SummaryDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function shareSummary() {
+    if (!summary) {
+      return;
+    }
+    try {
+      setSharing(true);
+      await Share.share({
+        title: summary.title,
+        message: summaryToMarkdown(summary),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to share summary');
+    } finally {
+      setSharing(false);
+    }
+  }
 
   if (loading) {
     return <LoadingState message="Loading summary" />;
@@ -62,6 +82,8 @@ export default function SummaryDetailScreen() {
               </Card>
             </Link>
           ) : null}
+
+          <Button title={sharing ? 'Opening...' : 'Save / Share Summary'} disabled={sharing} onPress={shareSummary} />
 
           <SummaryView summary={summary} />
         </>

@@ -26,8 +26,9 @@ StudyPilot currently supports:
 - course creation and listing
 - course detail dashboards
 - document upload and extraction
-- document previews
+- document previews, full extracted-text reading, and original-file download
 - fake-AI summary generation
+- saved summary detail screens with share/export support
 - fake-AI flashcard generation
 - fake-AI quiz generation
 - quiz taking and scoring
@@ -230,6 +231,8 @@ Main endpoints:
 - `DELETE /courses/{course_id}`
 - `POST /documents/upload`
 - `GET /documents/{document_id}`
+- `GET /documents/{document_id}/text`
+- `GET /documents/{document_id}/download`
 - `GET /courses/{course_id}/documents`
 - `DELETE /documents/{document_id}`
 - `POST /documents/{document_id}/summaries`
@@ -325,11 +328,13 @@ POST /quizzes/1/attempts
 5. Open the course.
 6. Upload a `.txt`, `.md`, or text-based `.pdf` file. For a repeatable demo, use `docs/demo/omscs_ai_sample_notes.md`.
 7. Open the uploaded document.
-8. Generate a concise summary.
-9. Generate flashcards.
-10. Generate a quiz.
-11. Take the quiz and submit answers.
-12. Return to the dashboard to inspect weak topics and recent activity.
+8. Open the full extracted text or original file if you need to inspect the source.
+9. Generate a concise summary.
+10. Open the saved summary from the course screen and use Save / Share if needed.
+11. Generate flashcards.
+12. Generate a quiz.
+13. Take the quiz and submit answers.
+14. Return to the dashboard to inspect weak topics and recent activity.
 
 ---
 

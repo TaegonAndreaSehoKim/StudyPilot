@@ -23,6 +23,10 @@ export interface DocumentDetail extends Document {
   preview_is_truncated: boolean;
 }
 
+export interface DocumentText extends Document {
+  text: string;
+}
+
 export interface KeyTerm {
   term: string;
   definition: string;

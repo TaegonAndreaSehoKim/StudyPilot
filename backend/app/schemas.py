@@ -47,6 +47,10 @@ class DocumentDetailOut(DocumentOut):
     preview_is_truncated: bool
 
 
+class DocumentTextOut(DocumentOut):
+    text: str
+
+
 class CourseDetailOut(CourseOut):
     document_count: int
     quiz_count: int

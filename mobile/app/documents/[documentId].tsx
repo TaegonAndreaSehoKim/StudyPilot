@@ -1,7 +1,7 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Flashcard, Quiz, Summary } from '@/api/types';
@@ -91,6 +91,15 @@ export default function DocumentDetailScreen() {
     }
   }
 
+  async function openOriginalFile() {
+    try {
+      setError(null);
+      await Linking.openURL(await api.documentDownloadUrl(id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to open original file');
+    }
+  }
+
   function confirmDeleteDocument() {
     Alert.alert(
       'Delete document?',
@@ -157,6 +166,8 @@ export default function DocumentDetailScreen() {
           ) : null}
 
           <View style={styles.actions}>
+            <Button title="Open Full Extracted Text" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
+            <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
             <Button title={working === 'concise' ? 'Generating...' : 'Generate Concise Summary'} disabled={actionDisabled} onPress={() => generateSummary('concise')} />
             <Button title={working === 'detailed' ? 'Generating...' : 'Generate Detailed Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('detailed')} />
             <Button title={working === 'exam' ? 'Generating...' : 'Generate Exam Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('exam')} />

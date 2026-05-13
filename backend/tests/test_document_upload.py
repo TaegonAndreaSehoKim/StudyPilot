@@ -22,6 +22,14 @@ def test_upload_txt_document(client: TestClient, course_id: int) -> None:
     assert detail.status_code == 200
     assert "Search uses states" in detail.json()["preview"]
 
+    text_response = client.get(f"/documents/{body['id']}/text")
+    assert text_response.status_code == 200
+    assert text_response.json()["text"] == "Search uses states, actions, and transition models."
+
+    download_response = client.get(f"/documents/{body['id']}/download")
+    assert download_response.status_code == 200
+    assert download_response.content == b"Search uses states, actions, and transition models."
+
 
 def test_upload_md_document(client: TestClient, course_id: int) -> None:
     response = client.post(
