@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_ai_provider
-from app.models import Document, Summary
+from app.models import Course, Document, Summary
 from app.schemas import SummaryCreate, SummaryOut
 from app.services.study_generator import StudyGenerator
 
@@ -35,6 +35,13 @@ def _document_ready(db: Session, document_id: int) -> Document:
     return document
 
 
+def _summary_or_404(db: Session, summary_id: int) -> Summary:
+    summary = db.get(Summary, summary_id)
+    if summary is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Summary not found")
+    return summary
+
+
 @router.post("/documents/{document_id}/summaries", response_model=SummaryOut, status_code=status.HTTP_201_CREATED)
 def create_summary(document_id: int, payload: SummaryCreate, db: Session = Depends(get_db)) -> SummaryOut:
     document = _document_ready(db, document_id)
@@ -60,4 +67,23 @@ def list_summaries(document_id: int, db: Session = Depends(get_db)) -> list[Summ
     if db.get(Document, document_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     summaries = db.query(Summary).filter(Summary.document_id == document_id).order_by(Summary.created_at.desc()).all()
+    return [_summary_out(summary) for summary in summaries]
+
+
+@router.get("/summaries/{summary_id}", response_model=SummaryOut)
+def get_summary(summary_id: int, db: Session = Depends(get_db)) -> SummaryOut:
+    return _summary_out(_summary_or_404(db, summary_id))
+
+
+@router.get("/courses/{course_id}/summaries", response_model=list[SummaryOut])
+def list_course_summaries(course_id: int, db: Session = Depends(get_db)) -> list[SummaryOut]:
+    if db.get(Course, course_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    summaries = (
+        db.query(Summary)
+        .join(Document, Summary.document_id == Document.id)
+        .filter(Document.course_id == course_id)
+        .order_by(Summary.created_at.desc())
+        .all()
+    )
     return [_summary_out(summary) for summary in summaries]

@@ -60,6 +60,8 @@ export const api = {
   courseDocuments: (courseId: number) => request<Document[]>(`/courses/${courseId}/documents`),
   document: (documentId: number) => request<DocumentDetail>(`/documents/${documentId}`),
   deleteDocument: (documentId: number) => request<void>(`/documents/${documentId}`, { method: 'DELETE' }),
+  summary: (summaryId: number) => request<Summary>(`/summaries/${summaryId}`),
+  courseSummaries: (courseId: number) => request<Summary[]>(`/courses/${courseId}/summaries`),
   summaries: (documentId: number) => request<Summary[]>(`/documents/${documentId}/summaries`),
   createSummary: (documentId: number, summary_type: 'concise' | 'detailed' | 'exam') =>
     request<Summary>(`/documents/${documentId}/summaries`, {

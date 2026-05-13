@@ -1,4 +1,5 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -165,7 +166,18 @@ export default function DocumentDetailScreen() {
           </View>
 
           <Section title="Latest Summary">
-            {summaries.length ? <SummaryView summary={summaries[0]} /> : <EmptyState title="No summary" message="Generate a summary from this document." />}
+            {summaries.length ? (
+              <>
+                <SummaryView summary={summaries[0]} />
+                <Button
+                  title="Open Saved Summary"
+                  variant="secondary"
+                  onPress={() => router.push(`/summaries/${summaries[0].id}` as Href)}
+                />
+              </>
+            ) : (
+              <EmptyState title="No summary" message="Generate a summary from this document." />
+            )}
           </Section>
 
           <Section title="Flashcards">

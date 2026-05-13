@@ -1,10 +1,11 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { CourseDashboard, Document } from '@/api/types';
+import type { CourseDashboard, Document, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -17,6 +18,7 @@ export default function CourseDetailScreen() {
   const id = Number(courseId);
   const [dashboard, setDashboard] = useState<CourseDashboard | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [summaries, setSummaries] = useState<Summary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -26,9 +28,14 @@ export default function CourseDetailScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [courseDashboard, docs] = await Promise.all([api.courseDashboard(id), api.courseDocuments(id)]);
+      const [courseDashboard, docs, summaryList] = await Promise.all([
+        api.courseDashboard(id),
+        api.courseDocuments(id),
+        api.courseSummaries(id),
+      ]);
       setDashboard(courseDashboard);
       setDocuments(docs);
+      setSummaries(summaryList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load course');
     } finally {
@@ -129,6 +136,23 @@ export default function CourseDetailScreen() {
               ))
             ) : (
               <EmptyState title="No documents" message="Upload .txt, .md, or text-based .pdf notes." />
+            )}
+          </Section>
+
+          <Section title="Saved Summaries">
+            {summaries.length ? (
+              summaries.map((summary) => (
+                <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
+                  <Card>
+                    <Text style={styles.itemTitle}>{summary.title}</Text>
+                    <Text style={styles.itemMeta}>
+                      {summary.summary_type} summary - document #{summary.document_id}
+                    </Text>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
             )}
           </Section>
 
