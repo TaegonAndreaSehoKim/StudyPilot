@@ -15,8 +15,8 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFF4F2',
-    borderColor: '#F4C7C3',
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.danger,
     borderRadius: 8,
     borderWidth: 1,
     gap: 10,

@@ -69,6 +69,7 @@ npm run export:web
 
 ## Main Screens
 
+- Visual palette: warm study palette based on `#D9C3B0`, `#8C7161`, `#D9663D`, `#A64029`, and `#261714`
 - Dashboard: counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
 - Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation

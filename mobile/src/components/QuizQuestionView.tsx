@@ -79,15 +79,15 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   selected: {
-    backgroundColor: '#EAF1FF',
+    backgroundColor: colors.infoSurface,
     borderColor: colors.primary,
   },
   correctChoice: {
-    backgroundColor: '#ECFDF3',
+    backgroundColor: colors.successSurface,
     borderColor: colors.success,
   },
   incorrectChoice: {
-    backgroundColor: '#FFF4F2',
+    backgroundColor: colors.dangerSurface,
     borderColor: colors.danger,
   },
   choiceText: {

@@ -37,16 +37,16 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   info: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    backgroundColor: colors.infoSurface,
+    borderColor: colors.border,
   },
   success: {
-    backgroundColor: '#ECFDF3',
-    borderColor: '#B7E4C7',
+    backgroundColor: colors.successSurface,
+    borderColor: colors.border,
   },
   warning: {
-    backgroundColor: '#FFFAEB',
-    borderColor: '#FEDF89',
+    backgroundColor: colors.warningSurface,
+    borderColor: colors.accent,
   },
   title: {
     fontSize: 15,

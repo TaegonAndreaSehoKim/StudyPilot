@@ -6,11 +6,11 @@ import { colors } from '@/constants/colors';
 export default function RootLayout() {
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.text,
+          headerStyle: { backgroundColor: colors.text },
+          headerTintColor: colors.surface,
           headerTitleStyle: { fontWeight: '800' },
           contentStyle: { backgroundColor: colors.background },
         }}

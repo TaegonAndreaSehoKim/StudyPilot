@@ -301,12 +301,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   openBadge: {
-    backgroundColor: colors.warning,
-    color: colors.surface,
+    backgroundColor: colors.warningSurface,
+    color: colors.text,
   },
   doneBadge: {
-    backgroundColor: colors.success,
-    color: colors.surface,
+    backgroundColor: colors.successSurface,
+    color: colors.text,
   },
   itemMeta: {
     color: colors.textMuted,
