@@ -3,26 +3,28 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.services.text_normalization import normalize_inline_text
+
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
 VALID_ANSWERS = {"A", "B", "C", "D"}
 
 
 def _clean_text(value: Any, fallback: str) -> str:
     if isinstance(value, str):
-        cleaned = re.sub(r"\s+", " ", value).strip()
+        cleaned = normalize_inline_text(value)
         if cleaned:
             return cleaned
     return fallback
 
 
 def _sentences(document_text: str) -> list[str]:
-    clean = re.sub(r"\s+", " ", document_text).strip()
+    clean = normalize_inline_text(document_text)
     parts = re.split(r"(?<=[.!?])\s+", clean)
     return [part.strip() for part in parts if part.strip()]
 
 
 def _excerpt(document_text: str, max_len: int = 180) -> str:
-    clean = re.sub(r"\s+", " ", document_text).strip()
+    clean = normalize_inline_text(document_text)
     return clean[:max_len].rstrip() or "The uploaded source text is limited."
 
 

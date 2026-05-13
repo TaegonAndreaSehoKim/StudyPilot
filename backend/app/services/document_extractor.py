@@ -4,6 +4,8 @@ from uuid import uuid4
 from fastapi import HTTPException, UploadFile, status
 from pypdf import PdfReader
 
+from app.services.text_normalization import normalize_extracted_text
+
 NO_EXTRACTABLE_TEXT_MESSAGE = (
     "[No extractable text found on this page. Scanned/image-only PDF pages are not supported in this MVP.]"
 )
@@ -52,7 +54,7 @@ def extract_text_from_path(path: Path, extension: str) -> tuple[str, str]:
 
 
 def extract_text_from_txt_or_md(path: Path) -> str:
-    return path.read_text(encoding="utf-8", errors="replace").strip()
+    return normalize_extracted_text(path.read_text(encoding="utf-8", errors="replace"))
 
 
 def extract_text_from_pdf(path: Path) -> tuple[str, str]:
@@ -66,7 +68,7 @@ def extract_text_from_pdf(path: Path) -> tuple[str, str]:
         page_text = _extract_pdf_page_text(page)
         if page_text:
             extracted_char_count += len(page_text)
-            pages.append(f"--- Page {index} of {page_count} ---\n\n{page_text}")
+            pages.append(f"--- Page {index} of {page_count} ---\n\n{normalize_extracted_text(page_text)}")
         else:
             empty_page_count += 1
             pages.append(f"--- Page {index} of {page_count} ---\n\n{NO_EXTRACTABLE_TEXT_MESSAGE}")
@@ -83,7 +85,7 @@ def extract_text_from_pdf(path: Path) -> tuple[str, str]:
             f"\n\nExtraction note: {empty_page_count} of {page_count} pages had no extractable text. "
             "Those pages may be scanned images or use PDF encoding that pypdf cannot read."
         )
-    return text, "extracted"
+    return normalize_extracted_text(text), "extracted"
 
 
 def _extract_pdf_page_text(page: object) -> str:
