@@ -2,7 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { CourseDashboard, CourseQuizAttempt, Document, Flashcard, Quiz, ScheduleItem, Summary } from '@/api/types';
@@ -11,6 +11,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView, useTabletLayout } from '@/components/Screen';
 import { StatusBanner } from '@/components/StatusBanner';
 import { colors } from '@/constants/colors';
 import { formatDateTime, formatTimeRemaining } from '@/utils/format';
@@ -41,6 +42,7 @@ export default function CourseDetailScreen() {
   const [generatingReviewQuiz, setGeneratingReviewQuiz] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
@@ -144,7 +146,7 @@ export default function CourseDetailScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -174,7 +176,7 @@ export default function CourseDetailScreen() {
             <Text style={styles.metric}>{dashboard.quiz_count} quizzes</Text>
           </View>
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, isTablet && styles.tabletActions]}>
             <Button title={uploading ? 'Uploading...' : 'Upload Document'} disabled={uploading || deleting} onPress={upload} />
             <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
           </View>
@@ -193,7 +195,7 @@ export default function CourseDetailScreen() {
           </View>
 
           {activeTab === 'overview' ? (
-            <>
+            <ResponsiveGrid minItemWidth={340}>
               <Section title="Upcoming Schedule">
                 <ScheduleCards courseId={id} schedule={schedule.slice(0, 3)} />
               </Section>
@@ -210,11 +212,11 @@ export default function CourseDetailScreen() {
                   <EmptyState title="No weak topics" message="Quiz misses for this course will appear here." />
                 )}
               </Section>
-            </>
+            </ResponsiveGrid>
           ) : null}
 
           {activeTab === 'materials' ? (
-            <>
+            <ResponsiveGrid minItemWidth={340}>
               <Section title="Documents">
                 {documents.length ? (
                   documents.map((document) => (
@@ -259,16 +261,18 @@ export default function CourseDetailScreen() {
                   <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
                 )}
               </Section>
-            </>
+            </ResponsiveGrid>
           ) : null}
 
           {activeTab === 'practice' ? (
-            <>
-              <Button
-                title={generatingReviewQuiz ? 'Generating Review Quiz...' : 'Generate Weak Topic Quiz'}
-                disabled={generatingReviewQuiz || deleting || !dashboard.weak_topics.length || !documents.length}
-                onPress={generateReviewQuiz}
-              />
+            <ResponsiveGrid minItemWidth={340}>
+              <View style={styles.section}>
+                <Button
+                  title={generatingReviewQuiz ? 'Generating Review Quiz...' : 'Generate Weak Topic Quiz'}
+                  disabled={generatingReviewQuiz || deleting || !dashboard.weak_topics.length || !documents.length}
+                  onPress={generateReviewQuiz}
+                />
+              </View>
               <Section title="Saved Quizzes">
                 {quizzes.length ? (
                   <Link href={`/quizzes/course/${id}` as Href} asChild>
@@ -294,7 +298,7 @@ export default function CourseDetailScreen() {
                   <EmptyState title="No attempts" message="Submit a quiz attempt and your scores will appear here." />
                 )}
               </Section>
-            </>
+            </ResponsiveGrid>
           ) : null}
 
           {activeTab === 'schedule' ? (
@@ -307,7 +311,7 @@ export default function CourseDetailScreen() {
           ) : null}
         </>
       ) : null}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
@@ -366,6 +370,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 10,
+  },
+  tabletActions: {
+    flexDirection: 'row',
   },
   metric: {
     backgroundColor: colors.surfaceMuted,

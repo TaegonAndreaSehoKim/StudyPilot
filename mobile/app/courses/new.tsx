@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput } from 'react-native';
 
 import { api } from '@/api/client';
 import { Button } from '@/components/Button';
 import { ErrorState } from '@/components/ErrorState';
+import { ScreenScrollView } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 
 export default function NewCourseScreen() {
@@ -32,7 +33,7 @@ export default function NewCourseScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         {error ? <ErrorState message={error} /> : null}
         <Text style={styles.label}>Title</Text>
         <TextInput
@@ -51,7 +52,7 @@ export default function NewCourseScreen() {
           multiline
         />
         <Button title={saving ? 'Creating...' : 'Create Course'} disabled={saving} onPress={submit} />
-      </ScrollView>
+      </ScreenScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   },
   container: {
     gap: 10,
-    padding: 16,
+    maxWidth: 720,
   },
   label: {
     color: colors.text,

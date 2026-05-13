@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { Flashcard } from '@/api/types';
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { FlashcardList } from '@/components/FlashcardList';
 import { LoadingState } from '@/components/LoadingState';
+import { ScreenScrollView } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 import { flashcardsToMarkdown } from '@/utils/flashcardsExport';
 
@@ -56,7 +57,7 @@ export default function CourseFlashcardsScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -74,14 +75,14 @@ export default function CourseFlashcardsScreen() {
       ) : (
         <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
       )}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     gap: 16,
-    padding: 16,
+    maxWidth: 920,
   },
   header: {
     gap: 4,

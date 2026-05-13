@@ -1,6 +1,6 @@
 import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { Course } from '@/api/types';
@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView, useTabletLayout } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 
 export default function CoursesScreen() {
@@ -16,6 +17,7 @@ export default function CoursesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
@@ -38,32 +40,41 @@ export default function CoursesScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
-      <Button title="Create Course" onPress={() => router.push('/courses/new')} />
+      <View style={[styles.actions, isTablet && styles.tabletActions]}>
+        <Button title="Create Course" onPress={() => router.push('/courses/new')} />
+      </View>
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {courses.length ? (
-        courses.map((course) => (
-          <Link key={course.id} href={`/courses/${course.id}`} asChild>
-            <Card>
-              <Text style={styles.title}>{course.title}</Text>
-              {course.description ? <Text style={styles.description}>{course.description}</Text> : null}
-            </Card>
-          </Link>
-        ))
+        <ResponsiveGrid minItemWidth={320}>
+          {courses.map((course) => (
+            <Link key={course.id} href={`/courses/${course.id}`} asChild>
+              <Card>
+                <Text style={styles.title}>{course.title}</Text>
+                {course.description ? <Text style={styles.description}>{course.description}</Text> : null}
+              </Card>
+            </Link>
+          ))}
+        </ResponsiveGrid>
       ) : (
         <EmptyState title="No courses" message="Create your first course to upload notes and generate study tools." />
       )}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     gap: 12,
-    padding: 16,
+  },
+  actions: {
+    gap: 10,
+  },
+  tabletActions: {
+    alignItems: 'flex-start',
   },
   title: {
     color: colors.text,

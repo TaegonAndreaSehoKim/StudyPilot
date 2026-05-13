@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput } from 'react-native';
 
 import { api, getAccessToken, getApiBaseUrl, setAccessToken, setApiBaseUrl } from '@/api/client';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
+import { ScreenScrollView } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 
 export default function SettingsScreen() {
@@ -49,7 +50,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScreenScrollView contentContainerStyle={styles.container}>
       {error ? <ErrorState message={error} /> : null}
       <Card>
         <Text style={styles.label}>API Base URL</Text>
@@ -79,14 +80,14 @@ export default function SettingsScreen() {
         iOS simulator usually works with 127.0.0.1. Android emulator often needs 10.0.2.2. Physical devices need your computer's LAN IP.
         The backend access token protects write and AI-generation requests after deployment; it is not an OpenAI API key.
       </Text>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     gap: 14,
-    padding: 16,
+    maxWidth: 720,
   },
   label: {
     color: colors.text,

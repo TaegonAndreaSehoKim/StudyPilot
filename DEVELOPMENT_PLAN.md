@@ -192,6 +192,7 @@ StudyPilot/
 - [x] Show upcoming schedule on the dashboard screen.
 - [x] Implement settings screen.
 - [x] Handle loading, empty, and error states.
+- [x] Add tablet-aware containers and responsive card grids for dashboard, course, document, schedule, saved-material, and quiz screens.
 
 ### Phase 12: Documentation
 

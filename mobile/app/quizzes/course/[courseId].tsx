@@ -1,7 +1,7 @@
 import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { Quiz } from '@/api/types';
@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 
 export default function CourseQuizzesScreen() {
@@ -40,7 +41,7 @@ export default function CourseQuizzesScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -51,27 +52,28 @@ export default function CourseQuizzesScreen() {
       </View>
 
       {quizzes.length ? (
-        quizzes.map((quiz) => (
-          <Link key={quiz.id} href={`/quiz/${quiz.id}` as Href} asChild>
-            <Card>
-              <Text style={styles.itemTitle}>{quiz.title}</Text>
-              <Text style={styles.itemMeta}>
-                {quiz.questions.length} questions - document #{quiz.document_id}
-              </Text>
-            </Card>
-          </Link>
-        ))
+        <ResponsiveGrid minItemWidth={340}>
+          {quizzes.map((quiz) => (
+            <Link key={quiz.id} href={`/quiz/${quiz.id}` as Href} asChild>
+              <Card>
+                <Text style={styles.itemTitle}>{quiz.title}</Text>
+                <Text style={styles.itemMeta}>
+                  {quiz.questions.length} questions - document #{quiz.document_id}
+                </Text>
+              </Card>
+            </Link>
+          ))}
+        </ResponsiveGrid>
       ) : (
         <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
       )}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     gap: 16,
-    padding: 16,
   },
   header: {
     gap: 4,

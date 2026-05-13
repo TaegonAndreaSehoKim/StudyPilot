@@ -1,6 +1,6 @@
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Summary } from '@/api/types';
@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ScreenScrollView } from '@/components/Screen';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
 import { summaryToMarkdown } from '@/utils/exportText';
@@ -62,7 +63,7 @@ export default function SummaryDetailScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -88,14 +89,14 @@ export default function SummaryDetailScreen() {
           <SummaryView summary={summary} />
         </>
       ) : null}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     gap: 16,
-    padding: 16,
+    maxWidth: 920,
   },
   header: {
     gap: 4,

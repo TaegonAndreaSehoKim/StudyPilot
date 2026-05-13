@@ -1,7 +1,7 @@
 import { Link, router, useFocusEffect } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { Dashboard, GlobalScheduleItem } from '@/api/types';
@@ -10,6 +10,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView, useTabletLayout } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 import { formatDate, formatDateTime, formatTimeRemaining } from '@/utils/format';
 
@@ -19,6 +20,7 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
@@ -46,7 +48,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -57,7 +59,7 @@ export default function DashboardScreen() {
         <Text style={styles.subtitle}>Turn course materials into review tools.</Text>
       </View>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, isTablet && styles.tabletActions]}>
         <Button title="Create Course" onPress={() => router.push('/courses/new')} />
         <Button title="View Courses" variant="secondary" onPress={() => router.push('/courses')} />
         <Button title="Settings" variant="secondary" onPress={() => router.push('/settings')} />
@@ -72,100 +74,102 @@ export default function DashboardScreen() {
             <Metric label="Quizzes" value={dashboard.quiz_count} />
           </View>
 
-          <Section title="Upcoming Schedule">
-            {schedule.length ? (
-              schedule.map((item) => (
-                <Link key={item.id} href={`/schedule/course/${item.course_id}` as Href} asChild>
-                  <Card>
-                    <View style={styles.itemHeader}>
-                      <Text style={styles.itemTitle}>{item.title}</Text>
-                      <Text style={styles.itemBadge}>{item.event_type}</Text>
-                    </View>
-                    <Text style={styles.itemMeta}>{item.course_title}</Text>
-                    <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)} - {formatDateTime(item.due_at)}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No upcoming schedule" message="Add deadlines or exam dates from a course schedule screen." />
-            )}
-          </Section>
+          <ResponsiveGrid minItemWidth={340}>
+            <Section title="Upcoming Schedule">
+              {schedule.length ? (
+                schedule.map((item) => (
+                  <Link key={item.id} href={`/schedule/course/${item.course_id}` as Href} asChild>
+                    <Card>
+                      <View style={styles.itemHeader}>
+                        <Text style={styles.itemTitle}>{item.title}</Text>
+                        <Text style={styles.itemBadge}>{item.event_type}</Text>
+                      </View>
+                      <Text style={styles.itemMeta}>{item.course_title}</Text>
+                      <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)} - {formatDateTime(item.due_at)}</Text>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <EmptyState title="No upcoming schedule" message="Add deadlines or exam dates from a course schedule screen." />
+              )}
+            </Section>
 
-          <Section title="Recent Courses">
-            {dashboard.recent_courses.length ? (
-              dashboard.recent_courses.map((course) => (
-                <Link key={course.id} href={`/courses/${course.id}`} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{course.title}</Text>
-                    <Text style={styles.itemMeta}>{formatDate(course.created_at)}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No courses yet" message="Create a course to start building study materials." />
-            )}
-          </Section>
+            <Section title="Recent Courses">
+              {dashboard.recent_courses.length ? (
+                dashboard.recent_courses.map((course) => (
+                  <Link key={course.id} href={`/courses/${course.id}`} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>{course.title}</Text>
+                      <Text style={styles.itemMeta}>{formatDate(course.created_at)}</Text>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <EmptyState title="No courses yet" message="Create a course to start building study materials." />
+              )}
+            </Section>
 
-          <Section title="Recent Documents">
-            {dashboard.recent_documents.length ? (
-              dashboard.recent_documents.map((document) => (
-                <Link key={document.id} href={`/documents/${document.id}`} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{document.filename}</Text>
-                    <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No documents" message="Upload notes from a course detail screen." />
-            )}
-          </Section>
+            <Section title="Recent Documents">
+              {dashboard.recent_documents.length ? (
+                dashboard.recent_documents.map((document) => (
+                  <Link key={document.id} href={`/documents/${document.id}`} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>{document.filename}</Text>
+                      <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <EmptyState title="No documents" message="Upload notes from a course detail screen." />
+              )}
+            </Section>
 
-          <Section title="Recent Summaries">
-            {dashboard.recent_summaries.length ? (
-              dashboard.recent_summaries.map((summary) => (
-                <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{summary.title}</Text>
-                    <Text style={styles.itemMeta}>{summary.summary_type} summary - document #{summary.document_id}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
-            )}
-          </Section>
+            <Section title="Recent Summaries">
+              {dashboard.recent_summaries.length ? (
+                dashboard.recent_summaries.map((summary) => (
+                  <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>{summary.title}</Text>
+                      <Text style={styles.itemMeta}>{summary.summary_type} summary - document #{summary.document_id}</Text>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
+              )}
+            </Section>
 
-          <Section title="Recent Quizzes">
-            {dashboard.recent_quizzes.length ? (
-              dashboard.recent_quizzes.map((quiz) => (
-                <Link key={quiz.id} href={`/quiz/${quiz.id}`} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{quiz.title}</Text>
-                    <Text style={styles.itemMeta}>{quiz.questions.length} questions - document #{quiz.document_id}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
-            )}
-          </Section>
+            <Section title="Recent Quizzes">
+              {dashboard.recent_quizzes.length ? (
+                dashboard.recent_quizzes.map((quiz) => (
+                  <Link key={quiz.id} href={`/quiz/${quiz.id}`} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>{quiz.title}</Text>
+                      <Text style={styles.itemMeta}>{quiz.questions.length} questions - document #{quiz.document_id}</Text>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
+              )}
+            </Section>
 
-          <Section title="Weak Topics">
-            {dashboard.weak_topics.length ? (
-              dashboard.weak_topics.map((topic) => (
-                <Card key={topic.id}>
-                  <Text style={styles.itemTitle}>{topic.topic}</Text>
-                  <Text style={styles.itemMeta}>Missed {topic.miss_count} times</Text>
-                </Card>
-              ))
-            ) : (
-              <EmptyState title="No weak topics" message="Missed quiz questions will appear here." />
-            )}
-          </Section>
+            <Section title="Weak Topics">
+              {dashboard.weak_topics.length ? (
+                dashboard.weak_topics.map((topic) => (
+                  <Card key={topic.id}>
+                    <Text style={styles.itemTitle}>{topic.topic}</Text>
+                    <Text style={styles.itemMeta}>Missed {topic.miss_count} times</Text>
+                  </Card>
+                ))
+              ) : (
+                <EmptyState title="No weak topics" message="Missed quiz questions will appear here." />
+              )}
+            </Section>
+          </ResponsiveGrid>
         </>
       ) : null}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
@@ -206,6 +210,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 10,
+  },
+  tabletActions: {
+    flexDirection: 'row',
   },
   grid: {
     flexDirection: 'row',

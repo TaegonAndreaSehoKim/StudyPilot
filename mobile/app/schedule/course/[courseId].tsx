@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { ScheduleEventType, ScheduleItem } from '@/api/types';
@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView, useTabletLayout } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 import { formatDateTime, formatTimeRemaining } from '@/utils/format';
 
@@ -28,6 +29,7 @@ export default function CourseScheduleScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
@@ -107,7 +109,7 @@ export default function CourseScheduleScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -118,81 +120,87 @@ export default function CourseScheduleScreen() {
         <Text style={styles.subtitle}>Track assignments, exams, readings, and milestones.</Text>
       </View>
 
-      <Card>
-        <Text style={styles.sectionTitle}>Add Item</Text>
-        <TextInput
-          placeholder="Title"
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-        />
-        <View style={styles.typeRow}>
-          {EVENT_TYPES.map((type) => (
-            <Button
-              key={type}
-              title={type}
-              variant={eventType === type ? 'primary' : 'secondary'}
-              onPress={() => setEventType(type)}
+      <View style={[styles.layout, isTablet && styles.tabletLayout]}>
+        <View style={isTablet ? styles.formPane : undefined}>
+          <Card>
+            <Text style={styles.sectionTitle}>Add Item</Text>
+            <TextInput
+              placeholder="Title"
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
             />
-          ))}
-        </View>
-        <View style={styles.dateRow}>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, styles.dateInput]}
-            value={dueDate}
-            onChangeText={setDueDate}
-          />
-          <TextInput
-            placeholder="HH:mm"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, styles.timeInput]}
-            value={dueTime}
-            onChangeText={setDueTime}
-          />
-        </View>
-        <TextInput
-          multiline
-          placeholder="Notes"
-          placeholderTextColor={colors.textMuted}
-          style={[styles.input, styles.notesInput]}
-          value={notes}
-          onChangeText={setNotes}
-        />
-        <Button title={saving ? 'Saving...' : 'Add Schedule Item'} disabled={saving} onPress={createItem} />
-      </Card>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Items</Text>
-        {items.length ? (
-          items.map((item) => (
-            <Card key={item.id}>
-              <View style={styles.itemHeader}>
-                <Text style={[styles.itemTitle, item.is_completed && styles.completedText]}>{item.title}</Text>
-                <Text style={[styles.badge, item.is_completed ? styles.doneBadge : styles.openBadge]}>
-                  {item.is_completed ? 'done' : item.event_type}
-                </Text>
-              </View>
-              <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)}</Text>
-              <Text style={styles.itemMeta}>{formatDateTime(item.due_at)}</Text>
-              {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
-              <View style={styles.itemActions}>
+            <View style={styles.typeRow}>
+              {EVENT_TYPES.map((type) => (
                 <Button
-                  title={item.is_completed ? 'Mark Open' : 'Mark Done'}
-                  variant="secondary"
-                  onPress={() => toggleItem(item)}
+                  key={type}
+                  title={type}
+                  variant={eventType === type ? 'primary' : 'secondary'}
+                  onPress={() => setEventType(type)}
                 />
-                <Button title="Delete" variant="danger" onPress={() => confirmDelete(item)} />
-              </View>
-            </Card>
-          ))
-        ) : (
-          <EmptyState title="No schedule items" message="Add your first assignment deadline or exam date." />
-        )}
+              ))}
+            </View>
+            <View style={styles.dateRow}>
+              <TextInput
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.input, styles.dateInput]}
+                value={dueDate}
+                onChangeText={setDueDate}
+              />
+              <TextInput
+                placeholder="HH:mm"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.input, styles.timeInput]}
+                value={dueTime}
+                onChangeText={setDueTime}
+              />
+            </View>
+            <TextInput
+              multiline
+              placeholder="Notes"
+              placeholderTextColor={colors.textMuted}
+              style={[styles.input, styles.notesInput]}
+              value={notes}
+              onChangeText={setNotes}
+            />
+            <Button title={saving ? 'Saving...' : 'Add Schedule Item'} disabled={saving} onPress={createItem} />
+          </Card>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Items</Text>
+          {items.length ? (
+            <ResponsiveGrid minItemWidth={320}>
+              {items.map((item) => (
+                <Card key={item.id}>
+                  <View style={styles.itemHeader}>
+                    <Text style={[styles.itemTitle, item.is_completed && styles.completedText]}>{item.title}</Text>
+                    <Text style={[styles.badge, item.is_completed ? styles.doneBadge : styles.openBadge]}>
+                      {item.is_completed ? 'done' : item.event_type}
+                    </Text>
+                  </View>
+                  <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)}</Text>
+                  <Text style={styles.itemMeta}>{formatDateTime(item.due_at)}</Text>
+                  {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
+                  <View style={styles.itemActions}>
+                    <Button
+                      title={item.is_completed ? 'Mark Open' : 'Mark Done'}
+                      variant="secondary"
+                      onPress={() => toggleItem(item)}
+                    />
+                    <Button title="Delete" variant="danger" onPress={() => confirmDelete(item)} />
+                  </View>
+                </Card>
+              ))}
+            </ResponsiveGrid>
+          ) : (
+            <EmptyState title="No schedule items" message="Add your first assignment deadline or exam date." />
+          )}
+        </View>
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
@@ -222,7 +230,17 @@ function parseLocalDateTime(dateValue: string, timeValue: string): Date | null {
 const styles = StyleSheet.create({
   container: {
     gap: 16,
-    padding: 16,
+  },
+  layout: {
+    gap: 16,
+  },
+  tabletLayout: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+  },
+  formPane: {
+    flexBasis: 340,
+    flexGrow: 0,
   },
   header: {
     gap: 4,
@@ -238,7 +256,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   section: {
+    flex: 1,
     gap: 10,
+    minWidth: 0,
   },
   sectionTitle: {
     color: colors.text,

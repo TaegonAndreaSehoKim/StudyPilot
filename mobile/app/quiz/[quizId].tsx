@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { Quiz, QuizAttemptResult } from '@/api/types';
@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { QuizQuestionView } from '@/components/QuizQuestionView';
+import { ScreenScrollView } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 import { formatPercent } from '@/utils/format';
 import { parseQuizExplanation } from '@/utils/quizExplanation';
@@ -70,7 +71,7 @@ export default function QuizScreen() {
   const canSubmit = !!quiz && unansweredCount === 0 && !submitting;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScreenScrollView contentContainerStyle={styles.container}>
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {quiz ? (
         <>
@@ -111,7 +112,7 @@ export default function QuizScreen() {
           ) : null}
         </>
       ) : null}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
@@ -144,7 +145,7 @@ function ExplanationBlock({ answer }: { answer: QuizAttemptResult['answers'][num
 const styles = StyleSheet.create({
   container: {
     gap: 14,
-    padding: 16,
+    maxWidth: 920,
   },
   title: {
     color: colors.text,

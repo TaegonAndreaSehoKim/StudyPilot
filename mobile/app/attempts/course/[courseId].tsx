@@ -1,7 +1,7 @@
 import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { CourseQuizAttempt } from '@/api/types';
@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView } from '@/components/Screen';
 import { colors } from '@/constants/colors';
 import { formatDate, formatPercent } from '@/utils/format';
 
@@ -41,7 +42,7 @@ export default function CourseAttemptsScreen() {
   }
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -52,35 +53,36 @@ export default function CourseAttemptsScreen() {
       </View>
 
       {attempts.length ? (
-        attempts.map((attempt) => (
-          <Link key={attempt.id} href={`/quiz/${attempt.quiz_id}` as Href} asChild>
-            <Card>
-              <View style={styles.attemptHeader}>
-                <Text style={styles.itemTitle}>{attempt.quiz_title}</Text>
-                <Text style={styles.score}>{formatPercent(attempt.score)}</Text>
-              </View>
-              <Text style={styles.itemMeta}>
-                {attempt.correct_count} of {attempt.total_questions} correct - {formatDate(attempt.created_at)}
-              </Text>
-              {attempt.missed_topics.length ? (
-                <Text style={styles.itemMeta}>Missed: {attempt.missed_topics.join(', ')}</Text>
-              ) : (
-                <Text style={styles.itemMeta}>No missed topics</Text>
-              )}
-            </Card>
-          </Link>
-        ))
+        <ResponsiveGrid minItemWidth={340}>
+          {attempts.map((attempt) => (
+            <Link key={attempt.id} href={`/quiz/${attempt.quiz_id}` as Href} asChild>
+              <Card>
+                <View style={styles.attemptHeader}>
+                  <Text style={styles.itemTitle}>{attempt.quiz_title}</Text>
+                  <Text style={styles.score}>{formatPercent(attempt.score)}</Text>
+                </View>
+                <Text style={styles.itemMeta}>
+                  {attempt.correct_count} of {attempt.total_questions} correct - {formatDate(attempt.created_at)}
+                </Text>
+                {attempt.missed_topics.length ? (
+                  <Text style={styles.itemMeta}>Missed: {attempt.missed_topics.join(', ')}</Text>
+                ) : (
+                  <Text style={styles.itemMeta}>No missed topics</Text>
+                )}
+              </Card>
+            </Link>
+          ))}
+        </ResponsiveGrid>
       ) : (
         <EmptyState title="No attempts" message="Submit a quiz and your scores will appear here." />
       )}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     gap: 16,
-    padding: 16,
   },
   header: {
     gap: 4,

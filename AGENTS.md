@@ -46,6 +46,7 @@ What is stable:
 - backend tests using temporary SQLite and temporary storage
 - mobile routing and API client structure
 - mobile dashboard, course, document, quiz, and settings screens
+- tablet-aware mobile layout containers and responsive card grids
 
 What is still in progress:
 
@@ -125,7 +126,7 @@ When choosing what to improve next, bias toward these:
 
 - run a full manual Expo demo flow against the local backend
 - exercise the EC2 Docker Compose deployment path with a real device
-- improve mobile layout after device or simulator inspection
+- inspect and polish the tablet layout on a real iPad or tablet simulator
 - add mobile-level smoke testing or lightweight component checks
 - continue hardening OpenAI structured-output validation with focused regression tests
 - refine fake AI output quality without making it nondeterministic

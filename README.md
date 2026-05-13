@@ -14,9 +14,10 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Study generation:** summaries, flashcards, and multiple-choice quizzes
 - **Quality loop:** section-aware generation, weak-topic review quizzes, and lightweight AI quality evals
 - **Learning loop:** quiz attempts update weak-topic tracking
+- **Tablet layout:** responsive containers and card grids for wider Expo tablet displays
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `50 passed`; mobile TypeScript and Expo export checks pass
+- **Quality checkpoint:** backend pytest suite currently passes at `56 passed`; mobile TypeScript and Expo export checks pass
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -42,11 +43,12 @@ StudyPilot currently supports:
 - weak-topic tracking from missed questions
 - global dashboard with counts, upcoming schedule, recent courses, recent documents, recent generated materials, and weak topics
 - mobile API base URL settings
+- tablet-friendly responsive layouts for dashboard, course, document, schedule, quiz, and saved-material screens
 - backend test coverage for the core local workflow
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `50 passed`
+- `python -m pytest -q` from `backend/` -> `56 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed

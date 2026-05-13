@@ -1,7 +1,7 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Flashcard, Quiz, Summary } from '@/api/types';
@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { FlashcardList } from '@/components/FlashcardList';
 import { LoadingState } from '@/components/LoadingState';
+import { ResponsiveGrid, ScreenScrollView, useTabletLayout } from '@/components/Screen';
 import { StatusBanner } from '@/components/StatusBanner';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
@@ -54,6 +55,7 @@ export default function DocumentDetailScreen() {
   const [quizDifficulty, setQuizDifficulty] = useState<QuizDifficulty>('mixed');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
@@ -177,7 +179,7 @@ export default function DocumentDetailScreen() {
   const actionDisabled = !!working || deleting || !canGenerate;
 
   return (
-    <ScrollView
+    <ScreenScrollView
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
@@ -213,14 +215,14 @@ export default function DocumentDetailScreen() {
             />
           ) : null}
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, isTablet && styles.tabletActions]}>
             <Button title="Open Full Extracted Text" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
             <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
             <Button title={deleting ? 'Deleting...' : 'Delete Document'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
           </View>
 
           <Section title="Generate Summaries">
-            <View style={styles.optionGrid}>
+            <ResponsiveGrid minItemWidth={280}>
               {SUMMARY_OPTIONS.map((option) => (
                 <Card key={option.type}>
                   <Text style={styles.optionTitle}>{option.title} Summary</Text>
@@ -233,35 +235,37 @@ export default function DocumentDetailScreen() {
                   />
                 </Card>
               ))}
-            </View>
+            </ResponsiveGrid>
           </Section>
 
           <Section title="Generate Practice">
-            <Card>
-              <Text style={styles.optionTitle}>Flashcards</Text>
-              <Text style={styles.optionDescription}>Create quick recall cards from the document concepts.</Text>
-              <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
-            </Card>
+            <ResponsiveGrid minItemWidth={320}>
+              <Card>
+                <Text style={styles.optionTitle}>Flashcards</Text>
+                <Text style={styles.optionDescription}>Create quick recall cards from the document concepts.</Text>
+                <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
+              </Card>
 
-            <Card>
-              <Text style={styles.optionTitle}>Quiz</Text>
-              <Text style={styles.optionDescription}>Choose question count and difficulty before generating a quiz.</Text>
-              <SegmentedControl
-                label="Questions"
-                options={QUIZ_COUNTS}
-                value={quizCount}
-                format={(value) => `${value}`}
-                onChange={setQuizCount}
-              />
-              <SegmentedControl
-                label="Difficulty"
-                options={QUIZ_DIFFICULTIES}
-                value={quizDifficulty}
-                format={(value) => value}
-                onChange={setQuizDifficulty}
-              />
-              <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
-            </Card>
+              <Card>
+                <Text style={styles.optionTitle}>Quiz</Text>
+                <Text style={styles.optionDescription}>Choose question count and difficulty before generating a quiz.</Text>
+                <SegmentedControl
+                  label="Questions"
+                  options={QUIZ_COUNTS}
+                  value={quizCount}
+                  format={(value) => `${value}`}
+                  onChange={setQuizCount}
+                />
+                <SegmentedControl
+                  label="Difficulty"
+                  options={QUIZ_DIFFICULTIES}
+                  value={quizDifficulty}
+                  format={(value) => value}
+                  onChange={setQuizDifficulty}
+                />
+                <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
+              </Card>
+            </ResponsiveGrid>
           </Section>
 
           <Section title="Latest Summary">
@@ -299,7 +303,7 @@ export default function DocumentDetailScreen() {
           </Section>
         </>
       ) : null}
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 
@@ -376,8 +380,8 @@ const styles = StyleSheet.create({
   actions: {
     gap: 10,
   },
-  optionGrid: {
-    gap: 10,
+  tabletActions: {
+    flexDirection: 'row',
   },
   optionTitle: {
     color: colors.text,

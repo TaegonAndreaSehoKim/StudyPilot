@@ -76,6 +76,7 @@ npm run export:web
 ## Main Screens
 
 - Visual palette: warm study palette based on `#D9C3B0`, `#8C7161`, `#D9663D`, `#A64029`, and `#261714`
+- Responsive layout: phone-first screens use wider max-width containers and two-column card grids on tablet-sized displays
 - Dashboard: counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
 - Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation
@@ -97,3 +98,4 @@ npm run export:web
 - If Android cannot connect to `127.0.0.1`, use `10.0.2.2`.
 - If a physical device cannot connect, use the computer's LAN IP and allow local firewall access.
 - Scanned PDFs are not supported by the MVP backend.
+- On tablets, rotate between portrait and landscape during manual testing because dashboard, course, document, schedule, quiz history, and saved-material screens use responsive grids.
