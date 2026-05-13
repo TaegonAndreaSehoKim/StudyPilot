@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Flashcard, Quiz, Summary } from '@/api/types';
@@ -23,6 +23,7 @@ export default function DocumentDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -89,12 +90,40 @@ export default function DocumentDetailScreen() {
     }
   }
 
+  function confirmDeleteDocument() {
+    Alert.alert(
+      'Delete document?',
+      'This removes the uploaded document and generated summaries, flashcards, quizzes, and attempts.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteDocument },
+      ],
+    );
+  }
+
+  async function deleteDocument() {
+    try {
+      setDeleting(true);
+      setError(null);
+      await api.deleteDocument(id);
+      if (document?.course_id) {
+        router.replace(`/courses/${document.course_id}`);
+      } else {
+        router.replace('/courses');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete document');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <LoadingState message="Loading document" />;
   }
 
   const canGenerate = document?.status === 'extracted';
-  const actionDisabled = !!working || !canGenerate;
+  const actionDisabled = !!working || deleting || !canGenerate;
 
   return (
     <ScrollView
@@ -127,6 +156,7 @@ export default function DocumentDetailScreen() {
             <Button title={working === 'exam' ? 'Generating...' : 'Generate Exam Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('exam')} />
             <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
             <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} variant="secondary" onPress={generateQuiz} />
+            <Button title={deleting ? 'Deleting...' : 'Delete Document'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
           </View>
 
           <Section title="Latest Summary">

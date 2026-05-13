@@ -56,8 +56,10 @@ export const api = {
   courseDashboard: (courseId: number) => request<CourseDashboard>(`/courses/${courseId}/dashboard`),
   createCourse: (payload: { title: string; description?: string }) =>
     request<Course>('/courses', { method: 'POST', body: JSON.stringify(payload) }),
+  deleteCourse: (courseId: number) => request<void>(`/courses/${courseId}`, { method: 'DELETE' }),
   courseDocuments: (courseId: number) => request<Document[]>(`/courses/${courseId}/documents`),
   document: (documentId: number) => request<DocumentDetail>(`/documents/${documentId}`),
+  deleteDocument: (documentId: number) => request<void>(`/documents/${documentId}`, { method: 'DELETE' }),
   summaries: (documentId: number) => request<Summary[]>(`/documents/${documentId}/summaries`),
   createSummary: (documentId: number, summary_type: 'concise' | 'detailed' | 'exam') =>
     request<Summary>(`/documents/${documentId}/summaries`, {

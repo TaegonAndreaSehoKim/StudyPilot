@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { CourseDashboard, Document } from '@/api/types';
@@ -20,6 +20,7 @@ export default function CourseDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -66,6 +67,30 @@ export default function CourseDetailScreen() {
     }
   }
 
+  function confirmDeleteCourse() {
+    Alert.alert(
+      'Delete course?',
+      'This removes the course, uploaded documents, generated study materials, quizzes, and weak topics.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteCourse },
+      ],
+    );
+  }
+
+  async function deleteCourse() {
+    try {
+      setDeleting(true);
+      setError(null);
+      await api.deleteCourse(id);
+      router.replace('/courses');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete course');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <LoadingState message="Loading course" />;
   }
@@ -87,7 +112,10 @@ export default function CourseDetailScreen() {
             <Text style={styles.metric}>{dashboard.summary_count} summaries</Text>
             <Text style={styles.metric}>{dashboard.quiz_count} quizzes</Text>
           </View>
-          <Button title={uploading ? 'Uploading...' : 'Upload Document'} disabled={uploading} onPress={upload} />
+          <View style={styles.actions}>
+            <Button title={uploading ? 'Uploading...' : 'Upload Document'} disabled={uploading || deleting} onPress={upload} />
+            <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
+          </View>
 
           <Section title="Documents">
             {documents.length ? (
@@ -152,6 +180,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  actions: {
+    gap: 10,
   },
   metric: {
     backgroundColor: colors.surfaceMuted,
