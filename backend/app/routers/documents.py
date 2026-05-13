@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Course, Document
 from app.schemas import DocumentDetailOut, DocumentOut
 from app.services.document_extractor import extract_text_from_path, save_upload_file, validate_upload
+from app.services.storage_cleanup import remove_document_files
 
 router = APIRouter(tags=["documents"])
 
@@ -70,7 +71,12 @@ def list_course_documents(course_id: int, db: Session = Depends(get_db)) -> list
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(document_id: int, db: Session = Depends(get_db)) -> None:
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> None:
     document = get_document_or_404(db, document_id)
     db.delete(document)
     db.commit()
+    remove_document_files([document], Path(settings.storage_dir))

@@ -9,9 +9,13 @@ sys.path.insert(0, str(BACKEND_ROOT))
 
 
 @pytest.fixture()
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def storage_dir(tmp_path: Path) -> Path:
+    return tmp_path / "storage"
+
+
+@pytest.fixture()
+def client(tmp_path: Path, storage_dir: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     database_url = f"sqlite:///{tmp_path / 'test.db'}"
-    storage_dir = tmp_path / "storage"
     monkeypatch.setenv("DATABASE_URL", database_url)
     monkeypatch.setenv("STORAGE_DIR", str(storage_dir))
     monkeypatch.setenv("USE_FAKE_AI", "true")

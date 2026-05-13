@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 
@@ -105,3 +107,20 @@ def test_reject_oversized_file(client: TestClient, course_id: int, monkeypatch) 
     )
 
     assert response.status_code == 413
+
+
+def test_delete_document_removes_uploaded_file(client: TestClient, course_id: int, storage_dir: Path) -> None:
+    response = client.post(
+        "/documents/upload",
+        data={"course_id": str(course_id)},
+        files={"file": ("notes.txt", b"Search uses states and actions.", "text/plain")},
+    )
+    assert response.status_code == 201
+    document_id = response.json()["id"]
+    documents_dir = storage_dir / "documents"
+    assert len(list(documents_dir.iterdir())) == 1
+
+    delete_response = client.delete(f"/documents/{document_id}")
+
+    assert delete_response.status_code == 204
+    assert list(documents_dir.iterdir()) == []

@@ -1,10 +1,14 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import Course, Document, Quiz
 from app.schemas import CourseCreate, CourseDetailOut, CourseOut, CourseUpdate, DocumentOut
+from app.services.storage_cleanup import remove_document_files
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -69,7 +73,13 @@ def update_course(course_id: int, payload: CourseUpdate, db: Session = Depends(g
 
 
 @router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_course(course_id: int, db: Session = Depends(get_db)) -> None:
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> None:
     course = get_course_or_404(db, course_id)
+    documents = list(course.documents)
     db.delete(course)
     db.commit()
+    remove_document_files(documents, Path(settings.storage_dir))
