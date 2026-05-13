@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.services.text_normalization import normalize_inline_text
+from app.services.text_normalization import normalize_extracted_text, normalize_inline_text
 
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
 VALID_ANSWERS = {"A", "B", "C", "D"}
@@ -12,6 +12,15 @@ VALID_ANSWERS = {"A", "B", "C", "D"}
 def _clean_text(value: Any, fallback: str) -> str:
     if isinstance(value, str):
         cleaned = normalize_inline_text(value)
+        if cleaned:
+            return cleaned
+    return fallback
+
+
+def _clean_multiline_text(value: Any, fallback: str) -> str:
+    if isinstance(value, str):
+        cleaned = normalize_extracted_text(value)
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
         if cleaned:
             return cleaned
     return fallback
@@ -151,7 +160,7 @@ def _normalize_choices(value: Any, fallback_sentence: str) -> list[str]:
 
 
 def _explanation_with_rationales(raw_item: dict[str, Any], correct_answer: str, choices: list[str], fallback_sentence: str) -> str:
-    explanation = _clean_text(raw_item.get("explanation"), f"The answer is grounded in this source excerpt: {_excerpt(fallback_sentence)}")
+    explanation = _clean_multiline_text(raw_item.get("explanation"), f"The answer is grounded in this source excerpt: {_excerpt(fallback_sentence)}")
     source_quote = _clean_text(raw_item.get("source_quote"), "")
     if source_quote and "source quote" not in explanation.lower():
         explanation = f"{explanation}\nSource quote: {source_quote[:240]}"

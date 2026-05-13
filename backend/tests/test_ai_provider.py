@@ -121,5 +121,5 @@ def test_fake_ai_uses_source_sentences_for_term_definitions() -> None:
 
     assert summary["key_terms"][0]["term"] == "Search Algorithms"
     assert "state spaces" in summary["key_terms"][0]["definition"]
-    assert cards[0]["front"] == "What does the source say about Search Algorithms?"
+    assert cards[0]["front"] == "How would you explain Search Algorithms using the uploaded notes?"
     assert "state spaces" in cards[0]["back"]

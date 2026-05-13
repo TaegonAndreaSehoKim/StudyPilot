@@ -4,6 +4,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -28,6 +29,13 @@ def _sentences(text: str) -> list[str]:
     return [part.strip() for part in parts if len(part.strip()) > 20]
 
 
+@dataclass(frozen=True)
+class SourceSection:
+    title: str
+    content: str
+    sentences: list[str]
+
+
 def _meaningful_lines(text: str) -> list[str]:
     lines = []
     for line in text.splitlines():
@@ -41,6 +49,47 @@ def _first_line(text: str) -> str:
     for line in _meaningful_lines(text):
         return line[:80]
     return "Study Notes"
+
+
+def _source_sections(text: str) -> list[SourceSection]:
+    sections: list[SourceSection] = []
+    current_title = "Source Notes"
+    current_lines: list[str] = []
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        lower = line.lower()
+        if lower.startswith("review focus topics:"):
+            continue
+        if lower.startswith("section:"):
+            _append_source_section(sections, current_title, current_lines)
+            current_title = line.split(":", 1)[1].strip() or "Source Notes"
+            current_lines = []
+            continue
+        if line.startswith("#"):
+            _append_source_section(sections, current_title, current_lines)
+            current_title = line.strip("# -*\t ") or "Source Notes"
+            current_lines = []
+            continue
+        current_lines.append(line)
+
+    _append_source_section(sections, current_title, current_lines)
+    if not sections:
+        content = re.sub(r"\s+", " ", text).strip()
+        sentences = _sentences(content)
+        if content:
+            sections.append(SourceSection(title=_first_line(text), content=content, sentences=sentences))
+    return sections
+
+
+def _append_source_section(sections: list[SourceSection], title: str, lines: list[str]) -> None:
+    content = re.sub(r"\s+", " ", " ".join(lines)).strip()
+    sentences = _sentences(content)
+    if content and sentences:
+        clean_title = re.sub(r"^Section:\s*", "", title).strip() or "Source Notes"
+        sections.append(SourceSection(title=clean_title, content=content, sentences=sentences))
 
 
 def _keywords(text: str, limit: int = 8) -> list[str]:
@@ -105,6 +154,29 @@ def _topics(text: str, limit: int = 8) -> list[str]:
     return unique_topics
 
 
+def _section_topics(text: str, limit: int = 8) -> list[str]:
+    sections = _source_sections(text)
+    focus_topics = []
+    for line in _meaningful_lines(text):
+        if line.lower().startswith("review focus topics:"):
+            focus = line.split(":", 1)[1] if ":" in line else ""
+            focus_topics.extend(topic.strip() for topic in focus.split(",") if topic.strip())
+    topics = focus_topics + [section.title for section in sections if section.title and section.title != "Source Notes"]
+    topics.extend(_topics(text, limit=limit * 2))
+    seen: set[str] = set()
+    unique = []
+    for topic in topics:
+        cleaned = re.sub(r"^Section:\s*", "", topic).strip()
+        key = cleaned.lower()
+        if not cleaned or key in seen:
+            continue
+        seen.add(key)
+        unique.append(cleaned)
+        if len(unique) >= limit:
+            break
+    return unique
+
+
 def _excerpt(text: str, max_len: int = 180) -> str:
     clean = re.sub(r"\s+", " ", text).strip()
     return clean[:max_len].rstrip()
@@ -125,15 +197,64 @@ def _best_sentence_for_topic(topic: str, sentences: list[str]) -> str:
     return sentences[0] if sentences else "The uploaded source text is limited."
 
 
+def _section_for_topic(topic: str, sections: list[SourceSection]) -> SourceSection | None:
+    topic_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", topic)}
+    for section in sections:
+        title_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", section.title)}
+        if topic_words & title_words:
+            return section
+    for section in sections:
+        content_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", section.content)}
+        if topic_words & content_words:
+            return section
+    return sections[0] if sections else None
+
+
+def _section_summary(section: SourceSection, max_sentences: int = 2) -> str:
+    selected = section.sentences[:max_sentences]
+    if not selected:
+        return _excerpt(section.content)
+    return " ".join(selected)
+
+
+def _overview_from_sections(sections: list[SourceSection], summary_type: str) -> str:
+    names = [section.title for section in sections[:4]]
+    if not names:
+        return "The uploaded notes contain limited extractable study context."
+    topic_text = ", ".join(names[:-1]) + (f", and {names[-1]}" if len(names) > 1 else names[0])
+    if summary_type == "exam":
+        return f"These notes are organized around {topic_text}. For exam review, focus on how each section defines a concept, what problem it solves, and how it differs from nearby ideas."
+    if summary_type == "detailed":
+        return f"These notes cover {topic_text}. The material builds context by separating the major concepts into sections and giving source-backed details for each one."
+    return f"These notes focus on {topic_text}. The main study task is to connect each section title to the specific source claims that support it."
+
+
 def _distractors(topic: str, topics: list[str], sentence: str) -> list[str]:
     alternatives = [candidate for candidate in topics if candidate.lower() != topic.lower()]
     first = alternatives[0] if alternatives else "a nearby concept"
     second = alternatives[1] if len(alternatives) > 1 else "a broader course theme"
     return [
-        f"This describes {first}, not {topic}.",
-        f"This overstates what the source says about {topic}.",
-        f"This confuses {topic} with {second}.",
+        f"It primarily describes {first}, not the source detail tied to {topic}.",
+        f"It adds a stronger claim about {topic} than the uploaded notes support.",
+        f"It confuses {topic} with {second} instead of using the cited section.",
     ]
+
+
+def _conceptual_answer(topic: str, sentence: str) -> str:
+    clean = _excerpt(sentence, 150)
+    if clean.lower().startswith("section:"):
+        clean = clean.split(".", 1)[1].strip() if "." in clean else clean
+    return f"{topic} is best understood through this source claim: {clean}"
+
+
+def _question_for_topic(topic: str, index: int) -> str:
+    templates = [
+        "Which option best captures how the notes frame {topic}?",
+        "What is the most source-grounded interpretation of {topic}?",
+        "When reviewing {topic}, which statement should be treated as supported by the notes?",
+        "Which answer best connects {topic} to the surrounding study material?",
+    ]
+    return templates[index % len(templates)].format(topic=topic)
 
 
 def _choice_rationale(correct_letter: str, choices: list[str], source_quote: str) -> str:
@@ -152,7 +273,8 @@ def _choice_rationale(correct_letter: str, choices: list[str], source_quote: str
 class FakeAIProvider(AIProvider):
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
         sentences = _sentences(document_text)
-        topics = _topics(document_text)
+        sections = _source_sections(document_text)
+        topics = _section_topics(document_text)
         title = _first_line(document_text)
 
         if _is_insufficient(document_text):
@@ -168,36 +290,53 @@ class FakeAIProvider(AIProvider):
                 "source_quotes": [{"quote": excerpt, "reason": "Only available source excerpt."}],
             }
 
-        overview_sentences = sentences[:2] or ["The uploaded material is short, so StudyPilot generated a limited source-grounded overview."]
-        key_points = sentences[1:6] or sentences[:1] or ["The source material is limited; review the original document for more detail."]
+        key_points = []
+        for section in sections[:8]:
+            detail = _section_summary(section, 2 if summary_type in {"detailed", "exam"} else 1)
+            if summary_type == "exam":
+                key_points.append(f"{section.title}: know the definition, purpose, and contrast implied by this source detail: {detail}")
+            else:
+                key_points.append(f"{section.title}: {detail}")
+        if not key_points:
+            key_points = sentences[:6] or ["The source material is limited; review the original document for more detail."]
+
+        key_terms = []
+        for topic in topics[:8]:
+            section = _section_for_topic(topic, sections)
+            definition = _section_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
+            key_terms.append({"term": topic, "definition": definition})
 
         return {
             "title": f"{title} ({summary_type.title()} Summary)",
-            "overview": " ".join(overview_sentences),
+            "overview": _overview_from_sections(sections, summary_type),
             "key_points": key_points[:6],
-            "key_terms": [
-                {"term": topic, "definition": _best_sentence_for_topic(topic, sentences)}
-                for topic in topics[:6]
-            ],
+            "key_terms": key_terms[:6],
             "source_quotes": [
-                {"quote": _excerpt(sentence), "reason": "Representative excerpt from the uploaded source."}
-                for sentence in (sentences[:3] or [_excerpt(document_text)])
+                {"quote": _excerpt(_section_summary(section, 1)), "reason": f"Representative source detail for {section.title}."}
+                for section in (sections[:3] or [])
             ],
         }
 
     def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
         sentences = _sentences(document_text)
-        topics = _topics(document_text, limit=max(count, 6))
+        sections = _source_sections(document_text)
+        topics = _section_topics(document_text, limit=max(count, 6))
         cards: list[dict[str, Any]] = []
         insufficient = _is_insufficient(document_text)
 
         for index in range(count):
             topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
-            sentence = _best_sentence_for_topic(topic, sentences)
+            section = _section_for_topic(topic, sections)
+            sentence = _section_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
             difficulty = ["easy", "medium", "hard"][index % 3]
+            front_templates = [
+                f"How would you explain {topic} using the uploaded notes?",
+                f"What role does {topic} play in this material?",
+                f"What should you compare or watch for when reviewing {topic}?",
+            ]
             cards.append(
                 {
-                    "front": f"What does the source say about {topic}?",
+                    "front": front_templates[index % len(front_templates)],
                     "back": "The uploaded material is too short for a reliable card." if insufficient else sentence,
                     "topic": topic,
                     "difficulty": difficulty,
@@ -208,15 +347,17 @@ class FakeAIProvider(AIProvider):
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
         sentences = _sentences(document_text)
-        topics = _topics(document_text, limit=max(question_count, 6))
+        sections = _source_sections(document_text)
+        topics = _section_topics(document_text, limit=max(question_count, 6))
         questions: list[dict[str, Any]] = []
         insufficient = _is_insufficient(document_text)
 
         for index in range(question_count):
             topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
-            sentence = _best_sentence_for_topic(topic, sentences)
+            section = _section_for_topic(topic, sections)
+            sentence = _section_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
             correct_letter = ["A", "B", "C", "D"][index % 4]
-            correct_choice_text = "The source is too limited to support a detailed answer." if insufficient else _excerpt(sentence, 90)
+            correct_choice_text = "The source is too limited to support a detailed answer." if insufficient else _conceptual_answer(topic, sentence)
             correct_choice = f"{correct_letter}. {correct_choice_text}"
             distractors = _distractors(topic, topics, sentence)
             choices = [
@@ -230,7 +371,7 @@ class FakeAIProvider(AIProvider):
             source_quote = _excerpt(sentence if not insufficient else document_text)
             questions.append(
                 {
-                    "question": f"Which statement is best supported by the notes about {topic}?",
+                    "question": _question_for_topic(topic, index),
                     "choices": choices,
                     "correct_answer": correct_letter,
                     "explanation": _choice_rationale(correct_letter, choices, source_quote),
