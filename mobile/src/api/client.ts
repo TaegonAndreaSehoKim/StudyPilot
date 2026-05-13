@@ -72,6 +72,7 @@ export const api = {
       body: JSON.stringify({ summary_type }),
     }),
   flashcards: (documentId: number) => request<Flashcard[]>(`/documents/${documentId}/flashcards`),
+  courseFlashcards: (courseId: number) => request<Flashcard[]>(`/courses/${courseId}/flashcards`),
   createFlashcards: (documentId: number, count = 10) =>
     request<Flashcard[]>(`/documents/${documentId}/flashcards`, {
       method: 'POST',

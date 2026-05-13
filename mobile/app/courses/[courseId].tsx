@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { CourseDashboard, Document, Summary } from '@/api/types';
+import type { CourseDashboard, Document, Flashcard, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -19,6 +19,7 @@ export default function CourseDetailScreen() {
   const [dashboard, setDashboard] = useState<CourseDashboard | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [summaries, setSummaries] = useState<Summary[]>([]);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -28,14 +29,16 @@ export default function CourseDetailScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [courseDashboard, docs, summaryList] = await Promise.all([
+      const [courseDashboard, docs, summaryList, cardList] = await Promise.all([
         api.courseDashboard(id),
         api.courseDocuments(id),
         api.courseSummaries(id),
+        api.courseFlashcards(id),
       ]);
       setDashboard(courseDashboard);
       setDocuments(docs);
       setSummaries(summaryList);
+      setFlashcards(cardList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load course');
     } finally {
@@ -153,6 +156,19 @@ export default function CourseDetailScreen() {
               ))
             ) : (
               <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
+            )}
+          </Section>
+
+          <Section title="Saved Flashcards">
+            {flashcards.length ? (
+              <Link href={`/flashcards/course/${id}` as Href} asChild>
+                <Card>
+                  <Text style={styles.itemTitle}>Review Course Flashcards</Text>
+                  <Text style={styles.itemMeta}>{flashcards.length} cards saved across this course</Text>
+                </Card>
+              </Link>
+            ) : (
+              <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
             )}
           </Section>
 

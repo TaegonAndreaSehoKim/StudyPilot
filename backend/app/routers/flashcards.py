@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_ai_provider
-from app.models import Document, Flashcard
+from app.models import Course, Document, Flashcard
 from app.schemas import FlashcardCreate, FlashcardOut
 from app.services.study_generator import StudyGenerator
 
@@ -47,3 +47,16 @@ def list_flashcards(document_id: int, db: Session = Depends(get_db)) -> list[Fla
     if db.get(Document, document_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return db.query(Flashcard).filter(Flashcard.document_id == document_id).order_by(Flashcard.created_at.desc()).all()
+
+
+@router.get("/courses/{course_id}/flashcards", response_model=list[FlashcardOut])
+def list_course_flashcards(course_id: int, db: Session = Depends(get_db)) -> list[Flashcard]:
+    if db.get(Course, course_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    return (
+        db.query(Flashcard)
+        .join(Document, Flashcard.document_id == Document.id)
+        .filter(Document.course_id == course_id)
+        .order_by(Flashcard.created_at.desc())
+        .all()
+    )
