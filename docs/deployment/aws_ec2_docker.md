@@ -102,6 +102,27 @@ Never put `OPENAI_API_KEY` in the mobile app. Only the backend reads it.
 
 For `OCR_PROVIDER=textract`, attach an IAM role or credentials that allow `textract:DetectDocumentText`. Use `OCR_PROVIDER=fake` if you want to test the UI flow without external OCR calls.
 
+## Textract OCR Validation
+
+After deployment, validate the OCR path with an image-only or scanned PDF:
+
+1. Upload the scanned PDF from the mobile document picker or API.
+2. Confirm the document returns `status=needs_ocr` and `ocr_status=available`.
+3. Run OCR from the document screen.
+4. Confirm the OCR job reaches `completed` and the document changes to `ocr_status=completed`.
+
+If the job fails with `SubscriptionRequiredException` or `The AWS Access Key Id needs a subscription for the service`, IAM is not the only issue. AWS account access to Textract must be activated for the account/region, or the account sign-up/billing process must be completed. In the AWS console, open Amazon Textract in the deployment region and follow any activation or get-started prompt. If the account still cannot call Textract, use AWS account/billing support. For demos while this is unresolved, set:
+
+```text
+OCR_PROVIDER=fake
+```
+
+Then restart:
+
+```bash
+docker compose restart backend
+```
+
 ## Run
 
 ```bash
