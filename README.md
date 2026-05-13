@@ -422,7 +422,7 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 - Scanned/image-only PDFs need OCR, which is not implemented.
 - The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
 - AI calls are synchronous.
-- The OpenAI provider has fallback behavior but still needs more robust structured-output validation.
+- The OpenAI provider has guarded JSON parsing and fake-AI fallback, but strict JSON Schema enforcement is still future work.
 - Quiz responses include correct answers in the MVP API for mobile simplicity.
 - Mobile automated tests are not added yet.
 - No cloud deployment or app store packaging.
@@ -437,7 +437,7 @@ Planned follow-up improvements:
 - run a full simulator or physical-device Expo smoke test
 - capture screenshots and polish mobile layout
 - add mobile component or interaction tests
-- improve OpenAI JSON schema handling
+- improve OpenAI JSON Schema enforcement
 - improve document-generation error states
 - hide quiz correct answers until submission in a production-oriented API mode
 - prepare deployment notes after the local MVP flow is stable

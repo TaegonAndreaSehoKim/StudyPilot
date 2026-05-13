@@ -149,8 +149,8 @@ class OpenAIProvider(AIProvider):
 
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
         prompt = (
-            "Create a source-grounded study summary as JSON with keys title, overview, "
-            "key_points, key_terms, source_quotes. Only use facts from the notes. "
+            "Create a source-grounded study summary as a JSON object with keys title, overview, "
+            "key_points, key_terms, source_quotes. Return only JSON. Only use facts from the notes. "
             f"Summary type: {summary_type}.\n\nNotes:\n{document_text[:30000]}"
         )
         data = self._json_response(prompt)
@@ -160,19 +160,22 @@ class OpenAIProvider(AIProvider):
 
     def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
         prompt = (
-            "Create source-grounded flashcards as a JSON array. Each item must include "
-            "front, back, topic, difficulty, source_quote. "
+            "Create source-grounded flashcards as a JSON object with key flashcards. "
+            "flashcards must be an array and each item must include front, back, topic, difficulty, source_quote. "
+            "Return only JSON. "
             f"Count: {count}.\n\nNotes:\n{document_text[:30000]}"
         )
         data = self._json_response(prompt)
-        if isinstance(data, list):
-            return data[:count]
+        cards = data.get("flashcards") if isinstance(data, dict) else data
+        if isinstance(cards, list):
+            return cards[:count]
         return self.fallback.generate_flashcards(document_text, count)
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
         prompt = (
             "Create a source-grounded multiple-choice quiz as JSON with keys title and questions. "
             "Each question must include question, choices, correct_answer, explanation, topic, difficulty. "
+            "Return only JSON. "
             f"Question count: {question_count}. Difficulty: {difficulty}.\n\nNotes:\n{document_text[:30000]}"
         )
         data = self._json_response(prompt)
@@ -182,12 +185,89 @@ class OpenAIProvider(AIProvider):
 
     def _json_response(self, prompt: str) -> Any:
         try:
-            response = self.client.responses.create(
+            response = self._create_json_response(prompt)
+            text = self._response_text(response)
+            return self._parse_json(text)
+        except Exception:
+            return None
+
+    def _create_json_response(self, prompt: str) -> Any:
+        try:
+            return self.client.responses.create(
+                model=self.model,
+                input=prompt,
+                text={"format": {"type": "json_object"}},
+            )
+        except TypeError:
+            return self.client.responses.create(
                 model=self.model,
                 input=prompt,
                 response_format={"type": "json_object"},
             )
-            text = getattr(response, "output_text", "")
-            return json.loads(text)
-        except Exception:
-            return None
+
+    def _response_text(self, response: Any) -> str:
+        output_text = getattr(response, "output_text", "")
+        if isinstance(output_text, str) and output_text.strip():
+            return output_text
+
+        if hasattr(response, "model_dump"):
+            dumped = response.model_dump()
+            text = self._text_from_mapping(dumped)
+            if text:
+                return text
+
+        if isinstance(response, dict):
+            text = self._text_from_mapping(response)
+            if text:
+                return text
+
+        return ""
+
+    def _text_from_mapping(self, value: Any) -> str:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            for item in value:
+                text = self._text_from_mapping(item)
+                if text:
+                    return text
+        if isinstance(value, dict):
+            for key in ("output_text", "text"):
+                text = value.get(key)
+                if isinstance(text, str) and text.strip():
+                    return text
+                if isinstance(text, dict):
+                    nested = self._text_from_mapping(text)
+                    if nested:
+                        return nested
+            for key in ("output", "content"):
+                nested = self._text_from_mapping(value.get(key))
+                if nested:
+                    return nested
+        return ""
+
+    def _parse_json(self, text: str) -> Any:
+        cleaned = text.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE).strip()
+            cleaned = re.sub(r"\s*```$", "", cleaned).strip()
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        object_start = cleaned.find("{")
+        object_end = cleaned.rfind("}")
+        array_start = cleaned.find("[")
+        array_end = cleaned.rfind("]")
+        candidates = []
+        if object_start != -1 and object_end > object_start:
+            candidates.append(cleaned[object_start : object_end + 1])
+        if array_start != -1 and array_end > array_start:
+            candidates.append(cleaned[array_start : array_end + 1])
+        for candidate in candidates:
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+        return None

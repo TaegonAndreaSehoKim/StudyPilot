@@ -49,7 +49,7 @@ What is still in progress:
 - hands-on mobile device testing with Expo
 - UI polish after real device screenshots
 - deeper PDF extraction edge-case handling
-- more robust OpenAI structured-output validation
+- stricter OpenAI JSON Schema enforcement
 - frontend/mobile automated testing
 - richer empty/error states and loading feedback
 - screenshot/demo documentation
@@ -91,6 +91,7 @@ For current quality expectations, read:
 - `backend/tests/test_quizzes.py`
 - `backend/tests/test_dashboard.py`
 - `backend/tests/test_chunking.py`
+- `backend/tests/test_ai_provider.py`
 
 ## Working Principles
 
@@ -119,7 +120,7 @@ When choosing what to improve next, bias toward these:
 - run a full manual Expo demo flow against the local backend
 - improve mobile layout after device or simulator inspection
 - add mobile-level smoke testing or lightweight component checks
-- improve OpenAI structured-output resilience
+- improve OpenAI JSON Schema enforcement
 - refine fake AI output quality without making it nondeterministic
 - add screenshots or a short demo walkthrough
 
