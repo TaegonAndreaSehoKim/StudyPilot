@@ -11,6 +11,7 @@ import { LoadingState } from '@/components/LoadingState';
 import { QuizQuestionView } from '@/components/QuizQuestionView';
 import { colors } from '@/constants/colors';
 import { formatPercent } from '@/utils/format';
+import { parseQuizExplanation } from '@/utils/quizExplanation';
 
 export default function QuizScreen() {
   const { quizId } = useLocalSearchParams<{ quizId: string }>();
@@ -74,19 +75,25 @@ export default function QuizScreen() {
       {quiz ? (
         <>
           <Text style={styles.title}>{quiz.title}</Text>
-          {quiz.questions.map((question) => (
-            <QuizQuestionView
-              key={question.id}
-              question={question}
-              selected={answers[question.id]}
-              onSelect={(answer) => setAnswers((current) => ({ ...current, [question.id]: answer }))}
+          {quiz.questions.map((question) => {
+            const answerResult = result?.answers.find((answer) => answer.question_id === question.id);
+            return (
+              <QuizQuestionView
+                key={question.id}
+                question={question}
+                selected={answers[question.id]}
+                result={answerResult}
+                onSelect={(answer) => setAnswers((current) => ({ ...current, [question.id]: answer }))}
+              />
+            );
+          })}
+          {!result ? (
+            <Button
+              title={submitting ? 'Submitting...' : unansweredCount > 0 ? `Answer ${unansweredCount} more` : 'Submit Answers'}
+              disabled={!canSubmit}
+              onPress={submit}
             />
-          ))}
-          <Button
-            title={submitting ? 'Submitting...' : unansweredCount > 0 ? `Answer ${unansweredCount} more` : 'Submit Answers'}
-            disabled={!canSubmit}
-            onPress={submit}
-          />
+          ) : null}
 
           {result ? (
             <Card>
@@ -97,12 +104,7 @@ export default function QuizScreen() {
               ) : null}
               <View style={styles.explanations}>
                 {result.answers.map((answer) => (
-                  <View key={answer.question_id} style={styles.explanation}>
-                    <Text style={answer.is_correct ? styles.correct : styles.incorrect}>
-                      {answer.is_correct ? 'Correct' : 'Missed'} - {answer.topic}
-                    </Text>
-                    <Text style={styles.resultMeta}>{answer.explanation}</Text>
-                  </View>
+                  <ExplanationBlock key={answer.question_id} answer={answer} />
                 ))}
               </View>
             </Card>
@@ -110,6 +112,32 @@ export default function QuizScreen() {
         </>
       ) : null}
     </ScrollView>
+  );
+}
+
+function ExplanationBlock({ answer }: { answer: QuizAttemptResult['answers'][number] }) {
+  const parsed = parseQuizExplanation(answer.explanation);
+  return (
+    <View style={styles.explanation}>
+      <Text style={answer.is_correct ? styles.correct : styles.incorrect}>
+        {answer.is_correct ? 'Correct' : 'Missed'} - {answer.topic}
+      </Text>
+      <Text style={styles.resultMeta}>{parsed.summary}</Text>
+      {parsed.sourceQuote ? (
+        <View style={styles.quoteBox}>
+          <Text style={styles.quoteLabel}>Source quote</Text>
+          <Text style={styles.quoteText}>{parsed.sourceQuote}</Text>
+        </View>
+      ) : null}
+      {parsed.wrongChoiceReasons.length ? (
+        <View style={styles.rationaleBox}>
+          <Text style={styles.rationaleTitle}>Why other choices are wrong</Text>
+          {parsed.wrongChoiceReasons.map((reason) => (
+            <Text key={reason} style={styles.rationaleText}>{reason}</Text>
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -137,7 +165,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   explanation: {
-    gap: 4,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    gap: 8,
+    paddingTop: 12,
   },
   correct: {
     color: colors.success,
@@ -146,5 +177,33 @@ const styles = StyleSheet.create({
   incorrect: {
     color: colors.danger,
     fontWeight: '800',
+  },
+  quoteBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    gap: 4,
+    padding: 10,
+  },
+  quoteLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  quoteText: {
+    color: colors.text,
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+  rationaleBox: {
+    gap: 6,
+  },
+  rationaleTitle: {
+    color: colors.text,
+    fontWeight: '800',
+  },
+  rationaleText: {
+    color: colors.textMuted,
+    lineHeight: 19,
   },
 });

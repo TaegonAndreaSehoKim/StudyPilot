@@ -36,7 +36,7 @@ StudyPilot currently supports:
 - saved course flashcard review with share/export support
 - fake-AI quiz generation
 - saved course quiz review
-- quiz taking and scoring
+- quiz taking, scoring, source-grounded explanations, and highlighted answer review
 - course-level quiz attempt history
 - weak-topic review quiz generation
 - weak-topic tracking from missed questions

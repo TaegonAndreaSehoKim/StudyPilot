@@ -80,7 +80,7 @@ npm run export:web
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support
 - Quizzes: course-level saved quiz list with links back into quiz taking
-- Quiz: answer questions, submit attempt, view explanations
+- Quiz: answer questions, submit attempt, view highlighted answers, source quotes, and distractor explanations
 - Attempts: course-level quiz score history and missed-topic review
 - Settings: API base URL and health check
 

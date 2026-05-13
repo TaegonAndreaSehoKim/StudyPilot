@@ -1,18 +1,22 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { QuizQuestion } from '@/api/types';
+import type { QuizAnswerResult, QuizQuestion } from '@/api/types';
 import { colors } from '@/constants/colors';
 import { Card } from './Card';
 
 export function QuizQuestionView({
   question,
   selected,
+  result,
   onSelect,
 }: {
   question: QuizQuestion;
   selected?: string;
+  result?: QuizAnswerResult;
   onSelect: (answer: string) => void;
 }) {
+  const submitted = !!result;
+
   return (
     <Card>
       <Text style={styles.topic}>{question.topic} - {question.difficulty}</Text>
@@ -21,13 +25,30 @@ export function QuizQuestionView({
         {question.choices.map((choice) => {
           const letter = choice.slice(0, 1);
           const isSelected = selected === letter;
+          const isCorrect = submitted && result.correct_answer === letter;
+          const isMissedSelection = submitted && result.selected_answer === letter && !result.is_correct;
           return (
             <Pressable
               key={choice}
+              disabled={submitted}
               onPress={() => onSelect(letter)}
-              style={[styles.choice, isSelected && styles.selected]}
+              style={[
+                styles.choice,
+                isSelected && styles.selected,
+                isCorrect && styles.correctChoice,
+                isMissedSelection && styles.incorrectChoice,
+              ]}
             >
-              <Text style={[styles.choiceText, isSelected && styles.selectedText]}>{choice}</Text>
+              <Text
+                style={[
+                  styles.choiceText,
+                  isSelected && styles.selectedText,
+                  isCorrect && styles.correctChoiceText,
+                  isMissedSelection && styles.incorrectChoiceText,
+                ]}
+              >
+                {choice}
+              </Text>
             </Pressable>
           );
         })}
@@ -61,6 +82,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAF1FF',
     borderColor: colors.primary,
   },
+  correctChoice: {
+    backgroundColor: '#ECFDF3',
+    borderColor: colors.success,
+  },
+  incorrectChoice: {
+    backgroundColor: '#FFF4F2',
+    borderColor: colors.danger,
+  },
   choiceText: {
     color: colors.text,
     lineHeight: 20,
@@ -68,5 +97,13 @@ const styles = StyleSheet.create({
   selectedText: {
     color: colors.primary,
     fontWeight: '700',
+  },
+  correctChoiceText: {
+    color: colors.success,
+    fontWeight: '800',
+  },
+  incorrectChoiceText: {
+    color: colors.danger,
+    fontWeight: '800',
   },
 });
