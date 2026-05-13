@@ -146,6 +146,8 @@ export interface Dashboard {
   quiz_count: number;
   recent_courses: Course[];
   recent_documents: Document[];
+  recent_summaries: Summary[];
+  recent_quizzes: Quiz[];
   weak_topics: WeakTopic[];
 }
 

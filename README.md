@@ -38,7 +38,7 @@ StudyPilot currently supports:
 - quiz taking and scoring
 - course-level quiz attempt history
 - weak-topic tracking from missed questions
-- global dashboard with counts, recent courses, recent documents, and weak topics
+- global dashboard with counts, upcoming schedule, recent courses, recent documents, recent generated materials, and weak topics
 - mobile API base URL settings
 - backend test coverage for the core local workflow
 

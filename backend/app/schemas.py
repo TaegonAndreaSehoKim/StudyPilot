@@ -218,6 +218,8 @@ class DashboardOut(BaseModel):
     quiz_count: int
     recent_courses: list[CourseOut]
     recent_documents: list[DocumentOut]
+    recent_summaries: list[SummaryOut]
+    recent_quizzes: list[QuizOut]
     weak_topics: list[WeakTopicOut]
 
 

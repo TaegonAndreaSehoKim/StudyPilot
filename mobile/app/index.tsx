@@ -121,6 +121,36 @@ export default function DashboardScreen() {
             )}
           </Section>
 
+          <Section title="Recent Summaries">
+            {dashboard.recent_summaries.length ? (
+              dashboard.recent_summaries.map((summary) => (
+                <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
+                  <Card>
+                    <Text style={styles.itemTitle}>{summary.title}</Text>
+                    <Text style={styles.itemMeta}>{summary.summary_type} summary - document #{summary.document_id}</Text>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
+            )}
+          </Section>
+
+          <Section title="Recent Quizzes">
+            {dashboard.recent_quizzes.length ? (
+              dashboard.recent_quizzes.map((quiz) => (
+                <Link key={quiz.id} href={`/quiz/${quiz.id}`} asChild>
+                  <Card>
+                    <Text style={styles.itemTitle}>{quiz.title}</Text>
+                    <Text style={styles.itemMeta}>{quiz.questions.length} questions - document #{quiz.document_id}</Text>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
+            )}
+          </Section>
+
           <Section title="Weak Topics">
             {dashboard.weak_topics.length ? (
               dashboard.weak_topics.map((topic) => (

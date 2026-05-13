@@ -69,7 +69,7 @@ npm run export:web
 
 ## Main Screens
 
-- Dashboard: counts, recent courses, recent documents, weak topics
+- Dashboard: counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
 - Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation
 - Course detail: tabbed overview, materials, practice, schedule, document upload, and course actions

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Course, Document, Flashcard, Quiz, Summary, WeakTopic
 from app.routers.quizzes import _quiz_out
+from app.routers.summaries import _summary_out
 from app.schemas import CourseDashboardOut, CourseOut, DashboardOut, DocumentOut, WeakTopicOut
 
 router = APIRouter(tags=["dashboard"])
@@ -14,6 +15,8 @@ router = APIRouter(tags=["dashboard"])
 def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
     recent_courses = db.query(Course).order_by(Course.created_at.desc()).limit(5).all()
     recent_documents = db.query(Document).order_by(Document.created_at.desc()).limit(5).all()
+    recent_summaries = db.query(Summary).order_by(Summary.created_at.desc()).limit(5).all()
+    recent_quizzes = db.query(Quiz).order_by(Quiz.created_at.desc()).limit(5).all()
     weak_topics = (
         db.query(WeakTopic)
         .order_by(WeakTopic.miss_count.desc(), WeakTopic.last_missed_at.desc())
@@ -28,6 +31,8 @@ def get_dashboard(db: Session = Depends(get_db)) -> DashboardOut:
         quiz_count=db.query(func.count(Quiz.id)).scalar() or 0,
         recent_courses=[CourseOut.model_validate(course) for course in recent_courses],
         recent_documents=[DocumentOut.model_validate(document) for document in recent_documents],
+        recent_summaries=[_summary_out(summary) for summary in recent_summaries],
+        recent_quizzes=[_quiz_out(quiz) for quiz in recent_quizzes],
         weak_topics=[WeakTopicOut.model_validate(topic) for topic in weak_topics],
     )
 
