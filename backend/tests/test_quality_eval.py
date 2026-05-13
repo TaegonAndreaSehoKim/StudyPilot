@@ -1,0 +1,53 @@
+from app.services.ai_provider import FakeAIProvider
+from app.services.study_generator import StudyGenerator
+
+
+EVAL_NOTES = """
+# Search Algorithms
+
+Artificial Intelligence studies rational agents that choose actions to achieve goals.
+Search algorithms explore state spaces by expanding states and evaluating possible paths.
+Heuristics guide search toward promising solutions when exhaustive search is too expensive.
+
+# Adversarial Search
+
+Adversarial search models competitive games where agents choose actions against opponents.
+Minimax evaluates possible future game states under optimal opposing play.
+
+# Planning
+
+Planning uses actions, preconditions, effects, and goals to build a sequence of steps.
+""".strip()
+
+
+def test_eval_summary_uses_section_topics_and_source_terms() -> None:
+    generator = StudyGenerator(FakeAIProvider())
+
+    summary = generator.generate_summary(EVAL_NOTES, "exam")
+    terms = [term["term"] for term in summary["key_terms"]]
+
+    assert "Search Algorithms" in terms
+    assert "Adversarial Search" in terms
+    assert "Planning" in terms
+    assert any("state spaces" in point for point in summary["key_points"])
+
+
+def test_eval_quiz_has_specific_topics_and_distractor_rationales() -> None:
+    generator = StudyGenerator(FakeAIProvider())
+
+    quiz = generator.generate_quiz(EVAL_NOTES, 4, "mixed")
+
+    assert len(quiz["questions"]) == 4
+    assert all(question["topic"] != "General" for question in quiz["questions"])
+    assert any(question["topic"] == "Search Algorithms" for question in quiz["questions"])
+    assert all("Why other choices are wrong" in question["explanation"] for question in quiz["questions"])
+    assert all("Source quote:" in question["explanation"] for question in quiz["questions"])
+
+
+def test_eval_review_quiz_prioritizes_weak_topics() -> None:
+    generator = StudyGenerator(FakeAIProvider())
+
+    quiz = generator.generate_review_quiz(EVAL_NOTES, ["Planning"], 2, "medium")
+
+    assert quiz["title"].startswith("Weak Topic Review")
+    assert quiz["questions"][0]["topic"] == "Planning"

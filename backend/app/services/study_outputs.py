@@ -150,6 +150,33 @@ def _normalize_choices(value: Any, fallback_sentence: str) -> list[str]:
     return normalized
 
 
+def _explanation_with_rationales(raw_item: dict[str, Any], correct_answer: str, choices: list[str], fallback_sentence: str) -> str:
+    explanation = _clean_text(raw_item.get("explanation"), f"The answer is grounded in this source excerpt: {_excerpt(fallback_sentence)}")
+    source_quote = _clean_text(raw_item.get("source_quote"), "")
+    if source_quote and "source quote" not in explanation.lower():
+        explanation = f"{explanation}\nSource quote: {source_quote[:240]}"
+
+    rationales = raw_item.get("why_others_are_wrong")
+    if isinstance(rationales, dict):
+        lines = []
+        for letter in ["A", "B", "C", "D"]:
+            if letter == correct_answer:
+                continue
+            rationale = _clean_text(rationales.get(letter), "")
+            if rationale:
+                lines.append(f"{letter}: {rationale}")
+        if lines and "why other choices" not in explanation.lower():
+            explanation = f"{explanation}\nWhy other choices are wrong:\n" + "\n".join(lines)
+
+    if "why other choices" not in explanation.lower():
+        wrong_letters = [choice[:1] for choice in choices if choice[:1] in VALID_ANSWERS and choice[:1] != correct_answer]
+        if wrong_letters:
+            lines = [f"{letter}: This option is not the best match for the cited source." for letter in wrong_letters]
+            explanation = f"{explanation}\nWhy other choices are wrong:\n" + "\n".join(lines)
+
+    return explanation
+
+
 def normalize_quiz_result(result: Any, question_count: int, difficulty: str, document_text: str) -> dict[str, Any]:
     source = result if isinstance(result, dict) else {}
     raw_questions = source.get("questions") if isinstance(source.get("questions"), list) else []
@@ -168,12 +195,13 @@ def normalize_quiz_result(result: Any, question_count: int, difficulty: str, doc
         if question_difficulty not in VALID_DIFFICULTIES:
             question_difficulty = "medium"
 
+        choices = _normalize_choices(raw_item.get("choices"), sentence)
         questions.append(
             {
                 "question": _clean_text(raw_item.get("question"), f"Which option is best supported by the notes about {keyword}?"),
-                "choices": _normalize_choices(raw_item.get("choices"), sentence),
+                "choices": choices,
                 "correct_answer": correct_answer,
-                "explanation": _clean_text(raw_item.get("explanation"), f"The answer is grounded in this source excerpt: {_excerpt(sentence)}"),
+                "explanation": _explanation_with_rationales(raw_item, correct_answer, choices, sentence),
                 "topic": _clean_text(raw_item.get("topic"), keyword),
                 "difficulty": question_difficulty,
             }

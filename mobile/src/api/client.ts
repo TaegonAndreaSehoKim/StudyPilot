@@ -87,6 +87,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ question_count, difficulty }),
     }),
+  createReviewQuiz: (courseId: number, question_count = 5, difficulty = 'mixed') =>
+    request<Quiz>(`/courses/${courseId}/review-quiz`, {
+      method: 'POST',
+      body: JSON.stringify({ question_count, difficulty }),
+    }),
   documentQuizzes: (documentId: number) => request<Quiz[]>(`/documents/${documentId}/quizzes`),
   courseQuizzes: (courseId: number) => request<Quiz[]>(`/courses/${courseId}/quizzes`),
   quiz: (quizId: number) => request<Quiz>(`/quizzes/${quizId}`),

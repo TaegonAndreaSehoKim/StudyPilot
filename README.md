@@ -12,10 +12,11 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Backend:** FastAPI, SQLAlchemy, SQLite
 - **Document support:** `.txt`, `.md`, and text-based `.pdf`
 - **Study generation:** summaries, flashcards, and multiple-choice quizzes
+- **Quality loop:** section-aware generation, weak-topic review quizzes, and lightweight AI quality evals
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `40 passed`; mobile TypeScript and Expo export checks pass
+- **Quality checkpoint:** backend pytest suite currently passes at `48 passed`; mobile TypeScript and Expo export checks pass
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -37,6 +38,7 @@ StudyPilot currently supports:
 - saved course quiz review
 - quiz taking and scoring
 - course-level quiz attempt history
+- weak-topic review quiz generation
 - weak-topic tracking from missed questions
 - global dashboard with counts, upcoming schedule, recent courses, recent documents, recent generated materials, and weak topics
 - mobile API base URL settings
@@ -44,7 +46,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `40 passed`
+- `python -m pytest -q` from `backend/` -> `48 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -248,6 +250,7 @@ Main endpoints:
 - `GET /documents/{document_id}/flashcards`
 - `GET /courses/{course_id}/flashcards`
 - `POST /documents/{document_id}/quizzes`
+- `POST /courses/{course_id}/review-quiz`
 - `GET /documents/{document_id}/quizzes`
 - `GET /courses/{course_id}/quizzes`
 - `GET /quizzes/{quiz_id}`
@@ -318,6 +321,18 @@ POST /documents/1/quizzes
 }
 ```
 
+### Generate a Weak-Topic Review Quiz
+
+```json
+POST /courses/1/review-quiz
+{
+  "question_count": 5,
+  "difficulty": "medium"
+}
+```
+
+If `topics` is omitted, StudyPilot uses the course's highest-miss weak topics.
+
 ### Submit a Quiz Attempt
 
 ```json
@@ -367,7 +382,7 @@ python -m pytest -q
 Current status:
 
 ```text
-40 passed
+48 passed
 ```
 
 The backend tests use:
@@ -446,7 +461,7 @@ Planned follow-up improvements:
 - run a full simulator or physical-device Expo smoke test
 - capture screenshots and polish mobile layout
 - add mobile component or interaction tests
-- improve OpenAI JSON Schema enforcement
+- improve strict OpenAI JSON Schema enforcement
 - improve document-generation error states
 - hide quiz correct answers until submission in a production-oriented API mode
 - prepare deployment notes after the local MVP flow is stable

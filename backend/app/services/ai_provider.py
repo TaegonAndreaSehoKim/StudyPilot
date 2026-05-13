@@ -82,6 +82,13 @@ def _keywords(text: str, limit: int = 8) -> list[str]:
 def _topics(text: str, limit: int = 8) -> list[str]:
     headings = []
     for line in _meaningful_lines(text):
+        if line.lower().startswith("review focus topics:"):
+            focus = line.split(":", 1)[1] if ":" in line else ""
+            headings.extend(topic.strip() for topic in focus.split(",") if topic.strip())
+            continue
+        if line.lower().startswith("section:"):
+            headings.append(line.split(":", 1)[1].strip()[:60])
+            continue
         if len(line.split()) <= 6 and not line.endswith((".", "!", "?")):
             headings.append(line[:60])
     topics = headings + _keywords(text, limit=limit * 2)
@@ -116,6 +123,30 @@ def _best_sentence_for_topic(topic: str, sentences: list[str]) -> str:
         if topic_words & sentence_words:
             return sentence
     return sentences[0] if sentences else "The uploaded source text is limited."
+
+
+def _distractors(topic: str, topics: list[str], sentence: str) -> list[str]:
+    alternatives = [candidate for candidate in topics if candidate.lower() != topic.lower()]
+    first = alternatives[0] if alternatives else "a nearby concept"
+    second = alternatives[1] if len(alternatives) > 1 else "a broader course theme"
+    return [
+        f"This describes {first}, not {topic}.",
+        f"This overstates what the source says about {topic}.",
+        f"This confuses {topic} with {second}.",
+    ]
+
+
+def _choice_rationale(correct_letter: str, choices: list[str], source_quote: str) -> str:
+    lines = [
+        f"Correct answer: {correct_letter}.",
+        f"Source quote: {source_quote}",
+        "Why other choices are wrong:",
+    ]
+    for choice in choices:
+        letter = choice[:1]
+        if letter != correct_letter:
+            lines.append(f"{letter}: This option is not the best match for the cited source excerpt.")
+    return "\n".join(lines)
 
 
 class FakeAIProvider(AIProvider):
@@ -187,22 +218,25 @@ class FakeAIProvider(AIProvider):
             correct_letter = ["A", "B", "C", "D"][index % 4]
             correct_choice_text = "The source is too limited to support a detailed answer." if insufficient else _excerpt(sentence, 90)
             correct_choice = f"{correct_letter}. {correct_choice_text}"
+            distractors = _distractors(topic, topics, sentence)
             choices = [
-                "A. A concept directly supported by the uploaded notes",
-                "B. A distractor that is not the best source-grounded answer",
-                "C. A broad claim not established by the document",
-                "D. An unrelated interpretation",
+                f"A. {distractors[0]}",
+                f"B. {distractors[1]}",
+                f"C. {distractors[2]}",
+                "D. The source does not provide enough evidence for this claim.",
             ]
             choices[index % 4] = correct_choice
             question_difficulty = difficulty if difficulty in {"easy", "medium", "hard"} else ["easy", "medium", "hard"][index % 3]
+            source_quote = _excerpt(sentence if not insufficient else document_text)
             questions.append(
                 {
-                    "question": f"Which option is best supported by the notes about {topic}?",
+                    "question": f"Which statement is best supported by the notes about {topic}?",
                     "choices": choices,
                     "correct_answer": correct_letter,
-                    "explanation": f"The selected answer is grounded in this source excerpt: {_excerpt(sentence if not insufficient else document_text)}",
+                    "explanation": _choice_rationale(correct_letter, choices, source_quote),
                     "topic": topic,
                     "difficulty": question_difficulty,
+                    "source_quote": source_quote,
                 }
             )
 
@@ -218,23 +252,14 @@ class OpenAIProvider(AIProvider):
         self.fallback = FakeAIProvider()
 
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
-        prompt = (
-            "Create a source-grounded study summary as a JSON object with keys title, overview, "
-            "key_points, key_terms, source_quotes. Return only JSON. Only use facts from the notes. "
-            f"Summary type: {summary_type}.\n\nNotes:\n{document_text[:30000]}"
-        )
+        prompt = self._summary_prompt(document_text, summary_type)
         data = self._json_response(prompt)
         if isinstance(data, dict) and {"title", "overview", "key_points"}.issubset(data):
             return data
         return self.fallback.generate_summary(document_text, summary_type)
 
     def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
-        prompt = (
-            "Create source-grounded flashcards as a JSON object with key flashcards. "
-            "flashcards must be an array and each item must include front, back, topic, difficulty, source_quote. "
-            "Return only JSON. "
-            f"Count: {count}.\n\nNotes:\n{document_text[:30000]}"
-        )
+        prompt = self._flashcard_prompt(document_text, count)
         data = self._json_response(prompt)
         cards = data.get("flashcards") if isinstance(data, dict) else data
         if isinstance(cards, list):
@@ -242,12 +267,7 @@ class OpenAIProvider(AIProvider):
         return self.fallback.generate_flashcards(document_text, count)
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
-        prompt = (
-            "Create a source-grounded multiple-choice quiz as JSON with keys title and questions. "
-            "Each question must include question, choices, correct_answer, explanation, topic, difficulty. "
-            "Return only JSON. "
-            f"Question count: {question_count}. Difficulty: {difficulty}.\n\nNotes:\n{document_text[:30000]}"
-        )
+        prompt = self._quiz_prompt(document_text, question_count, difficulty)
         data = self._json_response(prompt)
         if isinstance(data, dict) and isinstance(data.get("questions"), list):
             return data
@@ -341,3 +361,52 @@ class OpenAIProvider(AIProvider):
             except json.JSONDecodeError:
                 continue
         return None
+
+    def _summary_prompt(self, document_text: str, summary_type: str) -> str:
+        guidance = {
+            "concise": "Write a compact study summary with the highest-yield ideas only.",
+            "detailed": "Write a section-aware summary that preserves relationships between concepts.",
+            "exam": "Write an exam-focused summary with likely test points, common confusions, and comparison-oriented key points.",
+        }.get(summary_type, "Write a source-grounded study summary.")
+        return (
+            "You are generating study material from uploaded course notes.\n"
+            "Return only a valid JSON object with keys: title, overview, key_points, key_terms, source_quotes.\n"
+            "Rules:\n"
+            "- Use only facts supported by the notes.\n"
+            "- Preserve section structure when available.\n"
+            "- If notes are insufficient, say that explicitly.\n"
+            "- key_terms must include definitions grounded in the notes.\n"
+            "- source_quotes must be short snippets copied from the notes.\n"
+            f"- Summary mode: {summary_type}. {guidance}\n\n"
+            f"Notes:\n{document_text[:30000]}"
+        )
+
+    def _flashcard_prompt(self, document_text: str, count: int) -> str:
+        return (
+            "You are creating source-grounded study flashcards from uploaded course notes.\n"
+            "Return only a valid JSON object with key flashcards.\n"
+            "flashcards must be an array. Each item must include front, back, topic, difficulty, source_quote.\n"
+            "Rules:\n"
+            "- Ask concept-understanding questions, not trivia.\n"
+            "- Use only facts supported by the notes.\n"
+            "- source_quote must be a short snippet from the notes.\n"
+            "- If notes are insufficient, make the card say the source is insufficient.\n"
+            f"- Create exactly {count} cards when enough source material exists.\n\n"
+            f"Notes:\n{document_text[:30000]}"
+        )
+
+    def _quiz_prompt(self, document_text: str, question_count: int, difficulty: str) -> str:
+        return (
+            "You are creating a source-grounded multiple-choice quiz from uploaded course notes.\n"
+            "Return only a valid JSON object with keys title and questions.\n"
+            "Each question must include: question, choices, correct_answer, explanation, topic, difficulty, source_quote.\n"
+            "Rules:\n"
+            "- Ask concept-understanding questions.\n"
+            "- The correct answer must be directly supported by the notes.\n"
+            "- Distractors must be plausible but clearly wrong based on the notes.\n"
+            "- explanation must include why the correct answer is right and why each distractor is wrong.\n"
+            "- topic should be a specific section or concept, never General unless the source is insufficient.\n"
+            "- If Review Focus Topics are listed, prioritize those topics.\n"
+            f"- Question count: {question_count}. Difficulty: {difficulty}.\n\n"
+            f"Notes:\n{document_text[:30000]}"
+        )

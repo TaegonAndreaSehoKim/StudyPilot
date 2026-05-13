@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_ai_provider
-from app.models import Course, Document, Quiz, QuizAttempt, QuizQuestion
-from app.schemas import CourseQuizAttemptOut, QuizAnswerResult, QuizAttemptCreate, QuizAttemptResult, QuizCreate, QuizOut, QuizQuestionOut
+from app.models import Course, Document, Quiz, QuizAttempt, QuizQuestion, WeakTopic
+from app.schemas import CourseQuizAttemptOut, QuizAnswerResult, QuizAttemptCreate, QuizAttemptResult, QuizCreate, QuizOut, QuizQuestionOut, ReviewQuizCreate
 from app.services.study_generator import StudyGenerator
 from app.services.weak_topics import update_weak_topics
 
@@ -72,11 +72,7 @@ def _course_attempt_out(attempt: QuizAttempt) -> CourseQuizAttemptOut:
     )
 
 
-@router.post("/documents/{document_id}/quizzes", response_model=QuizOut, status_code=status.HTTP_201_CREATED)
-def create_quiz(document_id: int, payload: QuizCreate, db: Session = Depends(get_db)) -> QuizOut:
-    document = _document_ready(db, document_id)
-    generator = StudyGenerator(get_ai_provider())
-    result = generator.generate_quiz(document.extracted_text, payload.question_count, payload.difficulty)
+def _save_quiz(db: Session, document_id: int, result: dict) -> QuizOut:
     quiz = Quiz(document_id=document_id, title=str(result.get("title") or "Study Quiz"))
     db.add(quiz)
     db.flush()
@@ -97,6 +93,47 @@ def create_quiz(document_id: int, payload: QuizCreate, db: Session = Depends(get
     db.commit()
     db.refresh(quiz)
     return _quiz_out(quiz)
+
+
+@router.post("/documents/{document_id}/quizzes", response_model=QuizOut, status_code=status.HTTP_201_CREATED)
+def create_quiz(document_id: int, payload: QuizCreate, db: Session = Depends(get_db)) -> QuizOut:
+    document = _document_ready(db, document_id)
+    generator = StudyGenerator(get_ai_provider())
+    result = generator.generate_quiz(document.extracted_text, payload.question_count, payload.difficulty)
+    return _save_quiz(db, document_id, result)
+
+
+@router.post("/courses/{course_id}/review-quiz", response_model=QuizOut, status_code=status.HTTP_201_CREATED)
+def create_weak_topic_review_quiz(course_id: int, payload: ReviewQuizCreate, db: Session = Depends(get_db)) -> QuizOut:
+    if db.get(Course, course_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+
+    documents = (
+        db.query(Document)
+        .filter(Document.course_id == course_id, Document.status == "extracted")
+        .order_by(Document.created_at.desc())
+        .all()
+    )
+    if not documents:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No extracted documents are available for this course")
+
+    topics = [topic.strip() for topic in (payload.topics or []) if topic.strip()]
+    if not topics:
+        weak_topics = (
+            db.query(WeakTopic)
+            .filter(WeakTopic.course_id == course_id)
+            .order_by(WeakTopic.miss_count.desc(), WeakTopic.last_missed_at.desc())
+            .limit(5)
+            .all()
+        )
+        topics = [topic.topic for topic in weak_topics]
+    if not topics:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No weak topics are available for this course yet")
+
+    combined_text = "\n\n".join(f"# {document.filename}\n\n{document.extracted_text}" for document in documents)
+    generator = StudyGenerator(get_ai_provider())
+    result = generator.generate_review_quiz(combined_text, topics[:5], payload.question_count, payload.difficulty)
+    return _save_quiz(db, documents[0].id, result)
 
 
 @router.get("/documents/{document_id}/quizzes", response_model=list[QuizOut])

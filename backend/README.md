@@ -74,6 +74,7 @@ When `OPENAI_API_KEY` is missing or `USE_FAKE_AI=true`, the backend uses `FakeAI
 - `GET /documents/{document_id}/flashcards`
 - `GET /courses/{course_id}/flashcards`
 - `POST /documents/{document_id}/quizzes`
+- `POST /courses/{course_id}/review-quiz`
 - `GET /documents/{document_id}/quizzes`
 - `GET /courses/{course_id}/quizzes`
 - `GET /quizzes/{quiz_id}`
@@ -92,4 +93,4 @@ When `OPENAI_API_KEY` is missing or `USE_FAKE_AI=true`, the backend uses `FakeAI
 
 ## Notes
 
-The OpenAI provider is source-grounded and requests structured JSON. If model output is invalid or the provider fails, generation falls back to deterministic fake output instead of crashing the API.
+The generation pipeline prepares section-aware study context before calling the AI provider. The OpenAI provider is source-grounded and requests structured JSON. If model output is invalid or the provider fails, generation falls back to deterministic fake output instead of crashing the API.

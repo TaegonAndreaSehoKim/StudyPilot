@@ -20,16 +20,18 @@ FastAPI backend
 1. A user creates a course.
 2. The user uploads course material such as `.txt`, `.md`, or text-based `.pdf`.
 3. The backend saves the file and extracts text.
-4. The user requests generated study material:
+4. The backend prepares section-aware study context from the extracted text.
+5. The user requests generated study material:
    - concise summary
    - exam-focused summary
    - flashcards
    - quiz
-5. The backend calls the configured AI provider.
-6. Generated materials are persisted in SQLite.
-7. The user takes a quiz.
-8. The backend scores the attempt and updates weak topics.
-9. Dashboard endpoints surface counts, recent activity, and weak topics.
+6. The backend calls the configured AI provider.
+7. Generated materials are persisted in SQLite.
+8. The user takes a quiz.
+9. The backend scores the attempt and updates weak topics.
+10. The user can generate weak-topic review quizzes from missed topics.
+11. Dashboard endpoints surface counts, recent activity, generated materials, schedules, and weak topics.
 
 ## Backend
 
@@ -42,6 +44,7 @@ Main responsibilities:
 - manage SQLite persistence through SQLAlchemy
 - save uploaded files
 - extract document text
+- prepare section-aware study context
 - select fake or real AI provider
 - persist generated summaries, flashcards, quizzes, and attempts
 - update weak-topic counters
@@ -103,7 +106,7 @@ OPENAI_API_KEY present and USE_FAKE_AI=false
   -> OpenAIProvider
 ```
 
-`FakeAIProvider` is part of the product, not just a test stub. It keeps local demos free and deterministic.
+`FakeAIProvider` is part of the product, not just a test stub. It keeps local demos free and deterministic. Quality eval tests assert that generated topics, explanations, source quotes, and insufficient-source behavior stay useful for demos.
 
 ## Persistence
 

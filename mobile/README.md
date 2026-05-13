@@ -73,6 +73,7 @@ npm run export:web
 - Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation
 - Course detail: tabbed overview, materials, practice, schedule, document upload, and course actions
+- Weak-topic review quiz: generate focused practice from missed quiz topics on the course Practice tab
 - Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
 - Document detail: extracted preview, full extracted text link, original file link, generation feedback, generated summary, flashcards, quizzes
 - Full text: complete extracted document text with Save / Share support

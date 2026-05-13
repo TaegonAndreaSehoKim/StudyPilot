@@ -111,6 +111,8 @@ StudyPilot/
 - [x] Select fake provider when `USE_FAKE_AI=true` or `OPENAI_API_KEY` is missing.
 - [x] Add robust JSON parsing and fallback behavior.
 - [x] Keep prompts source-grounded.
+- [x] Add section-aware document preparation before generation.
+- [x] Add lightweight AI quality eval coverage for summaries and quizzes.
 
 ### Phase 6: Study Material Generation
 
@@ -132,6 +134,7 @@ StudyPilot/
 - [x] Update weak topics for missed questions.
 - [x] Implement `POST /quizzes/{quiz_id}/attempts`.
 - [x] Implement `GET /courses/{course_id}/weak-topics`.
+- [x] Implement weak-topic review quiz generation.
 
 ### Phase 8: Dashboard API
 
@@ -232,6 +235,7 @@ StudyPilot/
 - [x] `POST /documents/{document_id}/quizzes`
 - [x] `GET /quizzes/{quiz_id}`
 - [x] `POST /quizzes/{quiz_id}/attempts`
+- [x] `POST /courses/{course_id}/review-quiz`
 
 ### Schedule
 

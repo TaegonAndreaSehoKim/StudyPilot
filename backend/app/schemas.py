@@ -140,6 +140,10 @@ class QuizCreate(BaseModel):
     difficulty: Literal["easy", "medium", "hard", "mixed"] = "mixed"
 
 
+class ReviewQuizCreate(QuizCreate):
+    topics: list[str] | None = None
+
+
 class QuizQuestionOut(BaseModel):
     id: int
     quiz_id: int

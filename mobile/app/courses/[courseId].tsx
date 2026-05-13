@@ -38,6 +38,7 @@ export default function CourseDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [generatingReviewQuiz, setGeneratingReviewQuiz] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,6 +100,21 @@ export default function CourseDetailScreen() {
     }
   }
 
+  async function generateReviewQuiz() {
+    try {
+      setGeneratingReviewQuiz(true);
+      setError(null);
+      const quiz = await api.createReviewQuiz(id, 5, 'medium');
+      setQuizzes((current) => [quiz, ...current]);
+      setActiveTab('practice');
+      router.push(`/quiz/${quiz.id}` as Href);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to generate weak-topic quiz');
+    } finally {
+      setGeneratingReviewQuiz(false);
+    }
+  }
+
   function confirmDeleteCourse() {
     Alert.alert(
       'Delete course?',
@@ -137,6 +153,12 @@ export default function CourseDetailScreen() {
         <StatusBanner
           title="Uploading document"
           message="Keep StudyPilot open while the file is copied, extracted, and saved to this course."
+        />
+      ) : null}
+      {generatingReviewQuiz ? (
+        <StatusBanner
+          title="Generating review quiz"
+          message="StudyPilot is using missed topics and course documents to create a focused practice quiz."
         />
       ) : null}
       {dashboard ? (
@@ -242,6 +264,11 @@ export default function CourseDetailScreen() {
 
           {activeTab === 'practice' ? (
             <>
+              <Button
+                title={generatingReviewQuiz ? 'Generating Review Quiz...' : 'Generate Weak Topic Quiz'}
+                disabled={generatingReviewQuiz || deleting || !dashboard.weak_topics.length || !documents.length}
+                onPress={generateReviewQuiz}
+              />
               <Section title="Saved Quizzes">
                 {quizzes.length ? (
                   <Link href={`/quizzes/course/${id}` as Href} asChild>
