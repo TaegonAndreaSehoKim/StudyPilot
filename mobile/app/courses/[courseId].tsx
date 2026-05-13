@@ -2,7 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { CourseDashboard, CourseQuizAttempt, Document, Flashcard, Quiz, ScheduleItem, Summary } from '@/api/types';
@@ -14,6 +14,15 @@ import { LoadingState } from '@/components/LoadingState';
 import { colors } from '@/constants/colors';
 import { formatDateTime, formatTimeRemaining } from '@/utils/format';
 
+type CourseTab = 'overview' | 'materials' | 'practice' | 'schedule';
+
+const COURSE_TABS: { key: CourseTab; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'materials', label: 'Materials' },
+  { key: 'practice', label: 'Practice' },
+  { key: 'schedule', label: 'Schedule' },
+];
+
 export default function CourseDetailScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
   const id = Number(courseId);
@@ -24,6 +33,7 @@ export default function CourseDetailScreen() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [attempts, setAttempts] = useState<CourseQuizAttempt[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+  const [activeTab, setActiveTab] = useState<CourseTab>('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -127,121 +137,164 @@ export default function CourseDetailScreen() {
             <Text style={styles.title}>{dashboard.course.title}</Text>
             {dashboard.course.description ? <Text style={styles.subtitle}>{dashboard.course.description}</Text> : null}
           </View>
+
           <View style={styles.metrics}>
             <Text style={styles.metric}>{dashboard.document_count} docs</Text>
             <Text style={styles.metric}>{dashboard.summary_count} summaries</Text>
             <Text style={styles.metric}>{dashboard.quiz_count} quizzes</Text>
           </View>
+
           <View style={styles.actions}>
             <Button title={uploading ? 'Uploading...' : 'Upload Document'} disabled={uploading || deleting} onPress={upload} />
-            <Button title="Manage Schedule" disabled={uploading || deleting} variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
             <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
           </View>
 
-          <Section title="Upcoming Schedule">
-            {schedule.length ? (
-              schedule.slice(0, 3).map((item) => (
-                <Link key={item.id} href={`/schedule/course/${id}` as Href} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemMeta}>
-                      {item.event_type} - {formatTimeRemaining(item.due_at, item.is_completed)}
-                    </Text>
-                    <Text style={styles.itemMeta}>{formatDateTime(item.due_at)}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No schedule items" message="Add assignment deadlines, exams, and course milestones." />
-            )}
-          </Section>
+          <View style={styles.tabs}>
+            {COURSE_TABS.map((tab) => (
+              <Pressable
+                key={tab.key}
+                accessibilityRole="button"
+                onPress={() => setActiveTab(tab.key)}
+                style={[styles.tab, activeTab === tab.key && styles.activeTab]}
+              >
+                <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>{tab.label}</Text>
+              </Pressable>
+            ))}
+          </View>
 
-          <Section title="Documents">
-            {documents.length ? (
-              documents.map((document) => (
-                <Link key={document.id} href={`/documents/${document.id}`} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{document.filename}</Text>
-                    <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No documents" message="Upload .txt, .md, or text-based .pdf notes." />
-            )}
-          </Section>
+          {activeTab === 'overview' ? (
+            <>
+              <Section title="Upcoming Schedule">
+                <ScheduleCards courseId={id} schedule={schedule.slice(0, 3)} />
+              </Section>
 
-          <Section title="Saved Summaries">
-            {summaries.length ? (
-              summaries.map((summary) => (
-                <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{summary.title}</Text>
-                    <Text style={styles.itemMeta}>
-                      {summary.summary_type} summary - document #{summary.document_id}
-                    </Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
-            )}
-          </Section>
+              <Section title="Weak Topics">
+                {dashboard.weak_topics.length ? (
+                  dashboard.weak_topics.map((topic) => (
+                    <Card key={topic.id}>
+                      <Text style={styles.itemTitle}>{topic.topic}</Text>
+                      <Text style={styles.itemMeta}>Missed {topic.miss_count} times</Text>
+                    </Card>
+                  ))
+                ) : (
+                  <EmptyState title="No weak topics" message="Quiz misses for this course will appear here." />
+                )}
+              </Section>
+            </>
+          ) : null}
 
-          <Section title="Saved Flashcards">
-            {flashcards.length ? (
-              <Link href={`/flashcards/course/${id}` as Href} asChild>
-                <Card>
-                  <Text style={styles.itemTitle}>Review Course Flashcards</Text>
-                  <Text style={styles.itemMeta}>{flashcards.length} cards saved across this course</Text>
-                </Card>
-              </Link>
-            ) : (
-              <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
-            )}
-          </Section>
+          {activeTab === 'materials' ? (
+            <>
+              <Section title="Documents">
+                {documents.length ? (
+                  documents.map((document) => (
+                    <Link key={document.id} href={`/documents/${document.id}`} asChild>
+                      <Card>
+                        <Text style={styles.itemTitle}>{document.filename}</Text>
+                        <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
+                      </Card>
+                    </Link>
+                  ))
+                ) : (
+                  <EmptyState title="No documents" message="Upload .txt, .md, or text-based .pdf notes." />
+                )}
+              </Section>
 
-          <Section title="Saved Quizzes">
-            {quizzes.length ? (
-              <Link href={`/quizzes/course/${id}` as Href} asChild>
-                <Card>
-                  <Text style={styles.itemTitle}>Review Course Quizzes</Text>
-                  <Text style={styles.itemMeta}>{quizzes.length} quizzes saved across this course</Text>
-                </Card>
-              </Link>
-            ) : (
-              <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
-            )}
-          </Section>
+              <Section title="Saved Summaries">
+                {summaries.length ? (
+                  summaries.map((summary) => (
+                    <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
+                      <Card>
+                        <Text style={styles.itemTitle}>{summary.title}</Text>
+                        <Text style={styles.itemMeta}>
+                          {summary.summary_type} summary - document #{summary.document_id}
+                        </Text>
+                      </Card>
+                    </Link>
+                  ))
+                ) : (
+                  <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
+                )}
+              </Section>
 
-          <Section title="Quiz Attempts">
-            {attempts.length ? (
-              <Link href={`/attempts/course/${id}` as Href} asChild>
-                <Card>
-                  <Text style={styles.itemTitle}>Review Attempt History</Text>
-                  <Text style={styles.itemMeta}>{attempts.length} attempts recorded for this course</Text>
-                </Card>
-              </Link>
-            ) : (
-              <EmptyState title="No attempts" message="Submit a quiz attempt and your scores will appear here." />
-            )}
-          </Section>
+              <Section title="Saved Flashcards">
+                {flashcards.length ? (
+                  <Link href={`/flashcards/course/${id}` as Href} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>Review Course Flashcards</Text>
+                      <Text style={styles.itemMeta}>{flashcards.length} cards saved across this course</Text>
+                    </Card>
+                  </Link>
+                ) : (
+                  <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
+                )}
+              </Section>
+            </>
+          ) : null}
 
-          <Section title="Weak Topics">
-            {dashboard.weak_topics.length ? (
-              dashboard.weak_topics.map((topic) => (
-                <Card key={topic.id}>
-                  <Text style={styles.itemTitle}>{topic.topic}</Text>
-                  <Text style={styles.itemMeta}>Missed {topic.miss_count} times</Text>
-                </Card>
-              ))
-            ) : (
-              <EmptyState title="No weak topics" message="Quiz misses for this course will appear here." />
-            )}
-          </Section>
+          {activeTab === 'practice' ? (
+            <>
+              <Section title="Saved Quizzes">
+                {quizzes.length ? (
+                  <Link href={`/quizzes/course/${id}` as Href} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>Review Course Quizzes</Text>
+                      <Text style={styles.itemMeta}>{quizzes.length} quizzes saved across this course</Text>
+                    </Card>
+                  </Link>
+                ) : (
+                  <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
+                )}
+              </Section>
+
+              <Section title="Quiz Attempts">
+                {attempts.length ? (
+                  <Link href={`/attempts/course/${id}` as Href} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>Review Attempt History</Text>
+                      <Text style={styles.itemMeta}>{attempts.length} attempts recorded for this course</Text>
+                    </Card>
+                  </Link>
+                ) : (
+                  <EmptyState title="No attempts" message="Submit a quiz attempt and your scores will appear here." />
+                )}
+              </Section>
+            </>
+          ) : null}
+
+          {activeTab === 'schedule' ? (
+            <>
+              <Button title="Manage Schedule" variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
+              <Section title="Active Schedule">
+                <ScheduleCards courseId={id} schedule={schedule} />
+              </Section>
+            </>
+          ) : null}
         </>
       ) : null}
     </ScrollView>
+  );
+}
+
+function ScheduleCards({ courseId, schedule }: { courseId: number; schedule: ScheduleItem[] }) {
+  if (!schedule.length) {
+    return <EmptyState title="No schedule items" message="Add assignment deadlines, exams, and course milestones." />;
+  }
+
+  return (
+    <>
+      {schedule.map((item) => (
+        <Link key={item.id} href={`/schedule/course/${courseId}` as Href} asChild>
+          <Card>
+            <Text style={styles.itemTitle}>{item.title}</Text>
+            <Text style={styles.itemMeta}>
+              {item.event_type} - {formatTimeRemaining(item.due_at, item.is_completed)}
+            </Text>
+            <Text style={styles.itemMeta}>{formatDateTime(item.due_at)}</Text>
+          </Card>
+        </Link>
+      ))}
+    </>
   );
 }
 
@@ -286,6 +339,33 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     paddingHorizontal: 10,
     paddingVertical: 7,
+  },
+  tabs: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    padding: 4,
+  },
+  tab: {
+    alignItems: 'center',
+    borderRadius: 6,
+    flex: 1,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  activeTab: {
+    backgroundColor: colors.surface,
+  },
+  tabText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  activeTabText: {
+    color: colors.text,
   },
   section: {
     gap: 10,
