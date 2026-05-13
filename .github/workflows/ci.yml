@@ -61,4 +61,4 @@ jobs:
         run: npm run typecheck
 
       - name: Export web bundle
-        run: npx expo export --platform web --output-dir .expo-export-smoke
+        run: npm run export:web

@@ -1,4 +1,4 @@
-# StudyPilot — AI-Powered Mobile Study Assistant
+# StudyPilot - AI-Powered Mobile Study Assistant
 
 StudyPilot is a local-first mobile study assistant that turns course materials into summaries, flashcards, quizzes, and weak-topic reviews.
 
@@ -15,7 +15,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `34 passed`; mobile TypeScript check passes
+- **Quality checkpoint:** backend pytest suite currently passes at `38 passed`; mobile TypeScript and Expo export checks pass
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -44,7 +44,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `34 passed`
+- `python -m pytest -q` from `backend/` -> `38 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -365,7 +365,7 @@ python -m pytest -q
 Current status:
 
 ```text
-34 passed
+38 passed
 ```
 
 The backend tests use:
@@ -382,6 +382,13 @@ cd mobile
 npm run typecheck
 ```
 
+Run all mobile local checks:
+
+```bash
+cd mobile
+npm run check
+```
+
 Check Expo config loading:
 
 ```bash
@@ -393,7 +400,7 @@ Run the Expo web bundle smoke:
 
 ```bash
 cd mobile
-npx expo export --platform web --output-dir .expo-export-smoke
+npm run export:web
 ```
 
 Run the backend demo smoke flow against a running backend:

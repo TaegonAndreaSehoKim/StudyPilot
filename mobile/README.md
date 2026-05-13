@@ -49,10 +49,22 @@ uvicorn app.main:app --host 0.0.0.0 --reload
 npm run typecheck
 ```
 
+Run all mobile checks:
+
+```bash
+npm run check
+```
+
 Check Expo SDK dependency compatibility:
 
 ```bash
 npx expo install --check
+```
+
+Run the Expo web export smoke:
+
+```bash
+npm run export:web
 ```
 
 ## Main Screens
