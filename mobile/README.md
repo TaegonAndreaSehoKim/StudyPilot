@@ -66,6 +66,7 @@ npx expo install --check
 - Flashcards: course-level saved card review with Save / Share support
 - Quizzes: course-level saved quiz list with links back into quiz taking
 - Quiz: answer questions, submit attempt, view explanations
+- Attempts: course-level quiz score history and missed-topic review
 - Settings: API base URL and health check
 
 ## Troubleshooting

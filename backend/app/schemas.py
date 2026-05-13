@@ -153,6 +153,18 @@ class QuizAttemptResult(BaseModel):
     created_at: datetime
 
 
+class CourseQuizAttemptOut(BaseModel):
+    id: int
+    quiz_id: int
+    quiz_title: str
+    document_id: int
+    score: float
+    total_questions: int
+    correct_count: int
+    missed_topics: list[str]
+    created_at: datetime
+
+
 class WeakTopicOut(BaseModel):
     id: int
     course_id: int

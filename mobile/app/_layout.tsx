@@ -25,6 +25,7 @@ export default function RootLayout() {
         <Stack.Screen name="summaries/[summaryId]" options={{ title: 'Summary' }} />
         <Stack.Screen name="flashcards/course/[courseId]" options={{ title: 'Flashcards' }} />
         <Stack.Screen name="quizzes/course/[courseId]" options={{ title: 'Quizzes' }} />
+        <Stack.Screen name="attempts/course/[courseId]" options={{ title: 'Attempts' }} />
         <Stack.Screen name="quiz/[quizId]" options={{ title: 'Quiz' }} />
       </Stack>
     </>

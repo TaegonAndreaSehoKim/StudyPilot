@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { CourseDashboard, Document, Flashcard, Quiz, Summary } from '@/api/types';
+import type { CourseDashboard, CourseQuizAttempt, Document, Flashcard, Quiz, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -21,6 +21,7 @@ export default function CourseDetailScreen() {
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [attempts, setAttempts] = useState<CourseQuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -30,18 +31,20 @@ export default function CourseDetailScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [courseDashboard, docs, summaryList, cardList, quizList] = await Promise.all([
+      const [courseDashboard, docs, summaryList, cardList, quizList, attemptList] = await Promise.all([
         api.courseDashboard(id),
         api.courseDocuments(id),
         api.courseSummaries(id),
         api.courseFlashcards(id),
         api.courseQuizzes(id),
+        api.courseAttempts(id),
       ]);
       setDashboard(courseDashboard);
       setDocuments(docs);
       setSummaries(summaryList);
       setFlashcards(cardList);
       setQuizzes(quizList);
+      setAttempts(attemptList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load course');
     } finally {
@@ -185,6 +188,19 @@ export default function CourseDetailScreen() {
               </Link>
             ) : (
               <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
+            )}
+          </Section>
+
+          <Section title="Quiz Attempts">
+            {attempts.length ? (
+              <Link href={`/attempts/course/${id}` as Href} asChild>
+                <Card>
+                  <Text style={styles.itemTitle}>Review Attempt History</Text>
+                  <Text style={styles.itemMeta}>{attempts.length} attempts recorded for this course</Text>
+                </Card>
+              </Link>
+            ) : (
+              <EmptyState title="No attempts" message="Submit a quiz attempt and your scores will appear here." />
             )}
           </Section>
 

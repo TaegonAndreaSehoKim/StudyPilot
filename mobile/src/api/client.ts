@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   Course,
   CourseDashboard,
+  CourseQuizAttempt,
   Dashboard,
   Document,
   DocumentDetail,
@@ -86,6 +87,8 @@ export const api = {
   documentQuizzes: (documentId: number) => request<Quiz[]>(`/documents/${documentId}/quizzes`),
   courseQuizzes: (courseId: number) => request<Quiz[]>(`/courses/${courseId}/quizzes`),
   quiz: (quizId: number) => request<Quiz>(`/quizzes/${quizId}`),
+  quizAttempts: (quizId: number) => request<QuizAttemptResult[]>(`/quizzes/${quizId}/attempts`),
+  courseAttempts: (courseId: number) => request<CourseQuizAttempt[]>(`/courses/${courseId}/attempts`),
   submitQuiz: (quizId: number, answers: { question_id: number; selected_answer: string }[]) =>
     request<QuizAttemptResult>(`/quizzes/${quizId}/attempts`, {
       method: 'POST',

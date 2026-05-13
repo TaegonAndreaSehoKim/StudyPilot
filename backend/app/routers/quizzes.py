@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_ai_provider
 from app.models import Course, Document, Quiz, QuizAttempt, QuizQuestion
-from app.schemas import QuizAttemptCreate, QuizAttemptResult, QuizCreate, QuizOut, QuizQuestionOut
+from app.schemas import CourseQuizAttemptOut, QuizAnswerResult, QuizAttemptCreate, QuizAttemptResult, QuizCreate, QuizOut, QuizQuestionOut
 from app.services.study_generator import StudyGenerator
 from app.services.weak_topics import update_weak_topics
 
@@ -42,6 +42,33 @@ def _quiz_out(quiz: Quiz) -> QuizOut:
         title=quiz.title,
         created_at=quiz.created_at,
         questions=questions,
+    )
+
+
+def _attempt_out(attempt: QuizAttempt) -> QuizAttemptResult:
+    return QuizAttemptResult(
+        id=attempt.id,
+        quiz_id=attempt.quiz_id,
+        score=attempt.score,
+        total_questions=attempt.total_questions,
+        correct_count=attempt.correct_count,
+        missed_topics=json.loads(attempt.missed_topics_json),
+        answers=[QuizAnswerResult(**answer) for answer in json.loads(attempt.answers_json)],
+        created_at=attempt.created_at,
+    )
+
+
+def _course_attempt_out(attempt: QuizAttempt) -> CourseQuizAttemptOut:
+    return CourseQuizAttemptOut(
+        id=attempt.id,
+        quiz_id=attempt.quiz_id,
+        quiz_title=attempt.quiz.title,
+        document_id=attempt.quiz.document_id,
+        score=attempt.score,
+        total_questions=attempt.total_questions,
+        correct_count=attempt.correct_count,
+        missed_topics=json.loads(attempt.missed_topics_json),
+        created_at=attempt.created_at,
     )
 
 
@@ -102,6 +129,29 @@ def get_quiz(quiz_id: int, db: Session = Depends(get_db)) -> QuizOut:
     return _quiz_out(quiz)
 
 
+@router.get("/quizzes/{quiz_id}/attempts", response_model=list[QuizAttemptResult])
+def list_quiz_attempts(quiz_id: int, db: Session = Depends(get_db)) -> list[QuizAttemptResult]:
+    if db.get(Quiz, quiz_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+    attempts = db.query(QuizAttempt).filter(QuizAttempt.quiz_id == quiz_id).order_by(QuizAttempt.created_at.desc()).all()
+    return [_attempt_out(attempt) for attempt in attempts]
+
+
+@router.get("/courses/{course_id}/attempts", response_model=list[CourseQuizAttemptOut])
+def list_course_attempts(course_id: int, db: Session = Depends(get_db)) -> list[CourseQuizAttemptOut]:
+    if db.get(Course, course_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    attempts = (
+        db.query(QuizAttempt)
+        .join(Quiz, QuizAttempt.quiz_id == Quiz.id)
+        .join(Document, Quiz.document_id == Document.id)
+        .filter(Document.course_id == course_id)
+        .order_by(QuizAttempt.created_at.desc())
+        .all()
+    )
+    return [_course_attempt_out(attempt) for attempt in attempts]
+
+
 @router.post("/quizzes/{quiz_id}/attempts", response_model=QuizAttemptResult, status_code=status.HTTP_201_CREATED)
 def submit_attempt(quiz_id: int, payload: QuizAttemptCreate, db: Session = Depends(get_db)) -> QuizAttemptResult:
     quiz = db.get(Quiz, quiz_id)
@@ -150,13 +200,4 @@ def submit_attempt(quiz_id: int, payload: QuizAttemptCreate, db: Session = Depen
     db.commit()
     db.refresh(attempt)
 
-    return QuizAttemptResult(
-        id=attempt.id,
-        quiz_id=quiz.id,
-        score=attempt.score,
-        total_questions=attempt.total_questions,
-        correct_count=attempt.correct_count,
-        missed_topics=missed_topics,
-        answers=results,
-        created_at=attempt.created_at,
-    )
+    return _attempt_out(attempt)

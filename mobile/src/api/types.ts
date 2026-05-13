@@ -99,6 +99,18 @@ export interface QuizAttemptResult {
   created_at: string;
 }
 
+export interface CourseQuizAttempt {
+  id: number;
+  quiz_id: number;
+  quiz_title: string;
+  document_id: number;
+  score: number;
+  total_questions: number;
+  correct_count: number;
+  missed_topics: string[];
+  created_at: string;
+}
+
 export interface WeakTopic {
   id: number;
   course_id: number;
