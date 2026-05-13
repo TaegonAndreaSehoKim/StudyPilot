@@ -75,6 +75,7 @@ When `OPENAI_API_KEY` is missing or `USE_FAKE_AI=true`, the backend uses `FakeAI
 - `GET /courses/{course_id}/flashcards`
 - `POST /documents/{document_id}/quizzes`
 - `GET /documents/{document_id}/quizzes`
+- `GET /courses/{course_id}/quizzes`
 - `GET /quizzes/{quiz_id}`
 - `POST /quizzes/{quiz_id}/attempts`
 - `GET /courses/{course_id}/weak-topics`

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_ai_provider
-from app.models import Document, Quiz, QuizAttempt, QuizQuestion
+from app.models import Course, Document, Quiz, QuizAttempt, QuizQuestion
 from app.schemas import QuizAttemptCreate, QuizAttemptResult, QuizCreate, QuizOut, QuizQuestionOut
 from app.services.study_generator import StudyGenerator
 from app.services.weak_topics import update_weak_topics
@@ -77,6 +77,20 @@ def list_document_quizzes(document_id: int, db: Session = Depends(get_db)) -> li
     if db.get(Document, document_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     quizzes = db.query(Quiz).filter(Quiz.document_id == document_id).order_by(Quiz.created_at.desc()).all()
+    return [_quiz_out(quiz) for quiz in quizzes]
+
+
+@router.get("/courses/{course_id}/quizzes", response_model=list[QuizOut])
+def list_course_quizzes(course_id: int, db: Session = Depends(get_db)) -> list[QuizOut]:
+    if db.get(Course, course_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    quizzes = (
+        db.query(Quiz)
+        .join(Document, Quiz.document_id == Document.id)
+        .filter(Document.course_id == course_id)
+        .order_by(Quiz.created_at.desc())
+        .all()
+    )
     return [_quiz_out(quiz) for quiz in quizzes]
 
 

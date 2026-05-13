@@ -15,7 +15,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `27 passed`; mobile TypeScript check passes
+- **Quality checkpoint:** backend pytest suite currently passes at `29 passed`; mobile TypeScript check passes
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -32,6 +32,7 @@ StudyPilot currently supports:
 - fake-AI flashcard generation
 - saved course flashcard review with share/export support
 - fake-AI quiz generation
+- saved course quiz review
 - quiz taking and scoring
 - weak-topic tracking from missed questions
 - global dashboard with counts, recent courses, recent documents, and weak topics
@@ -40,7 +41,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `27 passed`
+- `python -m pytest -q` from `backend/` -> `29 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -245,6 +246,7 @@ Main endpoints:
 - `GET /courses/{course_id}/flashcards`
 - `POST /documents/{document_id}/quizzes`
 - `GET /documents/{document_id}/quizzes`
+- `GET /courses/{course_id}/quizzes`
 - `GET /quizzes/{quiz_id}`
 - `POST /quizzes/{quiz_id}/attempts`
 - `GET /courses/{course_id}/weak-topics`
@@ -352,7 +354,7 @@ python -m pytest -q
 Current status:
 
 ```text
-27 passed
+29 passed
 ```
 
 The backend tests use:

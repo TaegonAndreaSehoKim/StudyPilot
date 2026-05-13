@@ -64,6 +64,7 @@ npx expo install --check
 - Full text: complete extracted document text with Save / Share support
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support
+- Quizzes: course-level saved quiz list with links back into quiz taking
 - Quiz: answer questions, submit attempt, view explanations
 - Settings: API base URL and health check
 

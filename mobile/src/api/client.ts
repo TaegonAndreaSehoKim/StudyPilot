@@ -84,6 +84,7 @@ export const api = {
       body: JSON.stringify({ question_count, difficulty }),
     }),
   documentQuizzes: (documentId: number) => request<Quiz[]>(`/documents/${documentId}/quizzes`),
+  courseQuizzes: (courseId: number) => request<Quiz[]>(`/courses/${courseId}/quizzes`),
   quiz: (quizId: number) => request<Quiz>(`/quizzes/${quizId}`),
   submitQuiz: (quizId: number, answers: { question_id: number; selected_answer: string }[]) =>
     request<QuizAttemptResult>(`/quizzes/${quizId}/attempts`, {
