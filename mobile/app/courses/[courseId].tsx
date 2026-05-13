@@ -11,6 +11,7 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { StatusBanner } from '@/components/StatusBanner';
 import { colors } from '@/constants/colors';
 import { formatDateTime, formatTimeRemaining } from '@/utils/format';
 
@@ -89,6 +90,7 @@ export default function CourseDetailScreen() {
         mimeType: asset.mimeType,
       });
       await load();
+      setActiveTab('materials');
       router.push(`/documents/${document.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to upload document');
@@ -131,6 +133,12 @@ export default function CourseDetailScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
+      {uploading ? (
+        <StatusBanner
+          title="Uploading document"
+          message="Keep StudyPilot open while the file is copied, extracted, and saved to this course."
+        />
+      ) : null}
       {dashboard ? (
         <>
           <View style={styles.header}>

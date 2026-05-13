@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { FlashcardList } from '@/components/FlashcardList';
 import { LoadingState } from '@/components/LoadingState';
+import { StatusBanner } from '@/components/StatusBanner';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
 
@@ -26,6 +27,7 @@ export default function DocumentDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -56,8 +58,13 @@ export default function DocumentDetailScreen() {
     try {
       setWorking(summaryType);
       setError(null);
+      setNotice(null);
       const summary = await api.createSummary(id, summaryType);
       setSummaries((current) => [summary, ...current]);
+      setNotice({
+        title: 'Summary saved',
+        message: `${summary.title} is saved. Open it from Latest Summary here or from the course Materials tab later.`,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate summary');
     } finally {
@@ -69,7 +76,13 @@ export default function DocumentDetailScreen() {
     try {
       setWorking('flashcards');
       setError(null);
-      setFlashcards(await api.createFlashcards(id, 10));
+      setNotice(null);
+      const generatedFlashcards = await api.createFlashcards(id, 10);
+      setFlashcards(generatedFlashcards);
+      setNotice({
+        title: 'Flashcards saved',
+        message: `${generatedFlashcards.length} flashcards are saved. Review them here or from the course Materials tab.`,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate flashcards');
     } finally {
@@ -81,6 +94,7 @@ export default function DocumentDetailScreen() {
     try {
       setWorking('quiz');
       setError(null);
+      setNotice(null);
       const quiz = await api.createQuiz(id, 5, 'mixed');
       setQuizzes((current) => [quiz, ...current]);
       router.push(`/quiz/${quiz.id}`);
@@ -141,6 +155,13 @@ export default function DocumentDetailScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
+      {working ? (
+        <StatusBanner
+          title="Generating study material"
+          message="StudyPilot is using the extracted document text. The saved result will appear on this screen when generation finishes."
+        />
+      ) : null}
+      {notice ? <StatusBanner title={notice.title} message={notice.message} variant="success" /> : null}
       {document ? (
         <>
           <View style={styles.header}>
