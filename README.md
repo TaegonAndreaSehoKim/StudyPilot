@@ -336,6 +336,8 @@ POST /quizzes/1/attempts
 
 ## Demo Flow
 
+For a detailed Expo Go checklist, see [`docs/demo/mobile_walkthrough.md`](docs/demo/mobile_walkthrough.md).
+
 1. Start the backend.
 2. Start the mobile app.
 3. Open Settings and test the backend connection.

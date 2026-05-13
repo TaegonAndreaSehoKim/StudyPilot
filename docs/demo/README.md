@@ -13,3 +13,5 @@ Suggested demo flow:
 7. Confirm weak topics appear on the dashboard.
 
 The sample notes are intentionally short so fake-AI generation remains quick and predictable.
+
+For a full Expo Go checklist, see [mobile_walkthrough.md](mobile_walkthrough.md).
