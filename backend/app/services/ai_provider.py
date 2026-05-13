@@ -223,10 +223,30 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
         return "The uploaded notes contain limited extractable study context."
     topic_text = ", ".join(names[:-1]) + (f", and {names[-1]}" if len(names) > 1 else names[0])
     if summary_type == "exam":
-        return f"These notes are organized around {topic_text}. For exam review, focus on how each section defines a concept, what problem it solves, and how it differs from nearby ideas."
+        return f"These notes are organized around {topic_text}. For exam review, focus on likely test points, comparisons with similar concepts, and memorization anchors."
     if summary_type == "detailed":
-        return f"These notes cover {topic_text}. The material builds context by separating the major concepts into sections and giving source-backed details for each one."
-    return f"These notes focus on {topic_text}. The main study task is to connect each section title to the specific source claims that support it."
+        return f"These notes cover {topic_text}. This detailed summary emphasizes the general principles and conceptual roles of each topic rather than examples."
+    return f"These notes focus on {topic_text}. The concise summary follows the broad flow of the material and highlights the central concepts."
+
+
+def _concise_point(section: SourceSection) -> str:
+    return f"핵심개념 - {section.title}: {_section_summary(section, 1)}"
+
+
+def _detailed_point(section: SourceSection) -> str:
+    return f"개괄설명 - {section.title}: {_section_summary(section, 2)}"
+
+
+def _exam_points(sections: list[SourceSection]) -> list[str]:
+    points: list[str] = []
+    for index, section in enumerate(sections[:4]):
+        detail = _section_summary(section, 2)
+        points.append(f"출제 포인트 - {section.title}: {detail}")
+        if len(sections) > 1:
+            other = sections[(index + 1) % len(sections)]
+            points.append(f"유사개념 비교 - {section.title} vs {other.title}: distinguish the source claim about {section.title} from the source claim about {other.title}.")
+        points.append(f"암기 포인트 - {section.title}: remember the terms and relationships stated in this section rather than unsupported examples.")
+    return points
 
 
 def _distractors(topic: str, topics: list[str], sentence: str) -> list[str]:
@@ -290,13 +310,12 @@ class FakeAIProvider(AIProvider):
                 "source_quotes": [{"quote": excerpt, "reason": "Only available source excerpt."}],
             }
 
-        key_points = []
-        for section in sections[:8]:
-            detail = _section_summary(section, 2 if summary_type in {"detailed", "exam"} else 1)
-            if summary_type == "exam":
-                key_points.append(f"{section.title}: know the definition, purpose, and contrast implied by this source detail: {detail}")
-            else:
-                key_points.append(f"{section.title}: {detail}")
+        if summary_type == "exam":
+            key_points = _exam_points(sections)
+        elif summary_type == "detailed":
+            key_points = [_detailed_point(section) for section in sections[:8]]
+        else:
+            key_points = [_concise_point(section) for section in sections[:8]]
         if not key_points:
             key_points = sentences[:6] or ["The source material is limited; review the original document for more detail."]
 
@@ -505,9 +524,18 @@ class OpenAIProvider(AIProvider):
 
     def _summary_prompt(self, document_text: str, summary_type: str) -> str:
         guidance = {
-            "concise": "Write a compact study summary with the highest-yield ideas only.",
-            "detailed": "Write a section-aware summary that preserves relationships between concepts.",
-            "exam": "Write an exam-focused summary with likely test points, common confusions, and comparison-oriented key points.",
+            "concise": (
+                "Focus on core concepts and the broad flow of the material. "
+                "Do not over-explain details; show how the major ideas connect."
+            ),
+            "detailed": (
+                "Give a general conceptual explanation of the ideas covered in the source. "
+                "Prioritize principles, definitions, mechanisms, and relationships over examples."
+            ),
+            "exam": (
+                "Organize the output around likely test points, comparisons with similar concepts, "
+                "and memorization anchors. Make exam-facing distinctions explicit."
+            ),
         }.get(summary_type, "Write a source-grounded study summary.")
         return (
             "You are generating study material from uploaded course notes.\n"
@@ -518,6 +546,9 @@ class OpenAIProvider(AIProvider):
             "- If notes are insufficient, say that explicitly.\n"
             "- key_terms must include definitions grounded in the notes.\n"
             "- source_quotes must be short snippets copied from the notes.\n"
+            "- For concise summaries, emphasize core concepts and the big-picture flow.\n"
+            "- For detailed summaries, explain the concepts at a general theoretical level and avoid centering the output on examples.\n"
+            "- For exam summaries, include key_points labeled or phrased as test points, similar-concept comparisons, and memorization points.\n"
             f"- Summary mode: {summary_type}. {guidance}\n\n"
             f"Notes:\n{document_text[:30000]}"
         )

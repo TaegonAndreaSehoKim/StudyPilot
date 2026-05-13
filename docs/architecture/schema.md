@@ -66,9 +66,9 @@ Fields:
 
 Summary types:
 
-- `concise`
-- `detailed`
-- `exam`
+- `concise`: core concepts and broad content flow
+- `detailed`: general conceptual explanation, principles, and relationships over examples
+- `exam`: likely test points, similar-concept comparisons, and memorization anchors
 
 API responses deserialize JSON fields into:
 
