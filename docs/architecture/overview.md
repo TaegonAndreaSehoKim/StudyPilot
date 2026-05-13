@@ -136,6 +136,7 @@ Current backend coverage checks:
 - health
 - course CRUD
 - document upload
+- text-based PDF upload extraction
 - summary generation
 - flashcard generation
 - quiz generation and attempts

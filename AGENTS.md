@@ -15,6 +15,7 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - local uploaded-document storage
 - course creation and listing
 - document upload for `.txt`, `.md`, and text-based `.pdf`
+- text-based PDF upload regression coverage
 - backend-only AI provider abstraction
 - deterministic `FakeAIProvider` fallback when `OPENAI_API_KEY` is absent
 - summary, flashcard, and quiz generation endpoints
@@ -36,6 +37,7 @@ What is stable:
 - health endpoint
 - course CRUD
 - document upload and text extraction for supported files
+- text-based PDF extraction regression coverage
 - fake AI generation path
 - summary, flashcard, quiz, attempt, weak-topic, and dashboard API flows
 - backend tests using temporary SQLite and temporary storage
@@ -116,12 +118,10 @@ When choosing what to improve next, bias toward these:
 
 - run a full manual Expo demo flow against the local backend
 - improve mobile layout after device or simulator inspection
-- add a small sample notes file for demo use
 - add mobile-level smoke testing or lightweight component checks
 - improve OpenAI structured-output resilience
 - refine fake AI output quality without making it nondeterministic
 - add screenshots or a short demo walkthrough
-- expand PDF tests when a reliable text-based fixture is added
 
 Lower priority for now:
 
@@ -226,11 +226,9 @@ For most tasks:
 Reasonable next milestones:
 
 - run and polish the full Expo manual demo
-- add sample course notes for repeatable demos
 - improve mobile UI density and interaction feedback
 - add frontend/mobile tests
 - strengthen OpenAI JSON validation and retry/fallback behavior
-- add a text-based PDF fixture test
 - prepare demo screenshots and a walkthrough
 - plan cloud deployment only after the local MVP flow is stable
 

@@ -15,7 +15,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `11 passed`; mobile TypeScript check passes
+- **Quality checkpoint:** backend pytest suite currently passes at `12 passed`; mobile TypeScript check passes
 
 ## Current Status
 
@@ -36,7 +36,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `11 passed`
+- `python -m pytest -q` from `backend/` -> `12 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo config --type public` from `mobile/` -> passed
 - backend `/health` smoke check returned `{"status":"ok","app":"StudyPilot"}`
@@ -321,7 +321,7 @@ POST /quizzes/1/attempts
 3. Open Settings and test the backend connection.
 4. Create a course such as `OMSCS AI`.
 5. Open the course.
-6. Upload a `.txt`, `.md`, or text-based `.pdf` file.
+6. Upload a `.txt`, `.md`, or text-based `.pdf` file. For a repeatable demo, use `docs/demo/omscs_ai_sample_notes.md`.
 7. Open the uploaded document.
 8. Generate a concise summary.
 9. Generate flashcards.
@@ -343,7 +343,7 @@ python -m pytest -q
 Current status:
 
 ```text
-11 passed
+12 passed
 ```
 
 The backend tests use:

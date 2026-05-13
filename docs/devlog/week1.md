@@ -288,8 +288,67 @@ StudyPilot became a working local MVP foundation with backend tests, mobile Type
 ### Remaining next steps
 - Run `npx expo start` and complete a real device/simulator smoke test.
 - Capture any mobile layout issues from screenshots.
-- Add a small sample notes file for repeatable demos.
 - Improve mobile empty/error states after manual testing.
 - Add mobile test coverage.
 - Improve OpenAI structured-output parsing and validation.
-- Add a text-based PDF fixture test.
+
+---
+
+## Day 8 - Demo Materials and PDF Upload Coverage
+
+### Focus
+Close a small MVP acceptance gap and make manual demos more repeatable.
+
+### What was done
+- Added `docs/demo/omscs_ai_sample_notes.md` as a short repeatable OMSCS AI demo document.
+- Added `docs/demo/README.md` with a suggested demo flow.
+- Added backend test coverage for uploading a text-based `.pdf` file.
+- Generated the test PDF bytes inside the test so the repository does not need an external binary fixture.
+- Updated README demo flow to point to the sample notes file.
+
+### Validation
+
+```text
+python -m pytest tests/test_document_upload.py -q -> 5 passed
+python -m pytest -q -> 12 passed
+npm run typecheck -> passed
+npx expo config --type public -> passed
+```
+
+### Result
+The backend now has direct regression coverage for `.txt`, `.md`, and text-based `.pdf` uploads.
+The project also has a small sample note file that can be used for consistent mobile demos.
+
+---
+
+## Week 1 Updated Snapshot
+
+### Current project state
+- Backend starts successfully.
+- Backend test suite passes at **12 passed**.
+- Mobile TypeScript check passes.
+- Expo config loads successfully.
+- GitHub remote is connected and current.
+- Demo materials exist under `docs/demo/`.
+- The app supports:
+  - course creation
+  - document upload for `.txt`, `.md`, and text-based `.pdf`
+  - text extraction
+  - fake-AI summary generation
+  - fake-AI flashcard generation
+  - fake-AI quiz generation
+  - quiz attempts
+  - weak-topic tracking
+  - dashboard counts and recent activity
+
+### Quality checkpoint
+- Backend: `python -m pytest -q` -> **12 passed**
+- Mobile: `npm run typecheck` -> passed
+- Expo config: `npx expo config --type public` -> passed
+
+### Remaining next steps
+- Run `npx expo start` and complete a real device/simulator smoke test.
+- Capture any mobile layout issues from screenshots.
+- Improve mobile empty/error states after manual testing.
+- Add mobile test coverage.
+- Improve OpenAI structured-output parsing and validation.
