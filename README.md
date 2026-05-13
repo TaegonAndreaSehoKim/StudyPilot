@@ -89,10 +89,6 @@ Agent/developer guidance:
 
 - `AGENTS.md`
 
-Development log:
-
-- `docs/devlog/week1.md`
-
 ---
 
 ## Project Structure
@@ -115,8 +111,7 @@ StudyPilot/
 │   ├── README.md
 │   └── requirements.txt
 ├── docs/
-│   ├── architecture/
-│   └── devlog/
+│   └── architecture/
 └── mobile/
     ├── app/
     ├── src/

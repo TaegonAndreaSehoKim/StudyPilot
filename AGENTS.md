@@ -163,7 +163,7 @@ Lower priority for now:
 - If changing upload handling, verify max-size and unsupported-extension tests.
 - If changing mobile routes, verify links from dashboard, course detail, document detail, and quiz screens.
 - Do not commit `.env`, local database files, uploaded documents, `node_modules`, or generated Expo artifacts.
-- Keep documentation in sync during end-of-day documentation passes, especially `README.md`, `AGENTS.md`, and `docs/devlog/`.
+- Keep durable documentation in sync when behavior changes, especially `README.md`, `AGENTS.md`, and architecture notes.
 
 ## Validation Checklist
 
@@ -223,7 +223,7 @@ For most tasks:
 3. Update or add backend tests when behavior changes.
 4. Update mobile types/client when API shape changes.
 5. Run targeted checks.
-6. Update docs or devlog if the task changes project state.
+6. Update durable docs when the task changes setup, architecture, or operating expectations.
 
 ## Commit Convention
 
