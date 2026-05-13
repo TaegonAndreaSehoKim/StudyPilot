@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -81,6 +81,7 @@ export default function DocumentDetailScreen() {
       setError(null);
       const quiz = await api.createQuiz(id, 5, 'mixed');
       setQuizzes((current) => [quiz, ...current]);
+      router.push(`/quiz/${quiz.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to generate quiz');
     } finally {
@@ -102,7 +103,7 @@ export default function DocumentDetailScreen() {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>{document.filename}</Text>
-            <Text style={styles.subtitle}>{document.char_count} chars · {document.status}</Text>
+            <Text style={styles.subtitle}>{document.char_count} chars - {document.status}</Text>
           </View>
 
           <Card>

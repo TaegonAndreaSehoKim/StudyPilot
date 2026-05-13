@@ -15,7 +15,7 @@ export function QuizQuestionView({
 }) {
   return (
     <Card>
-      <Text style={styles.topic}>{question.topic} · {question.difficulty}</Text>
+      <Text style={styles.topic}>{question.topic} - {question.difficulty}</Text>
       <Text style={styles.question}>{question.question}</Text>
       <View style={styles.choices}>
         {question.choices.map((choice) => {

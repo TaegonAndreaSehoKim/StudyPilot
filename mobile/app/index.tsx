@@ -86,7 +86,7 @@ export default function DashboardScreen() {
                 <Link key={document.id} href={`/documents/${document.id}`} asChild>
                   <Card>
                     <Text style={styles.itemTitle}>{document.filename}</Text>
-                    <Text style={styles.itemMeta}>{document.char_count} chars · {document.status}</Text>
+                    <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
                   </Card>
                 </Link>
               ))

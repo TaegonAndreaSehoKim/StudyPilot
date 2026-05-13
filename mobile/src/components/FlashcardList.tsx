@@ -9,7 +9,7 @@ export function FlashcardList({ flashcards }: { flashcards: Flashcard[] }) {
     <View style={styles.list}>
       {flashcards.map((card) => (
         <Card key={card.id}>
-          <Text style={styles.topic}>{card.topic} · {card.difficulty}</Text>
+          <Text style={styles.topic}>{card.topic} - {card.difficulty}</Text>
           <Text style={styles.front}>{card.front}</Text>
           <Text style={styles.back}>{card.back}</Text>
         </Card>

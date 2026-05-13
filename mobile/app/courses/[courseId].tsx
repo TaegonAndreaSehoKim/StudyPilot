@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -52,12 +52,13 @@ export default function CourseDetailScreen() {
         return;
       }
       const asset = result.assets[0];
-      await api.uploadDocument(id, {
+      const document = await api.uploadDocument(id, {
         uri: asset.uri,
         name: asset.name,
         mimeType: asset.mimeType,
       });
       await load();
+      router.push(`/documents/${document.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to upload document');
     } finally {
@@ -94,7 +95,7 @@ export default function CourseDetailScreen() {
                 <Link key={document.id} href={`/documents/${document.id}`} asChild>
                   <Card>
                     <Text style={styles.itemTitle}>{document.filename}</Text>
-                    <Text style={styles.itemMeta}>{document.char_count} chars · {document.status}</Text>
+                    <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
                   </Card>
                 </Link>
               ))

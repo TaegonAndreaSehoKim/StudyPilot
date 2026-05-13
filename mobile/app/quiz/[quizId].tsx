@@ -41,6 +41,11 @@ export default function QuizScreen() {
     if (!quiz) {
       return;
     }
+    const unansweredCount = quiz.questions.filter((question) => !answers[question.id]).length;
+    if (unansweredCount > 0) {
+      setError(`Answer ${unansweredCount} more question${unansweredCount === 1 ? '' : 's'} before submitting.`);
+      return;
+    }
     try {
       setSubmitting(true);
       setError(null);
@@ -60,6 +65,9 @@ export default function QuizScreen() {
     return <LoadingState message="Loading quiz" />;
   }
 
+  const unansweredCount = quiz?.questions.filter((question) => !answers[question.id]).length ?? 0;
+  const canSubmit = !!quiz && unansweredCount === 0 && !submitting;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {error ? <ErrorState message={error} onRetry={load} /> : null}
@@ -74,7 +82,11 @@ export default function QuizScreen() {
               onSelect={(answer) => setAnswers((current) => ({ ...current, [question.id]: answer }))}
             />
           ))}
-          <Button title={submitting ? 'Submitting...' : 'Submit Answers'} disabled={submitting} onPress={submit} />
+          <Button
+            title={submitting ? 'Submitting...' : unansweredCount > 0 ? `Answer ${unansweredCount} more` : 'Submit Answers'}
+            disabled={!canSubmit}
+            onPress={submit}
+          />
 
           {result ? (
             <Card>
@@ -87,7 +99,7 @@ export default function QuizScreen() {
                 {result.answers.map((answer) => (
                   <View key={answer.question_id} style={styles.explanation}>
                     <Text style={answer.is_correct ? styles.correct : styles.incorrect}>
-                      {answer.is_correct ? 'Correct' : 'Missed'} · {answer.topic}
+                      {answer.is_correct ? 'Correct' : 'Missed'} - {answer.topic}
                     </Text>
                     <Text style={styles.resultMeta}>{answer.explanation}</Text>
                   </View>
