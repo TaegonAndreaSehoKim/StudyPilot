@@ -50,7 +50,7 @@ export default function DocumentDetailScreen() {
     load();
   }, [load]);
 
-  async function generateSummary(summaryType: 'concise' | 'exam') {
+  async function generateSummary(summaryType: 'concise' | 'detailed' | 'exam') {
     try {
       setWorking(summaryType);
       setError(null);
@@ -93,6 +93,9 @@ export default function DocumentDetailScreen() {
     return <LoadingState message="Loading document" />;
   }
 
+  const canGenerate = document?.status === 'extracted';
+  const actionDisabled = !!working || !canGenerate;
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -111,11 +114,19 @@ export default function DocumentDetailScreen() {
             <Text style={styles.preview}>{document.preview || 'No extracted text preview available.'}</Text>
           </Card>
 
+          {!canGenerate ? (
+            <EmptyState
+              title="Generation unavailable"
+              message="Study materials can only be generated after text is extracted. Scanned PDFs are not supported in this MVP."
+            />
+          ) : null}
+
           <View style={styles.actions}>
-            <Button title={working === 'concise' ? 'Generating...' : 'Generate Concise Summary'} disabled={!!working} onPress={() => generateSummary('concise')} />
-            <Button title={working === 'exam' ? 'Generating...' : 'Generate Exam Summary'} disabled={!!working} variant="secondary" onPress={() => generateSummary('exam')} />
-            <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={!!working} variant="secondary" onPress={generateFlashcards} />
-            <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={!!working} variant="secondary" onPress={generateQuiz} />
+            <Button title={working === 'concise' ? 'Generating...' : 'Generate Concise Summary'} disabled={actionDisabled} onPress={() => generateSummary('concise')} />
+            <Button title={working === 'detailed' ? 'Generating...' : 'Generate Detailed Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('detailed')} />
+            <Button title={working === 'exam' ? 'Generating...' : 'Generate Exam Summary'} disabled={actionDisabled} variant="secondary" onPress={() => generateSummary('exam')} />
+            <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
+            <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} variant="secondary" onPress={generateQuiz} />
           </View>
 
           <Section title="Latest Summary">
