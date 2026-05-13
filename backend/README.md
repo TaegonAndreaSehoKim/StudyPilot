@@ -114,4 +114,4 @@ The Compose setup stores SQLite data in the `studypilot_data` volume and uploade
 
 ## Notes
 
-The generation pipeline prepares section-aware study context before calling the AI provider. The OpenAI provider is source-grounded and requests structured JSON. If model output is invalid or the provider fails, generation falls back to deterministic fake output instead of crashing the API.
+The generation pipeline prepares section-aware study context before calling the AI provider. The OpenAI provider is source-grounded, requests structured JSON, and validates required fields before accepting generated summaries, flashcards, or quizzes. If model output is invalid, malformed, or the provider fails, generation falls back to deterministic fake output instead of crashing the API.

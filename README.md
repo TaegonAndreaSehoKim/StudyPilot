@@ -408,7 +408,7 @@ python -m pytest -q
 Current status:
 
 ```text
-54 passed
+56 passed
 ```
 
 The backend tests use:
@@ -472,7 +472,7 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 - Scanned/image-only PDFs need OCR, which is not implemented.
 - The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
 - AI calls are synchronous.
-- The OpenAI provider has guarded JSON parsing and fake-AI fallback, but strict JSON Schema enforcement is still future work.
+- The OpenAI provider validates required summary, flashcard, and quiz fields before accepting model output, then falls back to fake AI if the response shape is unsafe.
 - Quiz responses include correct answers in the MVP API for mobile simplicity.
 - Mobile automated tests are not added yet.
 - Docker Compose deployment notes exist for an EC2 MVP, but there is no managed database, S3 storage, HTTPS reverse proxy, or app store packaging yet.

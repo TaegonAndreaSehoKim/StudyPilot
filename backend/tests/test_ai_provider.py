@@ -38,7 +38,11 @@ def provider_with_response(response: DummyResponse) -> OpenAIProvider:
 
 
 def test_openai_provider_parses_json_code_fence() -> None:
-    provider = provider_with_response(DummyResponse('```json\n{"title":"Notes","overview":"Grounded.","key_points":["One"]}\n```'))
+    provider = provider_with_response(
+        DummyResponse(
+            '```json\n{"title":"Notes","overview":"Grounded.","key_points":["One"],"key_terms":[],"source_quotes":[]}\n```'
+        )
+    )
 
     result = provider.generate_summary("AI search uses heuristics.", "concise")
 
@@ -70,7 +74,11 @@ def test_openai_provider_reads_nested_response_payload() -> None:
                         "content": [
                             {
                                 "type": "output_text",
-                                "text": '{"title":"Nested","questions":[]}',
+                                "text": (
+                                    '{"title":"Nested","questions":[{"question":"What is supported?",'
+                                    '"choices":["A. Local search appears","B. Unsupported","C. Unsupported","D. Unsupported"],'
+                                    '"correct_answer":"A","explanation":"A is grounded in the notes.","topic":"Local search","difficulty":"medium"}]}'
+                                ),
                             }
                         ]
                     }
@@ -82,7 +90,26 @@ def test_openai_provider_reads_nested_response_payload() -> None:
     result = provider.generate_quiz("Local search appears in the notes.", 2, "mixed")
 
     assert result["title"] == "Nested"
-    assert result["questions"] == []
+    assert len(result["questions"]) == 1
+
+
+def test_openai_provider_falls_back_for_malformed_summary_shape() -> None:
+    provider = provider_with_response(DummyResponse('{"title":"Notes","overview":"Missing arrays","key_points":["One"]}'))
+
+    result = provider.generate_summary("Alpha Beta concepts appear in this source text.", "concise")
+
+    assert "Concise Summary" in result["title"]
+    assert result["source_quotes"]
+
+
+def test_openai_provider_falls_back_for_malformed_quiz_shape() -> None:
+    provider = provider_with_response(DummyResponse('{"title":"Quiz","questions":[{"question":"Q","choices":["A"],"correct_answer":"Z"}]}'))
+
+    result = provider.generate_quiz("Alpha Beta concepts appear in this source text.", 2, "medium")
+
+    assert "Quiz" in result["title"]
+    assert len(result["questions"]) == 2
+    assert all(question["correct_answer"] in {"A", "B", "C", "D"} for question in result["questions"])
 
 
 def test_openai_provider_falls_back_for_invalid_json() -> None:

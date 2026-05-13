@@ -32,9 +32,9 @@ def test_eval_summary_uses_section_topics_and_source_terms() -> None:
     assert any("state spaces" in point for point in summary["key_points"])
     assert "test points" in summary["overview"]
     assert all(not point.startswith("Section:") for point in summary["key_points"])
-    assert any(point.startswith("출제 포인트") for point in summary["key_points"])
-    assert any(point.startswith("유사개념 비교") for point in summary["key_points"])
-    assert any(point.startswith("암기 포인트") for point in summary["key_points"])
+    assert any(point.startswith("Test point -") for point in summary["key_points"])
+    assert any(point.startswith("Similar concept comparison -") for point in summary["key_points"])
+    assert any(point.startswith("Memorization point -") for point in summary["key_points"])
 
 
 def test_eval_summary_modes_have_distinct_study_intent() -> None:
@@ -44,9 +44,9 @@ def test_eval_summary_modes_have_distinct_study_intent() -> None:
     detailed = generator.generate_summary(EVAL_NOTES, "detailed")
 
     assert "broad flow" in concise["overview"]
-    assert all(point.startswith("핵심개념") for point in concise["key_points"])
+    assert all(point.startswith("Core concept -") for point in concise["key_points"])
     assert "general principles" in detailed["overview"]
-    assert all(point.startswith("개괄설명") for point in detailed["key_points"])
+    assert all(point.startswith("Concept overview -") for point in detailed["key_points"])
 
 
 def test_eval_quiz_has_specific_topics_and_distractor_rationales() -> None:

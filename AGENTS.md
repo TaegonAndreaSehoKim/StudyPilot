@@ -127,7 +127,7 @@ When choosing what to improve next, bias toward these:
 - exercise the EC2 Docker Compose deployment path with a real device
 - improve mobile layout after device or simulator inspection
 - add mobile-level smoke testing or lightweight component checks
-- improve OpenAI JSON Schema enforcement
+- continue hardening OpenAI structured-output validation with focused regression tests
 - refine fake AI output quality without making it nondeterministic
 - add screenshots or a short demo walkthrough
 
@@ -263,7 +263,7 @@ Reasonable next milestones:
 - run and polish the full Expo manual demo
 - improve mobile UI density and interaction feedback
 - add frontend/mobile tests
-- strengthen OpenAI JSON validation and retry/fallback behavior
+- strengthen OpenAI retry/fallback behavior around valid but low-quality model outputs
 - prepare demo screenshots and a walkthrough
 - test the EC2 Docker Compose deployment path
 - plan managed database, S3, and HTTPS after the EC2 MVP is stable

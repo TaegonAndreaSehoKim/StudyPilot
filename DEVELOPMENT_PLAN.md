@@ -113,6 +113,8 @@ StudyPilot/
 - [x] Keep prompts source-grounded.
 - [x] Add section-aware document preparation before generation.
 - [x] Add lightweight AI quality eval coverage for summaries and quizzes.
+- [x] Validate required OpenAI output fields before accepting generated summaries, flashcards, and quizzes.
+- [x] Remove broken generated-output labels from fake AI quality fixtures.
 
 ### Phase 6: Study Material Generation
 

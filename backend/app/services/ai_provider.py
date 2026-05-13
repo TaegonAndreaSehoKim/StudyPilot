@@ -230,22 +230,28 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
 
 
 def _concise_point(section: SourceSection) -> str:
-    return f"핵심개념 - {section.title}: {_section_summary(section, 1)}"
+    return f"Core concept - {section.title}: {_section_summary(section, 1)}"
 
 
 def _detailed_point(section: SourceSection) -> str:
-    return f"개괄설명 - {section.title}: {_section_summary(section, 2)}"
+    return f"Concept overview - {section.title}: {_section_summary(section, 2)}"
 
 
 def _exam_points(sections: list[SourceSection]) -> list[str]:
     points: list[str] = []
     for index, section in enumerate(sections[:4]):
         detail = _section_summary(section, 2)
-        points.append(f"출제 포인트 - {section.title}: {detail}")
+        points.append(f"Test point - {section.title}: {detail}")
         if len(sections) > 1:
             other = sections[(index + 1) % len(sections)]
-            points.append(f"유사개념 비교 - {section.title} vs {other.title}: distinguish the source claim about {section.title} from the source claim about {other.title}.")
-        points.append(f"암기 포인트 - {section.title}: remember the terms and relationships stated in this section rather than unsupported examples.")
+            points.append(
+                f"Similar concept comparison - {section.title} vs {other.title}: "
+                f"distinguish the source claim about {section.title} from the source claim about {other.title}."
+            )
+        points.append(
+            f"Memorization point - {section.title}: "
+            "remember the terms and relationships stated in this section rather than unsupported examples."
+        )
     return points
 
 
@@ -414,7 +420,7 @@ class OpenAIProvider(AIProvider):
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
         prompt = self._summary_prompt(document_text, summary_type)
         data = self._json_response(prompt)
-        if isinstance(data, dict) and {"title", "overview", "key_points"}.issubset(data):
+        if self._valid_summary(data):
             return data
         return self.fallback.generate_summary(document_text, summary_type)
 
@@ -422,16 +428,71 @@ class OpenAIProvider(AIProvider):
         prompt = self._flashcard_prompt(document_text, count)
         data = self._json_response(prompt)
         cards = data.get("flashcards") if isinstance(data, dict) else data
-        if isinstance(cards, list):
+        if self._valid_flashcards(cards):
             return cards[:count]
         return self.fallback.generate_flashcards(document_text, count)
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
         prompt = self._quiz_prompt(document_text, question_count, difficulty)
         data = self._json_response(prompt)
-        if isinstance(data, dict) and isinstance(data.get("questions"), list):
+        if self._valid_quiz(data):
             return data
         return self.fallback.generate_quiz(document_text, question_count, difficulty)
+
+    def _valid_summary(self, value: Any) -> bool:
+        if not isinstance(value, dict):
+            return False
+        if not all(isinstance(value.get(key), str) and value[key].strip() for key in ("title", "overview")):
+            return False
+        if not isinstance(value.get("key_points"), list) or not value["key_points"]:
+            return False
+        if not all(isinstance(point, str) and point.strip() for point in value["key_points"]):
+            return False
+        if not isinstance(value.get("key_terms"), list):
+            return False
+        if not isinstance(value.get("source_quotes"), list):
+            return False
+        return True
+
+    def _valid_flashcards(self, value: Any) -> bool:
+        if not isinstance(value, list) or not value:
+            return False
+        required = {"front", "back", "topic", "difficulty", "source_quote"}
+        for item in value:
+            if not isinstance(item, dict):
+                return False
+            if not all(isinstance(item.get(key), str) and item[key].strip() for key in required):
+                return False
+            if item["difficulty"] not in {"easy", "medium", "hard"}:
+                return False
+        return True
+
+    def _valid_quiz(self, value: Any) -> bool:
+        if not isinstance(value, dict):
+            return False
+        if not isinstance(value.get("title"), str) or not value["title"].strip():
+            return False
+        questions = value.get("questions")
+        if not isinstance(questions, list) or not questions:
+            return False
+        required = {"question", "choices", "correct_answer", "explanation", "topic", "difficulty"}
+        text_fields = required - {"choices"}
+        for item in questions:
+            if not isinstance(item, dict):
+                return False
+            if not all(key in item for key in required):
+                return False
+            if not all(isinstance(item.get(key), str) and item[key].strip() for key in text_fields):
+                return False
+            if item["correct_answer"] not in {"A", "B", "C", "D"}:
+                return False
+            if item["difficulty"] not in {"easy", "medium", "hard"}:
+                return False
+            if not isinstance(item["choices"], list) or len(item["choices"]) != 4:
+                return False
+            if not all(isinstance(choice, str) and choice.strip() for choice in item["choices"]):
+                return False
+        return True
 
     def _json_response(self, prompt: str) -> Any:
         try:
