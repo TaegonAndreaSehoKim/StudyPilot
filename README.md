@@ -17,6 +17,8 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Security boundary:** mobile app never reads or stores LLM API keys
 - **Quality checkpoint:** backend pytest suite currently passes at `17 passed`; mobile TypeScript check passes
 
+The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
+
 ## Current Status
 
 StudyPilot currently supports:

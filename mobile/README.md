@@ -17,6 +17,12 @@ npx expo start
 
 Then choose iOS simulator, Android emulator, Expo Go, or another Expo target.
 
+This project currently targets Expo SDK 54 so it can run in the App Store version of Expo Go. If the QR code still opens an incompatibility screen, stop Metro and restart with:
+
+```bash
+npx expo start --clear
+```
+
 ## API Base URL
 
 Default:
