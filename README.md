@@ -413,7 +413,6 @@ Planned follow-up improvements:
 
 - run a full simulator or physical-device Expo smoke test
 - capture screenshots and polish mobile layout
-- add sample notes for repeatable demos
 - add mobile component or interaction tests
 - improve OpenAI JSON schema handling
 - improve document-generation error states
