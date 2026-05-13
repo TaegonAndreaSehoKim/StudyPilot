@@ -17,7 +17,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Tablet layout:** responsive containers and card grids for wider Expo tablet displays
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `56 passed`; mobile TypeScript and Expo export checks pass
+- **Quality checkpoint:** backend pytest suite currently passes at `58 passed`; mobile TypeScript and Expo export checks pass
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -44,11 +44,12 @@ StudyPilot currently supports:
 - global dashboard with counts, upcoming schedule, recent courses, recent documents, recent generated materials, and weak topics
 - mobile API base URL settings
 - tablet-friendly responsive layouts for dashboard, course, document, schedule, quiz, and saved-material screens
+- backend access token protection and in-memory rate limiting for write and AI-generation requests
 - backend test coverage for the core local workflow
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `56 passed`
+- `python -m pytest -q` from `backend/` -> `58 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -219,6 +220,9 @@ OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false
 BACKEND_ACCESS_TOKEN=
 CORS_ORIGINS=*
+RATE_LIMIT_ENABLED=true
+MUTATION_RATE_LIMIT_PER_MINUTE=60
+AI_RATE_LIMIT_PER_MINUTE=12
 MAX_UPLOAD_MB=10
 ```
 
@@ -235,6 +239,7 @@ API access behavior:
 - `GET` endpoints such as `/health` and dashboards remain readable.
 - If `BACKEND_ACCESS_TOKEN` is set, every `POST`, `PATCH`, and `DELETE` request must include `X-StudyPilot-Key`.
 - In `ENVIRONMENT=production`, mutating requests fail unless `BACKEND_ACCESS_TOKEN` is configured.
+- Mutating requests are rate-limited in memory. AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` limit.
 
 ---
 
@@ -410,7 +415,7 @@ python -m pytest -q
 Current status:
 
 ```text
-56 passed
+58 passed
 ```
 
 The backend tests use:

@@ -49,6 +49,9 @@ OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false
 BACKEND_ACCESS_TOKEN=
 CORS_ORIGINS=*
+RATE_LIMIT_ENABLED=true
+MUTATION_RATE_LIMIT_PER_MINUTE=60
+AI_RATE_LIMIT_PER_MINUTE=12
 MAX_UPLOAD_MB=10
 ```
 
@@ -61,6 +64,8 @@ X-StudyPilot-Key: <token>
 ```
 
 In `ENVIRONMENT=production`, the backend rejects mutating requests unless `BACKEND_ACCESS_TOKEN` is configured.
+
+Rate limiting is enabled by default. `POST`, `PATCH`, and `DELETE` requests use `MUTATION_RATE_LIMIT_PER_MINUTE`; AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE`. Limits are in-memory and intended for the single-container EC2 MVP.
 
 ## Docker
 

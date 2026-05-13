@@ -208,6 +208,7 @@ StudyPilot/
 - [x] Keep local development usable without a token.
 - [x] Require a configured backend access token for mutating requests in production mode.
 - [x] Add mobile Settings support for storing the backend access token.
+- [x] Add in-memory rate limiting for write requests and stricter AI-generation requests.
 - [x] Add production environment example values.
 - [x] Add backend Dockerfile and root Docker Compose configuration.
 - [x] Document AWS EC2 + Docker Compose deployment flow.

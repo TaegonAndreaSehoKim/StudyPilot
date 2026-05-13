@@ -24,6 +24,7 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - weak-topic tracking from missed quiz questions
 - weak-topic review quiz generation
 - dashboard endpoints for counts, recent activity, and weak topics
+- backend access token protection and in-memory rate limiting for mutating and AI-generation requests
 - pytest coverage for the core backend workflow
 - TypeScript mobile API client and screens for the main demo flow
 
@@ -160,10 +161,13 @@ Lower priority for now:
 6. `BACKEND_ACCESS_TOKEN` is a shared backend guard, not user authentication.
    Keep it out of source control. Mobile stores this token only for backend access; never store `OPENAI_API_KEY` in mobile.
 
-7. MVP quiz responses include correct answers.
+7. Rate limits are in-memory and per process.
+   They are appropriate for the single-container EC2 MVP, but should move to Redis, a gateway, or managed protection before multi-instance deployment.
+
+8. MVP quiz responses include correct answers.
    This is acceptable for local mobile simplicity, but production should hide answers until submission.
 
-8. Relative backend storage paths are resolved from `backend/`.
+9. Relative backend storage paths are resolved from `backend/`.
    Keep this behavior intact so `cd backend && uvicorn app.main:app --reload` stores uploads under `backend/app/storage`.
 
 ## Editing Guidance

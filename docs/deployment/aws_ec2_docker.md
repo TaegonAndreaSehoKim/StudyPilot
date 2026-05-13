@@ -11,6 +11,7 @@ The mobile app still runs through Expo Go during this stage. In the mobile Setti
 - local uploaded-document storage on the same EC2 instance
 - backend-only OpenAI API access
 - write/generation protection with `BACKEND_ACCESS_TOKEN`
+- in-memory rate limits for write and AI-generation requests
 
 It does not deploy the mobile app to the App Store, set up a managed database, or move files to S3.
 
@@ -66,6 +67,9 @@ OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false
 BACKEND_ACCESS_TOKEN=replace-with-a-long-random-token
 CORS_ORIGINS=*
+RATE_LIMIT_ENABLED=true
+MUTATION_RATE_LIMIT_PER_MINUTE=60
+AI_RATE_LIMIT_PER_MINUTE=12
 MAX_UPLOAD_MB=10
 ```
 
@@ -112,6 +116,7 @@ In Expo Go:
 4. Test connection.
 
 The health check is public, but course creation, upload, generation, quiz attempts, and schedule writes require the token.
+Write requests are rate-limited. AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` setting to reduce accidental OpenAI spend from repeated taps or scripts.
 
 ## Data And Backups
 
@@ -153,6 +158,7 @@ docker compose logs -f backend
 
 - No authentication or user isolation.
 - Backend access token is a simple shared secret, not a user auth system.
+- Rate limits are in-memory per backend process. Use Redis or an API gateway for multi-instance production.
 - SQLite and local EC2 file storage are not high-availability.
 - No HTTPS is configured by this Compose file.
 - Scanned PDFs still require OCR, which is not implemented.
