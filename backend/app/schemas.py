@@ -70,6 +70,11 @@ class DocumentOut(BaseModel):
     file_type: str
     char_count: int
     status: str
+    page_count: int
+    extracted_page_count: int
+    extraction_method: str
+    extraction_notes: str | None
+    ocr_status: str
     created_at: datetime
     updated_at: datetime
 
@@ -83,6 +88,10 @@ class DocumentDetailOut(DocumentOut):
 
 
 class DocumentTextOut(DocumentOut):
+    text: str
+
+
+class DocumentOcrRunOut(DocumentOut):
     text: str
 
 

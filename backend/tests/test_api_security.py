@@ -111,4 +111,4 @@ def test_ai_generation_requests_have_stricter_rate_limit(tmp_path: Path, monkeyp
 
     assert first.status_code == 201
     assert second.status_code == 429
-    assert "Too many AI generation requests" in second.json()["detail"]
+    assert "Too many OCR or AI generation requests" in second.json()["detail"]

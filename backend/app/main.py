@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
                     if not allowed:
                         return JSONResponse(
                             status_code=429,
-                            content={"detail": "Too many AI generation requests. Please wait before trying again."},
+                            content={"detail": "Too many OCR or AI generation requests. Please wait before trying again."},
                             headers={"Retry-After": "60", "X-RateLimit-Remaining": "0"},
                         )
                 request.state.rate_limit_remaining = remaining

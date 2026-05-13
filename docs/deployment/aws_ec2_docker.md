@@ -12,6 +12,7 @@ The mobile app still runs through Expo Go during this stage. In the mobile Setti
 - backend-only OpenAI API access
 - write/generation protection with `BACKEND_ACCESS_TOKEN`
 - in-memory rate limits for write and AI-generation requests
+- optional Amazon Textract OCR for scanned PDFs
 
 It does not deploy the mobile app to the App Store, set up a managed database, or move files to S3.
 
@@ -70,6 +71,8 @@ CORS_ORIGINS=*
 RATE_LIMIT_ENABLED=true
 MUTATION_RATE_LIMIT_PER_MINUTE=60
 AI_RATE_LIMIT_PER_MINUTE=12
+OCR_PROVIDER=textract
+AWS_REGION=us-east-1
 MAX_UPLOAD_MB=10
 ```
 
@@ -83,6 +86,8 @@ PY
 ```
 
 Never put `OPENAI_API_KEY` in the mobile app. Only the backend reads it.
+
+For `OCR_PROVIDER=textract`, attach an IAM role or credentials that allow `textract:DetectDocumentText`. Use `OCR_PROVIDER=fake` if you want to test the UI flow without external OCR calls.
 
 ## Run
 
@@ -116,7 +121,7 @@ In Expo Go:
 4. Test connection.
 
 The health check is public, but course creation, upload, generation, quiz attempts, and schedule writes require the token.
-Write requests are rate-limited. AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` setting to reduce accidental OpenAI spend from repeated taps or scripts.
+Write requests are rate-limited. OCR and AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` setting to reduce accidental Textract/OpenAI spend from repeated taps or scripts.
 
 ## Data And Backups
 
@@ -161,4 +166,4 @@ docker compose logs -f backend
 - Rate limits are in-memory per backend process. Use Redis or an API gateway for multi-instance production.
 - SQLite and local EC2 file storage are not high-availability.
 - No HTTPS is configured by this Compose file.
-- Scanned PDFs still require OCR, which is not implemented.
+- Textract OCR uses a synchronous backend request in this MVP. Large documents should move to an async OCR job queue.

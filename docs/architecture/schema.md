@@ -33,6 +33,11 @@ Fields:
 - `extracted_text`
 - `char_count`
 - `status`
+- `page_count`
+- `extracted_page_count`
+- `extraction_method`
+- `extraction_notes`
+- `ocr_status`
 - `created_at`
 - `updated_at`
 
@@ -40,13 +45,15 @@ Status values:
 
 - `uploaded`
 - `extracted`
-- `error`
+- `needs_ocr`
 
 Notes:
 
 - `.txt` and `.md` files are decoded as UTF-8 with replacement.
 - `.pdf` files are parsed with `pypdf`.
-- text-poor PDFs are treated as scanned/image-only and marked unsupported for the MVP.
+- text-poor PDFs are marked `needs_ocr`.
+- partially extracted PDFs stay `extracted` but can set `ocr_status=recommended`.
+- `POST /documents/{document_id}/ocr` updates the document text through the configured OCR provider.
 
 ## Summary
 

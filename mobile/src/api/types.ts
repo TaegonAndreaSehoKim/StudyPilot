@@ -13,6 +13,11 @@ export interface Document {
   file_type: string;
   char_count: number;
   status: string;
+  page_count: number;
+  extracted_page_count: number;
+  extraction_method: string;
+  extraction_notes: string | null;
+  ocr_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +29,10 @@ export interface DocumentDetail extends Document {
 }
 
 export interface DocumentText extends Document {
+  text: string;
+}
+
+export interface DocumentOcrResult extends Document {
   text: string;
 }
 

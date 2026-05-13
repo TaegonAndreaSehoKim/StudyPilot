@@ -47,6 +47,11 @@ class Document(TimestampMixin, Base):
     extracted_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
     char_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="uploaded")
+    page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    extracted_page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    extraction_method: Mapped[str] = mapped_column(String(40), nullable=False, default="native")
+    extraction_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ocr_status: Mapped[str] = mapped_column(String(40), nullable=False, default="not_required")
 
     course: Mapped["Course"] = relationship(back_populates="documents")
     summaries: Mapped[list["Summary"]] = relationship(back_populates="document", cascade="all, delete-orphan")

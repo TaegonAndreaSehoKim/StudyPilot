@@ -19,6 +19,7 @@ def client(tmp_path: Path, storage_dir: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setenv("DATABASE_URL", database_url)
     monkeypatch.setenv("STORAGE_DIR", str(storage_dir))
     monkeypatch.setenv("USE_FAKE_AI", "true")
+    monkeypatch.setenv("OCR_PROVIDER", "fake")
     monkeypatch.delenv("BACKEND_ACCESS_TOKEN", raising=False)
     monkeypatch.delenv("ENVIRONMENT", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

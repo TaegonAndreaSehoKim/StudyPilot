@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     mutation_rate_limit_per_minute: int = 60
     ai_rate_limit_per_minute: int = 12
+    ocr_provider: str = "fake"
+    aws_region: str = "us-east-1"
     max_upload_mb: int = 10
     allowed_extensions: tuple[str, ...] = (".txt", ".md", ".pdf")
 

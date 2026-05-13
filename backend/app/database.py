@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
@@ -32,6 +32,29 @@ def create_db_and_tables() -> None:
     from app import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _apply_sqlite_migrations()
+
+
+def _apply_sqlite_migrations() -> None:
+    if not engine.url.get_backend_name().startswith("sqlite"):
+        return
+
+    inspector = inspect(engine)
+    if "documents" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("documents")}
+    migrations = {
+        "page_count": "ALTER TABLE documents ADD COLUMN page_count INTEGER NOT NULL DEFAULT 0",
+        "extracted_page_count": "ALTER TABLE documents ADD COLUMN extracted_page_count INTEGER NOT NULL DEFAULT 0",
+        "extraction_method": "ALTER TABLE documents ADD COLUMN extraction_method VARCHAR(40) NOT NULL DEFAULT 'native'",
+        "extraction_notes": "ALTER TABLE documents ADD COLUMN extraction_notes TEXT",
+        "ocr_status": "ALTER TABLE documents ADD COLUMN ocr_status VARCHAR(40) NOT NULL DEFAULT 'not_required'",
+    }
+    with engine.begin() as connection:
+        for column_name, statement in migrations.items():
+            if column_name not in existing_columns:
+                connection.execute(text(statement))
 
 
 def drop_db_and_tables() -> None:

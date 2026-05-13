@@ -6,5 +6,6 @@ pydantic-settings
 python-multipart
 pypdf
 openai
+boto3
 pytest
 httpx

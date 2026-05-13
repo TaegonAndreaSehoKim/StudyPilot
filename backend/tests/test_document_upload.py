@@ -17,6 +17,10 @@ def test_upload_txt_document(client: TestClient, course_id: int) -> None:
     assert body["file_type"] == ".txt"
     assert body["char_count"] > 0
     assert body["status"] == "extracted"
+    assert body["page_count"] == 1
+    assert body["extracted_page_count"] == 1
+    assert body["extraction_method"] == "text"
+    assert body["ocr_status"] == "not_required"
 
     detail = client.get(f"/documents/{body['id']}")
     assert detail.status_code == 200
@@ -54,10 +58,51 @@ def test_upload_text_based_pdf_document(client: TestClient, course_id: int) -> N
     assert body["file_type"] == ".pdf"
     assert body["status"] == "extracted"
     assert body["char_count"] > 100
+    assert body["page_count"] >= 1
+    assert body["extracted_page_count"] >= 1
+    assert body["extraction_method"] == "pypdf"
 
     detail = client.get(f"/documents/{body['id']}")
     assert detail.status_code == 200
     assert "Artificial Intelligence studies rational agents" in detail.json()["preview"]
+
+
+def test_scanned_pdf_can_be_marked_for_ocr_and_processed(client: TestClient, course_id: int, monkeypatch) -> None:
+    from app.services import document_extractor
+
+    class EmptyPdfReader:
+        pages = [object(), object()]
+
+    monkeypatch.setattr(document_extractor, "PdfReader", lambda _: EmptyPdfReader())
+    monkeypatch.setattr(document_extractor, "_extract_pdf_page_text", lambda _: "")
+
+    upload_response = client.post(
+        "/documents/upload",
+        data={"course_id": str(course_id)},
+        files={"file": ("scan.pdf", b"%PDF scanned placeholder", "application/pdf")},
+    )
+
+    assert upload_response.status_code == 201
+    uploaded = upload_response.json()
+    assert uploaded["status"] == "needs_ocr"
+    assert uploaded["ocr_status"] == "available"
+    assert uploaded["page_count"] == 2
+    assert uploaded["extracted_page_count"] == 0
+
+    summary_response = client.post(f"/documents/{uploaded['id']}/summaries", json={"summary_type": "concise"})
+    assert summary_response.status_code == 400
+
+    ocr_response = client.post(f"/documents/{uploaded['id']}/ocr")
+    assert ocr_response.status_code == 200
+    ocr_body = ocr_response.json()
+    assert ocr_body["status"] == "extracted"
+    assert ocr_body["ocr_status"] == "completed"
+    assert ocr_body["extraction_method"] == "fake_ocr"
+    assert ocr_body["extracted_page_count"] == 2
+    assert "Fake OCR extracted study text" in ocr_body["text"]
+
+    summary_after_ocr = client.post(f"/documents/{uploaded['id']}/summaries", json={"summary_type": "concise"})
+    assert summary_after_ocr.status_code == 201
 
 
 def test_reject_unsupported_extension(client: TestClient, course_id: int) -> None:

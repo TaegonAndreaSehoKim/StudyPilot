@@ -27,9 +27,14 @@ def test_pdf_extraction_marks_all_pages_and_empty_pages(monkeypatch) -> None:
     ]
     monkeypatch.setattr(document_extractor, "PdfReader", lambda _: FakePdfReader(pages))
 
-    text, status = document_extractor.extract_text_from_pdf(Path("unused.pdf"))
+    result = document_extractor.extract_text_from_pdf(Path("unused.pdf"))
 
-    assert status == "extracted"
+    assert result.status == "extracted"
+    assert result.page_count == 3
+    assert result.extracted_page_count == 2
+    assert result.extraction_method == "pypdf"
+    assert result.ocr_status == "recommended"
+    text = result.text
     assert "--- Page 1 of 3 ---" in text
     assert "--- Page 2 of 3 ---" in text
     assert "--- Page 3 of 3 ---" in text
@@ -42,8 +47,11 @@ def test_pdf_extraction_errors_when_no_pages_have_text(monkeypatch) -> None:
     pages = [FakePdfPage(""), FakePdfPage("")]
     monkeypatch.setattr(document_extractor, "PdfReader", lambda _: FakePdfReader(pages))
 
-    text, status = document_extractor.extract_text_from_pdf(Path("unused.pdf"))
+    result = document_extractor.extract_text_from_pdf(Path("unused.pdf"))
 
-    assert status == "error"
-    assert "Checked 2 pages" in text
-    assert "OCR" in text
+    assert result.status == "needs_ocr"
+    assert result.page_count == 2
+    assert result.extracted_page_count == 0
+    assert result.ocr_status == "available"
+    assert "Checked 2 pages" in result.text
+    assert "OCR" in result.text

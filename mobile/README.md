@@ -83,7 +83,7 @@ npm run export:web
 - Course detail: tabbed overview, materials, practice, schedule, document upload, and course actions
 - Weak-topic review quiz: generate focused practice from missed quiz topics on the course Practice tab
 - Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
-- Document detail: extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
+- Document detail: extraction diagnostics, OCR-required guidance, extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
 - Full text: complete extracted document text with Save / Share support
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support
@@ -97,5 +97,5 @@ npm run export:web
 - If health check fails, confirm the backend is running.
 - If Android cannot connect to `127.0.0.1`, use `10.0.2.2`.
 - If a physical device cannot connect, use the computer's LAN IP and allow local firewall access.
-- Scanned PDFs are not supported by the MVP backend.
+- Scanned PDFs are marked as requiring OCR. Use the document screen's Run OCR action when the backend has OCR enabled.
 - On tablets, rotate between portrait and landscape during manual testing because dashboard, course, document, schedule, quiz history, and saved-material screens use responsive grids.

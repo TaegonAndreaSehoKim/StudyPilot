@@ -10,14 +10,14 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 
 - **Mobile app:** Expo Router, React Native, TypeScript
 - **Backend:** FastAPI, SQLAlchemy, SQLite
-- **Document support:** `.txt`, `.md`, and text-based `.pdf`
+- **Document support:** `.txt`, `.md`, text-based `.pdf`, and OCR handoff for scanned PDFs
 - **Study generation:** summaries, flashcards, and multiple-choice quizzes
 - **Quality loop:** section-aware generation, weak-topic review quizzes, and lightweight AI quality evals
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Tablet layout:** responsive containers and card grids for wider Expo tablet displays
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `58 passed`; mobile TypeScript and Expo export checks pass
+- **Quality checkpoint:** backend pytest suite currently passes at `59 passed`; mobile TypeScript and Expo export checks pass
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -30,6 +30,7 @@ StudyPilot currently supports:
 - course schedule tracking for assignments, exams, readings, projects, and milestones
 - global upcoming schedule view across all courses
 - document upload and extraction
+- PDF extraction diagnostics with `needs_ocr`, page counts, and optional OCR execution
 - document previews, full extracted-text reading, original-file download, and guided generation options
 - fake-AI summary generation
 - saved summary detail screens with share/export support
@@ -49,7 +50,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `58 passed`
+- `python -m pytest -q` from `backend/` -> `59 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -223,6 +224,8 @@ CORS_ORIGINS=*
 RATE_LIMIT_ENABLED=true
 MUTATION_RATE_LIMIT_PER_MINUTE=60
 AI_RATE_LIMIT_PER_MINUTE=12
+OCR_PROVIDER=fake
+AWS_REGION=us-east-1
 MAX_UPLOAD_MB=10
 ```
 
@@ -239,7 +242,8 @@ API access behavior:
 - `GET` endpoints such as `/health` and dashboards remain readable.
 - If `BACKEND_ACCESS_TOKEN` is set, every `POST`, `PATCH`, and `DELETE` request must include `X-StudyPilot-Key`.
 - In `ENVIRONMENT=production`, mutating requests fail unless `BACKEND_ACCESS_TOKEN` is configured.
-- Mutating requests are rate-limited in memory. AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` limit.
+- Mutating requests are rate-limited in memory. OCR and AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` limit.
+- OCR uses `OCR_PROVIDER=fake` for local demos/tests. Set `OCR_PROVIDER=textract` and configure AWS credentials on the backend host for real scanned PDFs.
 
 ---
 
@@ -273,6 +277,7 @@ Main endpoints:
 - `GET /documents/{document_id}`
 - `GET /documents/{document_id}/text`
 - `GET /documents/{document_id}/download`
+- `POST /documents/{document_id}/ocr`
 - `GET /courses/{course_id}/documents`
 - `DELETE /documents/{document_id}`
 - `POST /documents/{document_id}/summaries`
@@ -415,7 +420,7 @@ python -m pytest -q
 Current status:
 
 ```text
-58 passed
+59 passed
 ```
 
 The backend tests use:
@@ -475,8 +480,8 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 
 - No authentication or multi-user support.
 - SQLite and local file storage are intended for local MVP persistence. The Docker deployment keeps them in EC2-local volumes.
-- PDF extraction supports text-based PDFs only.
-- Scanned/image-only PDFs need OCR, which is not implemented.
+- PDF extraction first uses embedded text. Scanned/image-only PDFs are marked `needs_ocr` and can be processed through the configured OCR provider.
+- The built-in fake OCR provider is for demos/tests; real OCR requires Amazon Textract configuration and AWS credentials.
 - The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
 - AI calls are synchronous.
 - The OpenAI provider validates required summary, flashcard, and quiz fields before accepting model output, then falls back to fake AI if the response shape is unsafe.

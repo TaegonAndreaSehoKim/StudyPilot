@@ -14,8 +14,9 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - SQLite-backed local persistence
 - local uploaded-document storage
 - course creation and listing
-- document upload for `.txt`, `.md`, and text-based `.pdf`
+- document upload for `.txt`, `.md`, text-based `.pdf`, and OCR-required scanned PDFs
 - text-based PDF upload regression coverage
+- fake OCR provider for local tests and optional Textract provider for deployment
 - section-aware document preparation before AI generation
 - backend-only AI provider abstraction
 - deterministic `FakeAIProvider` fallback when `OPENAI_API_KEY` is absent
@@ -53,7 +54,7 @@ What is still in progress:
 
 - hands-on mobile device testing with Expo
 - UI polish after real device screenshots
-- deeper PDF extraction edge-case handling
+- hands-on validation of real scanned PDFs through Textract
 - stricter OpenAI JSON Schema enforcement
 - frontend/mobile automated testing
 - richer empty/error states and loading feedback
@@ -64,7 +65,7 @@ What is not built yet:
 - authentication
 - cloud deployment
 - managed database persistence
-- OCR for scanned PDFs
+- asynchronous OCR job processing for large scanned PDFs
 - push notifications
 - vector search, embeddings, or RAG
 - spaced repetition scheduling
@@ -83,6 +84,7 @@ Use these files first when reasoning about behavior:
 - `backend/app/schemas.py`
 - `backend/app/services/ai_provider.py`
 - `backend/app/services/document_extractor.py`
+- `backend/app/services/ocr_provider.py`
 - `backend/app/routers/quizzes.py`
 - `mobile/src/api/client.ts`
 - `mobile/src/api/types.ts`
@@ -92,6 +94,7 @@ For current quality expectations, read:
 - `backend/tests/test_health.py`
 - `backend/tests/test_courses.py`
 - `backend/tests/test_document_upload.py`
+- `backend/tests/test_document_extractor.py`
 - `backend/tests/test_summary_generation.py`
 - `backend/tests/test_flashcards.py`
 - `backend/tests/test_quizzes.py`
@@ -146,8 +149,8 @@ Lower priority for now:
 1. `OPENAI_API_KEY` is optional by design.
    Do not treat missing API keys as an error. Missing keys should route to `FakeAIProvider`.
 
-2. PDF extraction is text-only.
-   Scanned or image-only PDFs should remain unsupported until OCR is explicitly added.
+2. PDF extraction is embedded-text first.
+   Scanned or image-only PDFs should be marked `needs_ocr`; OCR runs only when explicitly requested through the backend.
 
 3. SQLite is local MVP persistence.
    Do not overfit the code to multi-user production assumptions before auth and database migration are planned.
@@ -156,7 +159,7 @@ Lower priority for now:
    iOS simulator, Android emulator, and physical devices need different API base URLs. Keep the Settings screen working.
 
 5. Tests should not call real OpenAI APIs.
-   Test setup must keep fake AI forced and should avoid network-dependent assertions.
+   Test setup must keep fake AI and fake OCR forced and should avoid network-dependent assertions.
 
 6. `BACKEND_ACCESS_TOKEN` is a shared backend guard, not user authentication.
    Keep it out of source control. Mobile stores this token only for backend access; never store `OPENAI_API_KEY` in mobile.

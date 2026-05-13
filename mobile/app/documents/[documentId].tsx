@@ -134,6 +134,24 @@ export default function DocumentDetailScreen() {
     }
   }
 
+  async function runOcr() {
+    try {
+      setWorking('ocr');
+      setError(null);
+      setNotice(null);
+      const result = await api.runDocumentOcr(id);
+      await load();
+      setNotice({
+        title: 'OCR completed',
+        message: `StudyPilot extracted ${result.char_count} characters with ${result.extraction_method}. You can now generate study materials.`,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to run OCR');
+    } finally {
+      setWorking(null);
+    }
+  }
+
   async function openOriginalFile() {
     try {
       setError(null);
@@ -177,6 +195,7 @@ export default function DocumentDetailScreen() {
 
   const canGenerate = document?.status === 'extracted';
   const actionDisabled = !!working || deleting || !canGenerate;
+  const canRunOcr = document?.file_type === '.pdf' && ['available', 'recommended', 'error'].includes(document.ocr_status);
 
   return (
     <ScreenScrollView
@@ -186,8 +205,12 @@ export default function DocumentDetailScreen() {
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {working ? (
         <StatusBanner
-          title="Generating study material"
-          message="StudyPilot is using the extracted document text. The saved result will appear on this screen when generation finishes."
+          title={working === 'ocr' ? 'Running OCR' : 'Generating study material'}
+          message={
+            working === 'ocr'
+              ? 'StudyPilot is extracting text from scanned PDF pages. Keep the app open until OCR finishes.'
+              : 'StudyPilot is using the extracted document text. The saved result will appear on this screen when generation finishes.'
+          }
         />
       ) : null}
       {notice ? <StatusBanner title={notice.title} message={notice.message} variant="success" /> : null}
@@ -195,8 +218,28 @@ export default function DocumentDetailScreen() {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>{document.filename}</Text>
-            <Text style={styles.subtitle}>{document.char_count} chars - {document.status}</Text>
+            <Text style={styles.subtitle}>
+              {document.char_count} chars - {document.status}
+              {document.page_count ? ` - ${document.extracted_page_count}/${document.page_count} pages with embedded text` : ''}
+            </Text>
           </View>
+
+          {document.ocr_status !== 'not_required' ? (
+            <Card style={styles.ocrCard}>
+              <Text style={styles.optionTitle}>
+                {document.status === 'needs_ocr' ? 'OCR required' : 'OCR may improve this PDF'}
+              </Text>
+              <Text style={styles.optionDescription}>
+                {document.extraction_notes ||
+                  'Some pages have little or no embedded text. Scanned PDFs need OCR before StudyPilot can use the full material.'}
+              </Text>
+              {document.ocr_status === 'completed' ? (
+                <Text style={styles.ocrDone}>OCR completed</Text>
+              ) : canRunOcr ? (
+                <Button title={working === 'ocr' ? 'Running OCR...' : 'Run OCR'} disabled={!!working || deleting} onPress={runOcr} />
+              ) : null}
+            </Card>
+          ) : null}
 
           <Card>
             <Text style={styles.sectionTitle}>Extracted Text Preview</Text>
@@ -211,7 +254,7 @@ export default function DocumentDetailScreen() {
           {!canGenerate ? (
             <EmptyState
               title="Generation unavailable"
-              message="Study materials can only be generated after text is extracted. Scanned PDFs are not supported in this MVP."
+              message="Study materials can only be generated after text is extracted. Run OCR if this is a scanned PDF."
             />
           ) : null}
 
@@ -392,6 +435,13 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  ocrCard: {
+    backgroundColor: colors.warningSurface,
+  },
+  ocrDone: {
+    color: colors.success,
+    fontWeight: '900',
   },
   segmentGroup: {
     gap: 8,

@@ -34,7 +34,7 @@ Do not implement these in the MVP:
 - App Store or Play Store packaging
 - Complex spaced repetition
 - Real-time collaboration
-- OCR for scanned PDFs
+- full-scale asynchronous OCR pipeline for large scanned PDFs
 - Full offline mode
 - Vector database, embeddings, or RAG
 
@@ -97,7 +97,9 @@ StudyPilot/
 - [x] Save files under backend storage.
 - [x] Extract text from text and markdown files.
 - [x] Extract text from text-based PDFs using `pypdf`.
-- [x] Mark scanned or image-only PDFs as unsupported.
+- [x] Mark scanned or image-only PDFs as `needs_ocr`.
+- [x] Add fake OCR and optional Amazon Textract OCR provider path.
+- [x] Implement `POST /documents/{document_id}/ocr`.
 - [x] Implement `POST /documents/upload`.
 - [x] Implement `GET /documents/{document_id}`.
 - [x] Implement `GET /courses/{course_id}/documents`.
@@ -232,6 +234,9 @@ StudyPilot/
 
 - [x] `POST /documents/upload`
 - [x] `GET /documents/{document_id}`
+- [x] `GET /documents/{document_id}/text`
+- [x] `GET /documents/{document_id}/download`
+- [x] `POST /documents/{document_id}/ocr`
 - [x] `GET /courses/{course_id}/documents`
 - [x] `DELETE /documents/{document_id}`
 
@@ -312,7 +317,7 @@ npx expo start
 
 ## Known Risks
 
-- PDF extraction works only for text-based PDFs.
+- PDF extraction uses embedded text first; scanned PDFs are marked `needs_ocr` and can be processed by the configured OCR provider.
 - Mobile device networking may require replacing `127.0.0.1` with an emulator host address or LAN IP.
 - OpenAI responses may be malformed, so the backend needs parsing guards and fallback behavior.
 - MVP quiz responses include correct answers for mobile simplicity; production should hide answers until submission.
@@ -325,6 +330,7 @@ npx expo start
 - [x] Backend tests pass with `pytest -q`.
 - [x] User can create a course.
 - [x] User can upload `.txt`, `.md`, and text-based `.pdf` files.
+- [x] User can identify OCR-required scanned PDFs and run the configured OCR provider.
 - [x] User can generate summaries.
 - [x] User can generate flashcards.
 - [x] User can generate quizzes.

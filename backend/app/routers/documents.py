@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 from app.config import Settings, get_settings
 from app.database import get_db
 from app.models import Course, Document
-from app.schemas import DocumentDetailOut, DocumentOut, DocumentTextOut
+from app.schemas import DocumentDetailOut, DocumentOcrRunOut, DocumentOut, DocumentTextOut
 from app.services.document_extractor import extract_text_from_path, save_upload_file, validate_upload
+from app.services.ocr_provider import OCRProviderError, get_ocr_provider
 from app.services.storage_cleanup import remove_document_files
 
 router = APIRouter(tags=["documents"])
@@ -43,16 +44,21 @@ async def upload_document(
         allowed_extensions=settings.allowed_extensions,
     )
     path = await save_upload_file(file, Path(settings.storage_dir), content)
-    extracted_text, document_status = extract_text_from_path(path, extension)
+    extraction = extract_text_from_path(path, extension)
 
     document = Document(
         course_id=course_id,
         filename=file.filename or path.name,
         file_type=extension,
         storage_path=str(path),
-        extracted_text=extracted_text,
-        char_count=len(extracted_text),
-        status=document_status,
+        extracted_text=extraction.text,
+        char_count=len(extraction.text),
+        status=extraction.status,
+        page_count=extraction.page_count,
+        extracted_page_count=extraction.extracted_page_count,
+        extraction_method=extraction.extraction_method,
+        extraction_notes=extraction.extraction_notes,
+        ocr_status=extraction.ocr_status,
     )
     db.add(document)
     db.commit()
@@ -76,6 +82,44 @@ def get_document(document_id: int, db: Session = Depends(get_db)) -> DocumentDet
 def get_document_text(document_id: int, db: Session = Depends(get_db)) -> DocumentTextOut:
     document = get_document_or_404(db, document_id)
     return DocumentTextOut(**DocumentOut.model_validate(document).model_dump(), text=document.extracted_text)
+
+
+@router.post("/documents/{document_id}/ocr", response_model=DocumentOcrRunOut)
+def run_document_ocr(
+    document_id: int,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> DocumentOcrRunOut:
+    document = get_document_or_404(db, document_id)
+    if document.file_type != ".pdf":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OCR is only available for PDF documents.")
+    if document.ocr_status not in {"available", "recommended", "error"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OCR is not required for this document.")
+
+    path = _safe_stored_document_path(document, Path(settings.storage_dir))
+    try:
+        provider = get_ocr_provider(settings)
+        result = provider.extract_text(path, page_count=document.page_count)
+    except OCRProviderError as exc:
+        document.ocr_status = "error"
+        document.extraction_notes = str(exc)
+        db.add(document)
+        db.commit()
+        db.refresh(document)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+    document.extracted_text = result.text
+    document.char_count = len(result.text)
+    document.status = "extracted"
+    document.page_count = result.page_count or document.page_count
+    document.extracted_page_count = result.extracted_page_count
+    document.extraction_method = result.extraction_method
+    document.extraction_notes = result.extraction_notes
+    document.ocr_status = "completed"
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+    return DocumentOcrRunOut(**DocumentOut.model_validate(document).model_dump(), text=document.extracted_text)
 
 
 @router.get("/documents/{document_id}/download")
