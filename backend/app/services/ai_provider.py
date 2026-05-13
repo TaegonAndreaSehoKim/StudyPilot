@@ -22,16 +22,24 @@ class AIProvider(ABC):
 
 
 def _sentences(text: str) -> list[str]:
-    cleaned = re.sub(r"\s+", " ", text).strip()
+    cleaned = re.sub(r"[\r\n]+", ". ", text)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
     parts = re.split(r"(?<=[.!?])\s+", cleaned)
     return [part.strip() for part in parts if len(part.strip()) > 20]
 
 
-def _first_line(text: str) -> str:
+def _meaningful_lines(text: str) -> list[str]:
+    lines = []
     for line in text.splitlines():
         clean = line.strip("# -*\t ")
-        if clean:
-            return clean[:80]
+        if len(clean) > 2:
+            lines.append(clean)
+    return lines
+
+
+def _first_line(text: str) -> str:
+    for line in _meaningful_lines(text):
+        return line[:80]
     return "Study Notes"
 
 
@@ -52,6 +60,17 @@ def _keywords(text: str, limit: int = 8) -> list[str]:
         "those",
         "using",
         "page",
+        "notes",
+        "study",
+        "summary",
+        "concept",
+        "supported",
+        "uploaded",
+        "material",
+        "source",
+        "text",
+        "short",
+        "limited",
     }
     candidates = [word.strip("-") for word in words if word.lower() not in stop]
     capitalized = [word for word in candidates if word[:1].isupper()]
@@ -60,16 +79,64 @@ def _keywords(text: str, limit: int = 8) -> list[str]:
     return [word for word, _ in counts.most_common(limit)]
 
 
+def _topics(text: str, limit: int = 8) -> list[str]:
+    headings = []
+    for line in _meaningful_lines(text):
+        if len(line.split()) <= 6 and not line.endswith((".", "!", "?")):
+            headings.append(line[:60])
+    topics = headings + _keywords(text, limit=limit * 2)
+    seen: set[str] = set()
+    unique_topics = []
+    for topic in topics:
+        key = topic.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_topics.append(topic)
+        if len(unique_topics) >= limit:
+            break
+    return unique_topics
+
+
 def _excerpt(text: str, max_len: int = 180) -> str:
     clean = re.sub(r"\s+", " ", text).strip()
     return clean[:max_len].rstrip()
 
 
+def _is_insufficient(text: str) -> bool:
+    return len(re.sub(r"\s+", "", text)) < 80 or not _sentences(text)
+
+
+def _best_sentence_for_topic(topic: str, sentences: list[str]) -> str:
+    topic_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", topic)}
+    if not topic_words:
+        return sentences[0] if sentences else "The uploaded source text is limited."
+    for sentence in sentences:
+        sentence_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", sentence)}
+        if topic_words & sentence_words:
+            return sentence
+    return sentences[0] if sentences else "The uploaded source text is limited."
+
+
 class FakeAIProvider(AIProvider):
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
         sentences = _sentences(document_text)
-        keywords = _keywords(document_text)
+        topics = _topics(document_text)
         title = _first_line(document_text)
+
+        if _is_insufficient(document_text):
+            excerpt = _excerpt(document_text) or "The uploaded source text is limited."
+            return {
+                "title": f"{title} ({summary_type.title()} Summary)",
+                "overview": "The uploaded material is too short for a reliable generated summary. Review the original document for context.",
+                "key_points": [
+                    "StudyPilot found limited source text and avoided adding unsupported details.",
+                    f"Available source excerpt: {excerpt}",
+                ],
+                "key_terms": [{"term": "Insufficient source", "definition": "The uploaded notes do not contain enough extractable detail for reliable term extraction."}],
+                "source_quotes": [{"quote": excerpt, "reason": "Only available source excerpt."}],
+            }
+
         overview_sentences = sentences[:2] or ["The uploaded material is short, so StudyPilot generated a limited source-grounded overview."]
         key_points = sentences[1:6] or sentences[:1] or ["The source material is limited; review the original document for more detail."]
 
@@ -78,8 +145,8 @@ class FakeAIProvider(AIProvider):
             "overview": " ".join(overview_sentences),
             "key_points": key_points[:6],
             "key_terms": [
-                {"term": keyword, "definition": f"{keyword} appears as an important term in the uploaded notes."}
-                for keyword in keywords[:6]
+                {"term": topic, "definition": _best_sentence_for_topic(topic, sentences)}
+                for topic in topics[:6]
             ],
             "source_quotes": [
                 {"quote": _excerpt(sentence), "reason": "Representative excerpt from the uploaded source."}
@@ -89,34 +156,37 @@ class FakeAIProvider(AIProvider):
 
     def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
         sentences = _sentences(document_text)
-        keywords = _keywords(document_text, limit=max(count, 6))
+        topics = _topics(document_text, limit=max(count, 6))
         cards: list[dict[str, Any]] = []
+        insufficient = _is_insufficient(document_text)
 
         for index in range(count):
-            keyword = keywords[index % len(keywords)] if keywords else f"Concept {index + 1}"
-            sentence = sentences[index % len(sentences)] if sentences else "The uploaded material is too short for a detailed source quote."
+            topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
+            sentence = _best_sentence_for_topic(topic, sentences)
             difficulty = ["easy", "medium", "hard"][index % 3]
             cards.append(
                 {
-                    "front": f"What should you remember about {keyword}?",
-                    "back": sentence,
-                    "topic": keyword,
+                    "front": f"What does the source say about {topic}?",
+                    "back": "The uploaded material is too short for a reliable card." if insufficient else sentence,
+                    "topic": topic,
                     "difficulty": difficulty,
-                    "source_quote": _excerpt(sentence),
+                    "source_quote": _excerpt(sentence if not insufficient else document_text),
                 }
             )
         return cards
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
         sentences = _sentences(document_text)
-        keywords = _keywords(document_text, limit=max(question_count, 6))
+        topics = _topics(document_text, limit=max(question_count, 6))
         questions: list[dict[str, Any]] = []
+        insufficient = _is_insufficient(document_text)
 
         for index in range(question_count):
-            keyword = keywords[index % len(keywords)] if keywords else f"Concept {index + 1}"
-            sentence = sentences[index % len(sentences)] if sentences else "The source material is limited."
+            topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
+            sentence = _best_sentence_for_topic(topic, sentences)
             correct_letter = ["A", "B", "C", "D"][index % 4]
-            correct_choice = f"{correct_letter}. {_excerpt(sentence, 90)}"
+            correct_choice_text = "The source is too limited to support a detailed answer." if insufficient else _excerpt(sentence, 90)
+            correct_choice = f"{correct_letter}. {correct_choice_text}"
             choices = [
                 "A. A concept directly supported by the uploaded notes",
                 "B. A distractor that is not the best source-grounded answer",
@@ -127,11 +197,11 @@ class FakeAIProvider(AIProvider):
             question_difficulty = difficulty if difficulty in {"easy", "medium", "hard"} else ["easy", "medium", "hard"][index % 3]
             questions.append(
                 {
-                    "question": f"Which option is best supported by the notes about {keyword}?",
+                    "question": f"Which option is best supported by the notes about {topic}?",
                     "choices": choices,
                     "correct_answer": correct_letter,
-                    "explanation": f"The selected answer is grounded in this source excerpt: {_excerpt(sentence)}",
-                    "topic": keyword,
+                    "explanation": f"The selected answer is grounded in this source excerpt: {_excerpt(sentence if not insufficient else document_text)}",
+                    "topic": topic,
                     "difficulty": question_difficulty,
                 }
             )

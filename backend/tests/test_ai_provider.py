@@ -92,3 +92,34 @@ def test_openai_provider_falls_back_for_invalid_json() -> None:
 
     assert "Exam Summary" in result["title"]
     assert result["key_points"]
+
+
+def test_fake_ai_marks_insufficient_source_material() -> None:
+    provider = FakeAIProvider()
+
+    summary = provider.generate_summary("Too short.", "concise")
+    flashcards = provider.generate_flashcards("Too short.", 2)
+    quiz = provider.generate_quiz("Too short.", 2, "mixed")
+
+    assert "too short" in summary["overview"].lower()
+    assert "Insufficient source" == summary["key_terms"][0]["term"]
+    assert all("too short" in card["back"].lower() for card in flashcards)
+    assert all("limited" in question["choices"][index].lower() for index, question in enumerate(quiz["questions"]))
+
+
+def test_fake_ai_uses_source_sentences_for_term_definitions() -> None:
+    provider = FakeAIProvider()
+    text = (
+        "# Search Algorithms\n\n"
+        "Artificial Intelligence studies rational agents. "
+        "Search algorithms explore state spaces with heuristics. "
+        "Planning uses actions, preconditions, effects, and goals."
+    )
+
+    summary = provider.generate_summary(text, "exam")
+    cards = provider.generate_flashcards(text, 2)
+
+    assert summary["key_terms"][0]["term"] == "Search Algorithms"
+    assert "state spaces" in summary["key_terms"][0]["definition"]
+    assert cards[0]["front"] == "What does the source say about Search Algorithms?"
+    assert "state spaces" in cards[0]["back"]
