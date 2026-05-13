@@ -11,6 +11,7 @@ from app.services.document_extractor import extract_text_from_path, save_upload_
 from app.services.storage_cleanup import remove_document_files
 
 router = APIRouter(tags=["documents"])
+DOCUMENT_PREVIEW_CHAR_LIMIT = 5000
 
 
 def get_document_or_404(db: Session, document_id: int) -> Document:
@@ -60,7 +61,13 @@ async def upload_document(
 @router.get("/documents/{document_id}", response_model=DocumentDetailOut)
 def get_document(document_id: int, db: Session = Depends(get_db)) -> DocumentDetailOut:
     document = get_document_or_404(db, document_id)
-    return DocumentDetailOut(**DocumentOut.model_validate(document).model_dump(), preview=document.extracted_text[:1000])
+    preview = document.extracted_text[:DOCUMENT_PREVIEW_CHAR_LIMIT]
+    return DocumentDetailOut(
+        **DocumentOut.model_validate(document).model_dump(),
+        preview=preview,
+        preview_char_count=len(preview),
+        preview_is_truncated=len(document.extracted_text) > len(preview),
+    )
 
 
 @router.get("/courses/{course_id}/documents", response_model=list[DocumentOut])

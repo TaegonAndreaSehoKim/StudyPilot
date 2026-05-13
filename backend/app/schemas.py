@@ -43,6 +43,8 @@ class DocumentOut(BaseModel):
 
 class DocumentDetailOut(DocumentOut):
     preview: str
+    preview_char_count: int
+    preview_is_truncated: bool
 
 
 class CourseDetailOut(CourseOut):

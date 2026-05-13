@@ -4,6 +4,10 @@ from uuid import uuid4
 from fastapi import HTTPException, UploadFile, status
 from pypdf import PdfReader
 
+NO_EXTRACTABLE_TEXT_MESSAGE = (
+    "[No extractable text found on this page. Scanned/image-only PDF pages are not supported in this MVP.]"
+)
+
 
 def extension_for(filename: str) -> str:
     return Path(filename).suffix.lower()
@@ -54,15 +58,47 @@ def extract_text_from_txt_or_md(path: Path) -> str:
 def extract_text_from_pdf(path: Path) -> tuple[str, str]:
     reader = PdfReader(str(path))
     pages: list[str] = []
+    extracted_char_count = 0
+    empty_page_count = 0
+    page_count = len(reader.pages)
+
     for index, page in enumerate(reader.pages, start=1):
-        page_text = (page.extract_text() or "").strip()
+        page_text = _extract_pdf_page_text(page)
         if page_text:
-            pages.append(f"--- Page {index} ---\n\n{page_text}")
+            extracted_char_count += len(page_text)
+            pages.append(f"--- Page {index} of {page_count} ---\n\n{page_text}")
+        else:
+            empty_page_count += 1
+            pages.append(f"--- Page {index} of {page_count} ---\n\n{NO_EXTRACTABLE_TEXT_MESSAGE}")
 
     text = "\n\n".join(pages).strip()
-    if len(text) < 100:
+    if extracted_char_count < 100:
         return (
-            "This PDF appears to be scanned or image-only. OCR is not supported in the StudyPilot MVP.",
+            f"No extractable text was found in this PDF. Checked {page_count} pages. "
+            "Scanned/image-only PDFs need OCR, which is not supported in the StudyPilot MVP.",
             "error",
         )
+    if empty_page_count:
+        text += (
+            f"\n\nExtraction note: {empty_page_count} of {page_count} pages had no extractable text. "
+            "Those pages may be scanned images or use PDF encoding that pypdf cannot read."
+        )
     return text, "extracted"
+
+
+def _extract_pdf_page_text(page: object) -> str:
+    best_text = ""
+    extraction_attempts = ({}, {"extraction_mode": "layout"})
+    for kwargs in extraction_attempts:
+        try:
+            text = page.extract_text(**kwargs) or ""
+        except TypeError:
+            continue
+        except Exception:
+            continue
+
+        cleaned = text.strip()
+        if len(cleaned) > len(best_text):
+            best_text = cleaned
+
+    return best_text

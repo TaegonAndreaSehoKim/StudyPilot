@@ -19,6 +19,8 @@ export interface Document {
 
 export interface DocumentDetail extends Document {
   preview: string;
+  preview_char_count: number;
+  preview_is_truncated: boolean;
 }
 
 export interface KeyTerm {

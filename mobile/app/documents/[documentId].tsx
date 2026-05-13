@@ -139,7 +139,12 @@ export default function DocumentDetailScreen() {
           </View>
 
           <Card>
-            <Text style={styles.sectionTitle}>Preview</Text>
+            <Text style={styles.sectionTitle}>Extracted Text Preview</Text>
+            <Text style={styles.previewMeta}>
+              {document.preview_is_truncated
+                ? `Showing first ${document.preview_char_count} of ${document.char_count} extracted chars. Generation uses the full extracted text.`
+                : `Showing all ${document.char_count} extracted chars.`}
+            </Text>
             <Text style={styles.preview}>{document.preview || 'No extracted text preview available.'}</Text>
           </Card>
 
@@ -215,6 +220,12 @@ const styles = StyleSheet.create({
   preview: {
     color: colors.text,
     lineHeight: 20,
+  },
+  previewMeta: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
   },
   actions: {
     gap: 10,

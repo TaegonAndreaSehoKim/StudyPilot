@@ -15,7 +15,7 @@ The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the b
 - **Learning loop:** quiz attempts update weak-topic tracking
 - **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
 - **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `19 passed`; mobile TypeScript check passes
+- **Quality checkpoint:** backend pytest suite currently passes at `21 passed`; mobile TypeScript check passes
 
 The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
 
@@ -38,7 +38,7 @@ StudyPilot currently supports:
 
 Current validation state:
 
-- `python -m pytest -q` from `backend/` -> `19 passed`
+- `python -m pytest -q` from `backend/` -> `21 passed`
 - `npm run typecheck` from `mobile/` -> passed
 - `npx expo install --check` from `mobile/` -> dependencies up to date
 - `npx expo config --type public` from `mobile/` -> passed
@@ -343,7 +343,7 @@ python -m pytest -q
 Current status:
 
 ```text
-19 passed
+21 passed
 ```
 
 The backend tests use:
@@ -398,6 +398,7 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 - SQLite and local file storage are intended for local MVP persistence.
 - PDF extraction supports text-based PDFs only.
 - Scanned/image-only PDFs need OCR, which is not implemented.
+- The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
 - AI calls are synchronous.
 - The OpenAI provider has fallback behavior but still needs more robust structured-output validation.
 - Quiz responses include correct answers in the MVP API for mobile simplicity.
