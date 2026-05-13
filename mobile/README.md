@@ -43,6 +43,12 @@ If using a physical device, start the backend with a host that accepts LAN traff
 uvicorn app.main:app --host 0.0.0.0 --reload
 ```
 
+## Backend Access Token
+
+If the backend sets `BACKEND_ACCESS_TOKEN`, enter the same value in the Settings screen. The app sends it as `X-StudyPilot-Key` for course creation, uploads, AI generation, quiz attempts, schedule edits, and other write requests.
+
+Do not put `OPENAI_API_KEY` in the mobile app. The mobile app only stores the backend URL and optional backend access token.
+
 ## Type Check
 
 ```bash
@@ -83,7 +89,7 @@ npm run export:web
 - Quizzes: course-level saved quiz list with links back into quiz taking
 - Quiz: answer questions, submit attempt, view highlighted answers, source quotes, and distractor explanations
 - Attempts: course-level quiz score history and missed-topic review
-- Settings: API base URL and health check
+- Settings: API base URL, backend access token, and health check
 
 ## Troubleshooting
 

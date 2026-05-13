@@ -199,6 +199,17 @@ StudyPilot/
 - [x] Document API base URL notes for iOS simulator, Android emulator, and physical devices.
 - [x] Document that generated content may contain mistakes and should be verified against source materials.
 
+### Phase 13: Deployment Prep
+
+- [x] Add backend write-request protection with optional `BACKEND_ACCESS_TOKEN`.
+- [x] Keep local development usable without a token.
+- [x] Require a configured backend access token for mutating requests in production mode.
+- [x] Add mobile Settings support for storing the backend access token.
+- [x] Add production environment example values.
+- [x] Add backend Dockerfile and root Docker Compose configuration.
+- [x] Document AWS EC2 + Docker Compose deployment flow.
+- [x] Clarify EC2-local SQLite/file-storage limitations and future S3/database migration path.
+
 ## Backend Endpoint Checklist
 
 ### Health

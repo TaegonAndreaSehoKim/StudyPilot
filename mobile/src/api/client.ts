@@ -18,6 +18,7 @@ import type {
 } from './types';
 
 const API_BASE_URL_KEY = 'studypilot.apiBaseUrl';
+const ACCESS_TOKEN_KEY = 'studypilot.accessToken';
 export const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export async function getApiBaseUrl(): Promise<string> {
@@ -28,11 +29,28 @@ export async function setApiBaseUrl(value: string): Promise<void> {
   await AsyncStorage.setItem(API_BASE_URL_KEY, value.trim());
 }
 
+export async function getAccessToken(): Promise<string> {
+  return (await AsyncStorage.getItem(ACCESS_TOKEN_KEY)) || '';
+}
+
+export async function setAccessToken(value: string): Promise<void> {
+  const trimmed = value.trim();
+  if (trimmed) {
+    await AsyncStorage.setItem(ACCESS_TOKEN_KEY, trimmed);
+  } else {
+    await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = await getApiBaseUrl();
+  const accessToken = await getAccessToken();
   const headers = new Headers(options.headers);
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
+  }
+  if (accessToken && !headers.has('X-StudyPilot-Key')) {
+    headers.set('X-StudyPilot-Key', accessToken);
   }
 
   const response = await fetch(`${baseUrl}${path}`, { ...options, headers });

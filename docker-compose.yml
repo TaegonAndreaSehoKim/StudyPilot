@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: sqlite:////app/data/studypilot.db
+      STORAGE_DIR: app/storage
+    ports:
+      - "8000:8000"
+    volumes:
+      - studypilot_data:/app/data
+      - studypilot_storage:/app/app/storage
+    restart: unless-stopped
+
+volumes:
+  studypilot_data:
+  studypilot_storage:

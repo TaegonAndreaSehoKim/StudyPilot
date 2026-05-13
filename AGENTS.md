@@ -75,6 +75,7 @@ Use these files first when reasoning about behavior:
 - `DEVELOPMENT_PLAN.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/schema.md`
+- `docs/deployment/aws_ec2_docker.md`
 - `backend/app/main.py`
 - `backend/app/models.py`
 - `backend/app/schemas.py`
@@ -123,6 +124,7 @@ For current quality expectations, read:
 When choosing what to improve next, bias toward these:
 
 - run a full manual Expo demo flow against the local backend
+- exercise the EC2 Docker Compose deployment path with a real device
 - improve mobile layout after device or simulator inspection
 - add mobile-level smoke testing or lightweight component checks
 - improve OpenAI JSON Schema enforcement
@@ -132,7 +134,7 @@ When choosing what to improve next, bias toward these:
 Lower priority for now:
 
 - authentication
-- cloud deployment
+- production-grade cloud deployment beyond the EC2 Docker MVP
 - vector databases
 - advanced spaced repetition
 - large dependency additions
@@ -154,10 +156,13 @@ Lower priority for now:
 5. Tests should not call real OpenAI APIs.
    Test setup must keep fake AI forced and should avoid network-dependent assertions.
 
-6. MVP quiz responses include correct answers.
+6. `BACKEND_ACCESS_TOKEN` is a shared backend guard, not user authentication.
+   Keep it out of source control. Mobile stores this token only for backend access; never store `OPENAI_API_KEY` in mobile.
+
+7. MVP quiz responses include correct answers.
    This is acceptable for local mobile simplicity, but production should hide answers until submission.
 
-7. Relative backend storage paths are resolved from `backend/`.
+8. Relative backend storage paths are resolved from `backend/`.
    Keep this behavior intact so `cd backend && uvicorn app.main:app --reload` stores uploads under `backend/app/storage`.
 
 ## Editing Guidance
@@ -215,6 +220,12 @@ npx expo export --platform web --output-dir .expo-export-smoke
 npx expo start
 ```
 
+Docker deployment config smoke:
+
+```powershell
+docker compose config
+```
+
 Manual product smoke:
 
 1. Start backend.
@@ -254,7 +265,8 @@ Reasonable next milestones:
 - add frontend/mobile tests
 - strengthen OpenAI JSON validation and retry/fallback behavior
 - prepare demo screenshots and a walkthrough
-- plan cloud deployment only after the local MVP flow is stable
+- test the EC2 Docker Compose deployment path
+- plan managed database, S3, and HTTPS after the EC2 MVP is stable
 
 ## Default Mindset
 

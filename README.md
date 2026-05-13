@@ -187,6 +187,7 @@ npx expo start
 ```
 
 The mobile app stores the API base URL in Settings.
+If the backend has `BACKEND_ACCESS_TOKEN` configured, enter the same backend access token in Settings. This is not an OpenAI API key.
 
 Common backend URLs:
 
@@ -208,11 +209,14 @@ Backend variables are documented in `backend/.env.example`.
 
 ```text
 APP_NAME=StudyPilot
+ENVIRONMENT=development
 DATABASE_URL=sqlite:///./studypilot.db
 STORAGE_DIR=app/storage
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false
+BACKEND_ACCESS_TOKEN=
+CORS_ORIGINS=*
 MAX_UPLOAD_MB=10
 ```
 
@@ -223,6 +227,28 @@ AI provider behavior:
 - if `OPENAI_API_KEY` exists and `USE_FAKE_AI=false`, use `OpenAIProvider`
 
 Do not place LLM API keys in the mobile app.
+
+API access behavior:
+
+- `GET` endpoints such as `/health` and dashboards remain readable.
+- If `BACKEND_ACCESS_TOKEN` is set, every `POST`, `PATCH`, and `DELETE` request must include `X-StudyPilot-Key`.
+- In `ENVIRONMENT=production`, mutating requests fail unless `BACKEND_ACCESS_TOKEN` is configured.
+
+---
+
+## Docker And AWS Deployment
+
+The current deployment MVP is one EC2 instance running the backend with Docker Compose:
+
+```bash
+cp backend/.env.production.example backend/.env
+docker compose up -d --build
+docker compose logs -f backend
+```
+
+The Compose setup stores SQLite in the `studypilot_data` volume and uploaded files in the `studypilot_storage` volume.
+
+Full deployment notes are in `docs/deployment/aws_ec2_docker.md`.
 
 ---
 
@@ -382,7 +408,7 @@ python -m pytest -q
 Current status:
 
 ```text
-50 passed
+54 passed
 ```
 
 The backend tests use:
@@ -441,7 +467,7 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 ## Known Limitations
 
 - No authentication or multi-user support.
-- SQLite and local file storage are intended for local MVP persistence.
+- SQLite and local file storage are intended for local MVP persistence. The Docker deployment keeps them in EC2-local volumes.
 - PDF extraction supports text-based PDFs only.
 - Scanned/image-only PDFs need OCR, which is not implemented.
 - The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
@@ -449,7 +475,7 @@ GitHub Actions runs backend tests and mobile checks on pushes and pull requests 
 - The OpenAI provider has guarded JSON parsing and fake-AI fallback, but strict JSON Schema enforcement is still future work.
 - Quiz responses include correct answers in the MVP API for mobile simplicity.
 - Mobile automated tests are not added yet.
-- No cloud deployment or app store packaging.
+- Docker Compose deployment notes exist for an EC2 MVP, but there is no managed database, S3 storage, HTTPS reverse proxy, or app store packaging yet.
 - Generated study material may contain mistakes. Students should verify against original course materials.
 
 ---
@@ -464,7 +490,7 @@ Planned follow-up improvements:
 - improve strict OpenAI JSON Schema enforcement
 - improve document-generation error states
 - hide quiz correct answers until submission in a production-oriented API mode
-- prepare deployment notes after the local MVP flow is stable
+- add HTTPS/reverse proxy and S3 once the EC2 MVP is exercised
 
 ---
 

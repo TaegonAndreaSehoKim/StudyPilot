@@ -47,10 +47,31 @@ STORAGE_DIR=app/storage
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.5
 USE_FAKE_AI=false
+BACKEND_ACCESS_TOKEN=
+CORS_ORIGINS=*
 MAX_UPLOAD_MB=10
 ```
 
 When `OPENAI_API_KEY` is missing or `USE_FAKE_AI=true`, the backend uses `FakeAIProvider`.
+
+If `BACKEND_ACCESS_TOKEN` is set, every `POST`, `PATCH`, and `DELETE` request must include:
+
+```text
+X-StudyPilot-Key: <token>
+```
+
+In `ENVIRONMENT=production`, the backend rejects mutating requests unless `BACKEND_ACCESS_TOKEN` is configured.
+
+## Docker
+
+From the repository root:
+
+```bash
+docker compose up -d --build
+docker compose logs -f backend
+```
+
+The Compose setup stores SQLite data in the `studypilot_data` volume and uploaded files in the `studypilot_storage` volume. See `docs/deployment/aws_ec2_docker.md` for the EC2 deployment flow.
 
 ## API Summary
 

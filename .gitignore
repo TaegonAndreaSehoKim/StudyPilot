@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # Python
 __pycache__/
@@ -32,6 +33,7 @@ backend/app/storage/documents/*
 # Node / Expo
 node_modules/
 .expo/
+.expo-export-smoke/
 dist/
 web-build/
 npm-debug.log*
