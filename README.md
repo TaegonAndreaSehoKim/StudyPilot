@@ -1,536 +1,175 @@
 # StudyPilot - AI-Powered Mobile Study Assistant
 
-StudyPilot is a local-first mobile study assistant that turns course materials into summaries, flashcards, quizzes, and weak-topic reviews.
+StudyPilot is a full-stack mobile study assistant that turns course materials into review notes, flashcards, practice quizzes, weak-area review, and deadline tracking.
 
-The project is built as a full-stack monorepo with a React Native Expo mobile app and a FastAPI backend. It is designed to feel like an early-stage product MVP rather than a toy demo, while still staying simple enough to run locally after cloning.
+It is built as an early-stage product MVP with a React Native Expo app, a FastAPI backend, SQLite persistence, local file storage, OCR handoff for scanned PDFs, and a backend-only AI provider layer.
 
-The MVP works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the backend automatically uses a deterministic fake AI provider so the full demo flow and backend tests can run without external network calls or paid API usage.
+The project works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the backend uses a deterministic fake AI provider so the full demo flow and test suite can run locally without paid API calls.
 
-## Highlights
+## What It Does
 
-- **Mobile app:** Expo Router, React Native, TypeScript
-- **Backend:** FastAPI, SQLAlchemy, SQLite
-- **Document support:** `.txt`, `.md`, text-based `.pdf`, and OCR handoff for scanned PDFs
-- **Study generation:** summaries, flashcards, and multiple-choice quizzes
-- **Quality loop:** section-aware generation, weak-topic review quizzes, and lightweight AI quality evals
-- **Learning loop:** quiz attempts update weak-topic tracking
-- **Tablet layout:** responsive containers and card grids for wider Expo tablet displays
-- **Local demo mode:** deterministic `FakeAIProvider` is used when no API key exists
-- **Security boundary:** mobile app never reads or stores LLM API keys
-- **Quality checkpoint:** backend pytest suite currently passes at `59 passed`; mobile TypeScript and Expo export checks pass
+```text
+course -> source material -> review notes -> flashcards -> practice quiz -> weak areas -> deadlines
+```
 
-The mobile app currently targets Expo SDK 54 so it can run in the App Store version of Expo Go.
+Core capabilities:
 
-## Current Status
+- Create courses and organize source materials.
+- Upload `.txt`, `.md`, text-based `.pdf`, and OCR-required scanned PDFs.
+- Create source-grounded review notes, flashcards, and quizzes.
+- Take quizzes and track missed topics as weak areas.
+- Create weak-area practice quizzes.
+- Track assignments, exams, readings, projects, and deadlines per course.
+- See Continue Studying cards, recent work, deadlines, and weak areas on the dashboard.
+- Run locally with fake AI, or use OpenAI from the backend only.
 
-StudyPilot currently supports:
+## Tech Stack
 
-- course creation and listing
-- course detail dashboards
-- course schedule tracking for assignments, exams, readings, projects, and milestones
-- global upcoming schedule view across all courses
-- document upload and extraction
-- PDF extraction diagnostics with `needs_ocr`, quality labels, page coverage, and optional OCR execution
-- document previews, full extracted-text reading, original-file download, and guided generation options
-- fake-AI summary generation
-- saved summary detail screens with share/export support
-- fake-AI flashcard generation
-- saved course flashcard review with share/export support
-- fake-AI quiz generation
-- saved course quiz review
-- quiz taking, scoring, source-grounded explanations, and highlighted answer review
-- course-level quiz attempt history
-- weak-topic review quiz generation
-- weak-topic tracking from missed questions
-- global dashboard with Continue Studying cards, counts, upcoming deadlines, recent courses, recent sources, review notes, practice quizzes, and weak areas
-- mobile API base URL settings
-- tablet-friendly responsive layouts for dashboard, course, source, deadline, quiz, and saved-material screens
-- backend access token protection and in-memory rate limiting for write and AI-generation requests
-- backend test coverage for the core local workflow
-
-Current validation state:
-
-- `python -m pytest -q` from `backend/` -> `59 passed`
-- `npm run typecheck` from `mobile/` -> passed
-- `npx expo install --check` from `mobile/` -> dependencies up to date
-- `npx expo config --type public` from `mobile/` -> passed
-- `npx expo start --localhost --port 8085` reached `Waiting on http://localhost:8085`
-- backend `/health` smoke check returned `{"status":"ok","app":"StudyPilot"}`
-- backend demo smoke flow passed with course, upload, summary, flashcards, quiz, attempt, weak topics, and dashboard verification
-
----
-
-## What the Project Does
-
-StudyPilot supports the following flow:
-
-1. Create a course, such as `OMSCS AI`.
-2. Upload lecture notes, markdown notes, text files, or text-based PDFs.
-3. Extract text on the backend.
-4. Generate a concise or exam-focused summary.
-5. Generate flashcards.
-6. Generate a quiz.
-7. Take the quiz in the mobile app.
-8. Save attempt results.
-9. Track missed topics as weak topics.
-10. Review recent activity and weak topics on the dashboard.
-
-The current implementation is intentionally transparent and local-first. It is designed for demo-quality study workflows and future extension.
-
----
+- Mobile: React Native, Expo Router, TypeScript
+- Backend: Python, FastAPI, SQLAlchemy
+- Database: SQLite
+- AI: backend-only provider abstraction with fake AI fallback and OpenAI support
+- OCR: fake OCR for local tests, optional Amazon Textract for scanned PDFs
+- Testing: pytest for backend, TypeScript and Expo smoke checks for mobile
+- Deployment MVP: Docker Compose on EC2, Expo Go plus EAS preview updates
 
 ## Architecture
 
 ```text
 Expo mobile app
-  -> fetch HTTP requests
+  -> HTTP fetch calls
 FastAPI backend
-  -> SQLite database
+  -> SQLite
   -> local upload storage
-  -> AIProvider abstraction
-       -> FakeAIProvider when OPENAI_API_KEY is missing
-       -> OpenAIProvider when OPENAI_API_KEY is set
+  -> OCR provider
+  -> AI provider
+       -> FakeAIProvider without API key
+       -> OpenAIProvider with OPENAI_API_KEY
 ```
 
-The mobile app calls the FastAPI backend only. It does not access OpenAI or any LLM provider directly.
+The mobile app never reads or stores LLM API keys. It only talks to the FastAPI backend.
 
-Architecture notes:
+More detail:
 
-- `docs/architecture/overview.md`
-- `docs/architecture/schema.md`
-- `docs/deployment/eas_preview_updates.md`
-- `docs/demo/mobile_walkthrough.md`
-- `docs/demo/demo_script.md`
+- [Architecture overview](docs/architecture/overview.md)
+- [Database schema](docs/architecture/schema.md)
+- [API endpoints](docs/api/endpoints.md)
 
-Agent/developer guidance:
+## Quick Start
 
-- `AGENTS.md`
-
----
-
-## Project Structure
-
-```text
-StudyPilot/
-├── AGENTS.md
-├── DEVELOPMENT_PLAN.md
-├── README.md
-├── backend/
-│   ├── app/
-│   │   ├── routers/
-│   │   ├── services/
-│   │   ├── config.py
-│   │   ├── database.py
-│   │   ├── models.py
-│   │   ├── schemas.py
-│   │   └── main.py
-│   ├── tests/
-│   ├── README.md
-│   └── requirements.txt
-├── docs/
-│   └── architecture/
-└── mobile/
-    ├── app/
-    ├── src/
-    ├── README.md
-    └── package.json
-```
-
----
-
-## Backend Setup
-
-Create and activate a virtual environment, then install dependencies.
+Start the backend:
 
 ```bash
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-Start the backend:
-
-```bash
 uvicorn app.main:app --reload
 ```
 
-Open:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Health check:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-Expected response:
-
-```json
-{
-  "status": "ok",
-  "app": "StudyPilot"
-}
-```
-
----
-
-## Mobile Setup
-
-Install dependencies:
+Start the mobile app:
 
 ```bash
 cd mobile
 npm install
-```
-
-Start Expo:
-
-```bash
 npx expo start
 ```
 
-The mobile app stores the API base URL in Settings.
-If the backend has `BACKEND_ACCESS_TOKEN` configured, enter the same backend access token in Settings. This is not an OpenAI API key.
-
-Common backend URLs:
+Open Settings in the app and set the API base URL:
 
 - iOS simulator: `http://127.0.0.1:8000`
 - Android emulator: `http://10.0.2.2:8000`
 - Physical device: `http://<your-computer-lan-ip>:8000`
+- Current EC2 MVP backend: `http://3.23.120.213:8000`
 
-For physical-device testing, run the backend with:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --reload
-```
-
-To check the mobile app from Expo Go without keeping a local dev server running, publish a preview update after mobile changes:
-
-```bash
-cd mobile
-npm run update:preview -- --message "preview update"
-```
-
-Then reopen the StudyPilot project in Expo Go from the same Expo account. Use the Settings screen's App Update card to confirm the currently loaded update metadata when available.
-
----
-
-## Environment Variables
-
-Backend variables are documented in `backend/.env.example`.
-
-```text
-APP_NAME=StudyPilot
-ENVIRONMENT=development
-DATABASE_URL=sqlite:///./studypilot.db
-STORAGE_DIR=app/storage
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.5
-USE_FAKE_AI=false
-BACKEND_ACCESS_TOKEN=
-CORS_ORIGINS=*
-RATE_LIMIT_ENABLED=true
-MUTATION_RATE_LIMIT_PER_MINUTE=60
-AI_RATE_LIMIT_PER_MINUTE=12
-OCR_PROVIDER=fake
-AWS_REGION=us-east-1
-MAX_UPLOAD_MB=10
-```
-
-AI provider behavior:
-
-- if `USE_FAKE_AI=true`, use `FakeAIProvider`
-- if `OPENAI_API_KEY` is missing, use `FakeAIProvider`
-- if `OPENAI_API_KEY` exists and `USE_FAKE_AI=false`, use `OpenAIProvider`
-
-Do not place LLM API keys in the mobile app.
-
-API access behavior:
-
-- `GET` endpoints such as `/health` and dashboards remain readable.
-- If `BACKEND_ACCESS_TOKEN` is set, every `POST`, `PATCH`, and `DELETE` request must include `X-StudyPilot-Key`.
-- In `ENVIRONMENT=production`, mutating requests fail unless `BACKEND_ACCESS_TOKEN` is configured.
-- Mutating requests are rate-limited in memory. OCR and AI-generation endpoints use the stricter `AI_RATE_LIMIT_PER_MINUTE` limit.
-- OCR uses `OCR_PROVIDER=fake` for local demos/tests. Set `OCR_PROVIDER=textract` and configure AWS credentials on the backend host for real scanned PDFs. `POST /documents/{document_id}/ocr` starts a backend OCR job and returns a job record; poll `GET /ocr-jobs/{job_id}` until it is completed or failed.
-
----
-
-## Docker And AWS Deployment
-
-The current deployment MVP is one EC2 instance running the backend with Docker Compose:
-
-```bash
-cp backend/.env.production.example backend/.env
-docker compose up -d --build
-docker compose logs -f backend
-```
-
-The Compose setup stores SQLite in the `studypilot_data` volume and uploaded files in the `studypilot_storage` volume.
-
-For a stable mobile API URL, associate an Elastic IP with the EC2 instance and use `http://<elastic-ip>:8000` in the mobile Settings screen. Full deployment notes are in `docs/deployment/aws_ec2_docker.md`.
-
----
-
-## API Usage
-
-Main endpoints:
-
-- `GET /health`
-- `POST /courses`
-- `GET /courses`
-- `GET /courses/{course_id}`
-- `PATCH /courses/{course_id}`
-- `DELETE /courses/{course_id}`
-- `POST /documents/upload`
-- `GET /documents/{document_id}`
-- `GET /documents/{document_id}/text`
-- `GET /documents/{document_id}/download`
-- `POST /documents/{document_id}/ocr`
-- `GET /ocr-jobs/{job_id}`
-- `GET /courses/{course_id}/documents`
-- `DELETE /documents/{document_id}`
-- `POST /documents/{document_id}/summaries`
-- `GET /documents/{document_id}/summaries`
-- `GET /summaries/{summary_id}`
-- `GET /courses/{course_id}/summaries`
-- `POST /documents/{document_id}/flashcards`
-- `GET /documents/{document_id}/flashcards`
-- `GET /courses/{course_id}/flashcards`
-- `POST /documents/{document_id}/quizzes`
-- `POST /courses/{course_id}/review-quiz`
-- `GET /documents/{document_id}/quizzes`
-- `GET /courses/{course_id}/quizzes`
-- `GET /quizzes/{quiz_id}`
-- `GET /quizzes/{quiz_id}/attempts`
-- `GET /courses/{course_id}/attempts`
-- `POST /quizzes/{quiz_id}/attempts`
-- `POST /courses/{course_id}/schedule`
-- `GET /courses/{course_id}/schedule`
-- `GET /schedule`
-- `GET /schedule/{item_id}`
-- `PATCH /schedule/{item_id}`
-- `DELETE /schedule/{item_id}`
-- `GET /courses/{course_id}/weak-topics`
-- `GET /dashboard`
-- `GET /courses/{course_id}/dashboard`
-
-### Create a Course
-
-```json
-POST /courses
-{
-  "title": "OMSCS AI",
-  "description": "Artificial Intelligence notes"
-}
-```
-
-### Upload a Document
-
-Use multipart form data:
-
-```text
-POST /documents/upload
-course_id=<course id>
-file=<notes.txt | notes.md | notes.pdf>
-```
-
-### Generate a Summary
-
-```json
-POST /documents/1/summaries
-{
-  "summary_type": "concise"
-}
-```
-
-Supported summary types:
-
-- `concise`: summarize core concepts and the broad flow of the material
-- `detailed`: explain the concepts at a general/theoretical level, prioritizing principles over examples
-- `exam`: focus on likely test points, similar-concept comparisons, and memorization anchors
-
-### Generate Flashcards
-
-```json
-POST /documents/1/flashcards
-{
-  "count": 10
-}
-```
-
-### Generate a Quiz
-
-```json
-POST /documents/1/quizzes
-{
-  "question_count": 5,
-  "difficulty": "mixed"
-}
-```
-
-### Generate a Weak-Topic Review Quiz
-
-```json
-POST /courses/1/review-quiz
-{
-  "question_count": 5,
-  "difficulty": "medium"
-}
-```
-
-If `topics` is omitted, StudyPilot uses the course's highest-miss weak topics.
-
-### Submit a Quiz Attempt
-
-```json
-POST /quizzes/1/attempts
-{
-  "answers": [
-    {
-      "question_id": 1,
-      "selected_answer": "A"
-    }
-  ]
-}
-```
-
----
+Full setup guide: [Local setup](docs/setup/local_setup.md).
 
 ## Demo Flow
 
-For a detailed Expo Go checklist, see [`docs/demo/mobile_walkthrough.md`](docs/demo/mobile_walkthrough.md).
+1. Open StudyPilot.
+2. Create a course, for example `OMSCS AI`.
+3. Add source material such as `docs/demo/omscs_ai_sample_notes.md`.
+4. Read the full source text.
+5. Create Quick Review notes.
+6. Create flashcards.
+7. Create a practice quiz.
+8. Submit answers with at least one miss.
+9. Review weak areas.
+10. Add an assignment or exam deadline.
+11. Return to the dashboard and continue studying from the next recommended action.
 
-1. Start the backend.
-2. Start the mobile app.
-3. Open Settings and test the backend connection.
-4. Create a course such as `OMSCS AI`.
-5. Open the course.
-6. Upload a `.txt`, `.md`, or text-based `.pdf` file. For a repeatable text upload demo, use `docs/demo/sample-study-notes.txt`; for markdown, use `docs/demo/omscs_ai_sample_notes.md`.
-7. Open the uploaded document.
-8. Open the full extracted text or original file if you need to inspect the source.
-9. Generate a concise summary.
-10. Open the saved summary from the course screen and use Save / Share if needed.
-11. Generate flashcards.
-12. Generate a quiz.
-13. Take the quiz and submit answers.
-14. Return to the dashboard to inspect weak topics and recent activity.
+Demo docs:
 
----
+- [Mobile walkthrough](docs/demo/mobile_walkthrough.md)
+- [Demo script](docs/demo/demo_script.md)
+- [Sample demo materials](docs/demo/README.md)
 
-## Testing
+## Validation
 
-Run the backend suite:
+Backend:
 
 ```bash
 cd backend
 python -m pytest -q
 ```
 
-Current status:
-
-```text
-59 passed
-```
-
-The backend tests use:
-
-- temporary SQLite databases
-- temporary upload storage
-- fake AI
-- no external model API calls
-
-Run the mobile type check:
-
-```bash
-cd mobile
-npm run typecheck
-```
-
-Run mobile smoke checks for app config, routes, preview-update setup, and backend-token wiring:
-
-```bash
-cd mobile
-npm run smoke
-```
-
-Run all mobile local checks:
+Mobile:
 
 ```bash
 cd mobile
 npm run check
 ```
 
-Check Expo config loading:
+More checks: [Validation and smoke checks](docs/operations/validation.md).
 
-```bash
-cd mobile
-npx expo config --type public
+## Deployment Notes
+
+The current deployment MVP runs the backend on one EC2 instance with Docker Compose. The mobile app is tested through Expo Go and EAS preview updates.
+
+- [AWS EC2 Docker deployment](docs/deployment/aws_ec2_docker.md)
+- [EAS preview updates](docs/deployment/eas_preview_updates.md)
+
+## Current Status
+
+Stable MVP foundation:
+
+- backend startup, course CRUD, upload, extraction, OCR jobs, generation, quiz attempts, weak areas, deadlines, dashboards
+- deterministic fake AI and fake OCR for local demos/tests
+- OpenAI provider path from backend only
+- EC2 backend deployment path tested
+- Expo Go preview workflow tested
+- learner-focused mobile UX for dashboard, course, and source screens
+
+Still intentionally out of scope:
+
+- authentication and multi-user accounts
+- subscriptions or payments
+- S3 or managed database persistence
+- app store packaging
+- advanced spaced repetition
+- vector search or RAG
+
+Generated study material may contain mistakes. Students should verify against original course materials.
+
+## Project Map
+
+```text
+backend/                 FastAPI app, SQLite models, routers, services, tests
+mobile/                  Expo Router app, API client, screens, components
+docs/architecture/       architecture and schema notes
+docs/api/                API reference
+docs/setup/              local setup
+docs/deployment/         EC2 and EAS preview operations
+docs/demo/               walkthroughs and sample source materials
+docs/operations/         validation and smoke checks
+AGENTS.md                guidance for future coding agents
+DEVELOPMENT_PLAN.md      original build plan and milestone notes
 ```
-
-Run the Expo web bundle smoke:
-
-```bash
-cd mobile
-npm run export:web
-```
-
-Run the backend demo smoke flow against a running backend:
-
-```bash
-cd backend
-python scripts/smoke_demo.py --base-url http://127.0.0.1:8000 --cleanup
-```
-
-Check Expo dependency compatibility:
-
-```bash
-cd mobile
-npx expo install --check
-```
-
-GitHub Actions runs backend tests and mobile checks on pushes and pull requests to `main`.
-
----
-
-## Known Limitations
-
-- No authentication or multi-user support.
-- SQLite and local file storage are intended for local MVP persistence. The Docker deployment keeps them in EC2-local volumes.
-- PDF extraction first uses embedded text. Scanned/image-only PDFs and low-coverage partial extractions are marked `needs_ocr` and can be processed through a backend OCR job using the configured OCR provider.
-- The built-in fake OCR provider is for demos/tests; real OCR requires Amazon Textract configuration and AWS credentials.
-- The mobile document screen shows a bounded extracted-text preview; summaries, flashcards, and quizzes use the full extracted text stored by the backend.
-- OCR jobs use FastAPI background tasks for the single-server MVP. A production deployment should move OCR work to a durable queue.
-- AI calls are synchronous.
-- The OpenAI provider validates required summary, flashcard, and quiz fields before accepting model output, then falls back to fake AI if the response shape is unsafe.
-- Quiz responses include correct answers in the MVP API for mobile simplicity.
-- Mobile automated tests are not added yet.
-- Docker Compose deployment notes exist for an EC2 MVP, but there is no managed database, S3 storage, HTTPS reverse proxy, or app store packaging yet.
-- Generated study material may contain mistakes. Students should verify against original course materials.
-
----
-
-## Next Steps
-
-Planned follow-up improvements:
-
-- run a full simulator or physical-device Expo smoke test
-- capture screenshots and polish mobile layout
-- add mobile component or interaction tests
-- improve strict OpenAI JSON Schema enforcement
-- improve document-generation error states
-- hide quiz correct answers until submission in a production-oriented API mode
-- add HTTPS/reverse proxy and S3 once the EC2 MVP is exercised
-
----
 
 ## Resume Bullet Draft
 
-StudyPilot — AI-Powered Mobile Study Assistant | React Native, Expo, FastAPI, Python, SQLite, LLM APIs
+StudyPilot - AI-Powered Mobile Study Assistant | React Native, Expo, FastAPI, Python, SQLite, LLM APIs
 
-- Built a mobile study assistant that imports course materials and generates structured summaries, flashcards, quizzes, and weak-topic reviews through a FastAPI-based AI pipeline.
-- Implemented document upload, PDF/text extraction, chunking, prompt-based generation, quiz attempts, and mobile dashboard views for personalized study workflows.
-- Added deterministic fake-AI mode and pytest coverage to support local demos without external API calls.
+- Built a mobile study assistant that imports course materials and generates structured review notes, flashcards, quizzes, and weak-area reviews through a FastAPI-based AI pipeline.
+- Implemented document upload, PDF/text extraction, OCR handoff, chunking, prompt-based generation, quiz attempts, deadline tracking, and mobile dashboard views for personalized study workflows.
+- Added deterministic fake-AI mode, backend-only LLM access, EC2 deployment notes, EAS preview updates, and pytest/mobile smoke checks to support reliable local and device demos.

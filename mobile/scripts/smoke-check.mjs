@@ -30,6 +30,7 @@ const packageJson = readJson('package.json');
 const apiClient = readTextFromRepo('mobile/src/api/client.ts');
 const mobileReadme = readTextFromRepo('mobile/README.md');
 const rootReadme = readTextFromRepo('README.md');
+const setupDoc = readTextFromRepo('docs/setup/local_setup.md');
 
 check('Expo project id is configured', () => Boolean(appConfig.extra?.eas?.projectId));
 check('EAS update URL uses the project id', () => appConfig.updates?.url?.includes(appConfig.extra.eas.projectId));
@@ -42,7 +43,8 @@ check('Mobile API client keeps a local default backend URL', () => apiClient.inc
 check('EAS preview update script exists', () => packageJson.scripts?.['update:preview']?.includes('eas-cli'));
 check('expo-updates dependency exists', () => Boolean(packageJson.dependencies?.['expo-updates']));
 check('Mobile README documents preview updates', () => mobileReadme.includes('Preview Updates Without A Local Dev Server'));
-check('Root README documents preview update command', () => rootReadme.includes('npm run update:preview'));
+check('Root README links to setup guide', () => rootReadme.includes('docs/setup/local_setup.md'));
+check('Setup guide documents preview update command', () => setupDoc.includes('npm run update:preview'));
 
 [
   'app/index.tsx',
