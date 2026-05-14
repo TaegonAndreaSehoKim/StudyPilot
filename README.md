@@ -152,6 +152,14 @@ Still intentionally out of scope:
 
 Generated study material may contain mistakes. Students should verify against original course materials.
 
+## Development Workflow
+
+StudyPilot was developed with AI-assisted coding support using Codex. I used Codex as a pair-programming assistant for implementation planning, scaffolding, refactoring, documentation, and test generation.
+
+I owned the product direction, architecture decisions, requirements, prompt design, code review, debugging, and final validation. Generated code was reviewed, modified, and tested before being kept in the project.
+
+The project includes deterministic fake-AI and fake-OCR modes, backend-only LLM access, pytest coverage, and mobile smoke checks so the main demo flow can be validated without relying on external API calls.
+
 ## Project Map
 
 ```text
