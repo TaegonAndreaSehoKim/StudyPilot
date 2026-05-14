@@ -17,6 +17,7 @@ Core capabilities:
 - Create courses and organize source materials.
 - Upload `.txt`, `.md`, text-based `.pdf`, and OCR-required scanned PDFs.
 - Create source-grounded review notes, flashcards, and quizzes.
+- Save and share review notes as PDFs from the mobile app.
 - Take quizzes and track missed topics as weak areas.
 - Create weak-area practice quizzes.
 - Track assignments, exams, readings, projects, and deadlines per course.

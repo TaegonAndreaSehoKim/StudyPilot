@@ -106,7 +106,7 @@ npm run export:web
 - Deadlines: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
 - Source detail: read full source, open original file, text-recognition guidance, source preview, review-note options, practice options, saved study-tool counts, and saved-material sections
 - Full text: complete readable source text with Save / Share support
-- Review notes: full saved notes with overview, what to remember, key concepts, source evidence, and Save / Share support
+- Review notes: full saved notes with overview, what to remember, key concepts, source evidence, and Save / Share PDF support
 - Flashcards: course-level saved card review with Save / Share support
 - Practice quizzes: course-level saved quiz list with links back into quiz taking
 - Practice quiz: answer progress, submit practice, highlighted answers, source evidence, distractor explanations, weak-area review, practice again, and return links to the source/course

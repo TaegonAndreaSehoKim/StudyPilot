@@ -72,17 +72,29 @@ export default function DashboardScreen() {
             <Metric label="Practice Sets" value={dashboard.quiz_count} />
           </View>
 
+          <Section title="Due Soon">
+            {schedule.length ? (
+              <ResponsiveGrid minItemWidth={340}>
+                {schedule.slice(0, 3).map((item) => (
+                  <Link key={item.id} href={`/schedule/course/${item.course_id}` as Href} asChild>
+                    <Card>
+                      <View style={styles.itemHeader}>
+                        <Text style={styles.itemTitle}>{item.title}</Text>
+                        <Text style={styles.itemBadge}>{item.event_type}</Text>
+                      </View>
+                      <Text style={styles.itemMeta}>{item.course_title}</Text>
+                      <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)} - {formatDateTime(item.due_at)}</Text>
+                    </Card>
+                  </Link>
+                ))}
+              </ResponsiveGrid>
+            ) : (
+              <EmptyState title="No deadlines yet" message="Add assignments or exam dates from a course page." />
+            )}
+          </Section>
+
           <Section title="Continue Studying">
             <ResponsiveGrid minItemWidth={300}>
-              {schedule[0] ? (
-                <FocusCard
-                  eyebrow="Due Soon"
-                  title={schedule[0].title}
-                  detail={`${schedule[0].course_title} - ${formatTimeRemaining(schedule[0].due_at, schedule[0].is_completed)}`}
-                  actionLabel="View deadline"
-                  href={`/schedule/course/${schedule[0].course_id}` as Href}
-                />
-              ) : null}
               {dashboard.weak_topics[0] ? (
                 <FocusCard
                   eyebrow="Review Weak Area"
@@ -110,32 +122,13 @@ export default function DashboardScreen() {
                   href={`/summaries/${dashboard.recent_summaries[0].id}` as Href}
                 />
               ) : null}
-              {!schedule.length && !dashboard.weak_topics.length && !dashboard.recent_quizzes.length && !dashboard.recent_summaries.length ? (
+              {!dashboard.weak_topics.length && !dashboard.recent_quizzes.length && !dashboard.recent_summaries.length ? (
                 <EmptyState title="Nothing queued yet" message="Add a course and source notes to start building review notes and practice." />
               ) : null}
             </ResponsiveGrid>
           </Section>
 
           <ResponsiveGrid minItemWidth={340}>
-            <Section title="Due Soon">
-              {schedule.length ? (
-                schedule.map((item) => (
-                  <Link key={item.id} href={`/schedule/course/${item.course_id}` as Href} asChild>
-                    <Card>
-                      <View style={styles.itemHeader}>
-                        <Text style={styles.itemTitle}>{item.title}</Text>
-                        <Text style={styles.itemBadge}>{item.event_type}</Text>
-                      </View>
-                      <Text style={styles.itemMeta}>{item.course_title}</Text>
-                      <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)} - {formatDateTime(item.due_at)}</Text>
-                    </Card>
-                  </Link>
-                ))
-              ) : (
-                <EmptyState title="No deadlines yet" message="Add assignments or exam dates from a course page." />
-              )}
-            </Section>
-
             <Section title="Recent Courses">
               {dashboard.recent_courses.length ? (
                 dashboard.recent_courses.map((course) => (

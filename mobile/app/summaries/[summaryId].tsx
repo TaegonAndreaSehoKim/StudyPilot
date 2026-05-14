@@ -1,4 +1,6 @@
 import { Link, useLocalSearchParams } from 'expo-router';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -11,7 +13,7 @@ import { LoadingState } from '@/components/LoadingState';
 import { ScreenScrollView } from '@/components/Screen';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
-import { summaryToMarkdown } from '@/utils/exportText';
+import { summaryToHtml, summaryToMarkdown } from '@/utils/exportText';
 
 export default function SummaryDetailScreen() {
   const { summaryId } = useLocalSearchParams<{ summaryId: string }>();
@@ -47,10 +49,21 @@ export default function SummaryDetailScreen() {
     }
     try {
       setSharing(true);
-      await Share.share({
-        title: summary.title,
-        message: summaryToMarkdown(summary),
+      const pdf = await Print.printToFileAsync({
+        html: summaryToHtml(summary),
       });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdf.uri, {
+          dialogTitle: 'Save / Share Review Notes PDF',
+          mimeType: 'application/pdf',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        await Share.share({
+          title: summary.title,
+          message: summaryToMarkdown(summary),
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to share review notes');
     } finally {
@@ -85,7 +98,7 @@ export default function SummaryDetailScreen() {
             </Link>
           ) : null}
 
-          <Button title={sharing ? 'Opening...' : 'Save / Share Notes'} disabled={sharing} onPress={shareSummary} />
+          <Button title={sharing ? 'Creating PDF...' : 'Save / Share PDF'} disabled={sharing} onPress={shareSummary} />
 
           <SummaryView summary={summary} />
         </>

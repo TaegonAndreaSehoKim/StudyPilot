@@ -312,7 +312,7 @@ export default function CourseDetailScreen() {
 
           {activeTab === 'schedule' ? (
             <>
-              <Button title="Manage Deadlines" variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
+              <Button title="Add New Deadline" variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
               <Section title="Active Deadlines">
                 <ScheduleCards courseId={id} schedule={schedule} />
               </Section>
