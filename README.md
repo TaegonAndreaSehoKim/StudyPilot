@@ -138,7 +138,7 @@ Stable MVP foundation:
 - OpenAI provider path from backend only
 - EC2 backend deployment path tested
 - Expo Go preview workflow tested
-- learner-focused mobile UX for dashboard, course, and source screens
+- learner-focused mobile UX for dashboard, course, source, review-note, and practice screens
 
 Still intentionally out of scope:
 

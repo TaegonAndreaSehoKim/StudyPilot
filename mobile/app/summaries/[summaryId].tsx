@@ -30,7 +30,7 @@ export default function SummaryDetailScreen() {
       setSummary(loadedSummary);
       setDocument(await api.document(loadedSummary.document_id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load summary');
+      setError(err instanceof Error ? err.message : 'Unable to load review notes');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -52,14 +52,14 @@ export default function SummaryDetailScreen() {
         message: summaryToMarkdown(summary),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to share summary');
+      setError(err instanceof Error ? err.message : 'Unable to share review notes');
     } finally {
       setSharing(false);
     }
   }
 
   if (loading) {
-    return <LoadingState message="Loading summary" />;
+    return <LoadingState message="Loading review notes" />;
   }
 
   return (
@@ -72,25 +72,39 @@ export default function SummaryDetailScreen() {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>{summary.title}</Text>
-            <Text style={styles.subtitle}>{summary.summary_type} summary</Text>
+            <Text style={styles.subtitle}>{summaryTypeLabel(summary.summary_type)} review notes</Text>
           </View>
 
           {document ? (
             <Link href={`/documents/${document.id}`} asChild>
               <Card>
-                <Text style={styles.itemTitle}>Source Document</Text>
+                <Text style={styles.itemTitle}>Source Material</Text>
                 <Text style={styles.itemMeta}>{document.filename}</Text>
+                <Text style={styles.itemHint}>Open the source to read the original context or create more practice.</Text>
               </Card>
             </Link>
           ) : null}
 
-          <Button title={sharing ? 'Opening...' : 'Save / Share Summary'} disabled={sharing} onPress={shareSummary} />
+          <Button title={sharing ? 'Opening...' : 'Save / Share Notes'} disabled={sharing} onPress={shareSummary} />
 
           <SummaryView summary={summary} />
         </>
       ) : null}
     </ScreenScrollView>
   );
+}
+
+function summaryTypeLabel(value: string): string {
+  if (value === 'concise') {
+    return 'Quick Review';
+  }
+  if (value === 'detailed') {
+    return 'Deep Review';
+  }
+  if (value === 'exam') {
+    return 'Exam Prep';
+  }
+  return value;
 }
 
 const styles = StyleSheet.create({
@@ -118,5 +132,10 @@ const styles = StyleSheet.create({
   itemMeta: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+  itemHint: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

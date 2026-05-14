@@ -63,8 +63,8 @@ export default function CourseFlashcardsScreen() {
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       <View style={styles.header}>
-        <Text style={styles.title}>Saved Flashcards</Text>
-        <Text style={styles.subtitle}>{flashcards.length} cards across this course</Text>
+        <Text style={styles.title}>Flashcards</Text>
+        <Text style={styles.subtitle}>{flashcards.length} recall card{flashcards.length === 1 ? '' : 's'} ready for this course</Text>
       </View>
 
       {flashcards.length ? (
@@ -73,7 +73,7 @@ export default function CourseFlashcardsScreen() {
           <FlashcardList flashcards={flashcards} />
         </>
       ) : (
-        <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
+        <EmptyState title="No flashcards" message="Create flashcards from a source material and they will appear here." />
       )}
     </ScreenScrollView>
   );

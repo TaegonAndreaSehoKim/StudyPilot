@@ -25,7 +25,7 @@ export default function CourseQuizzesScreen() {
       setError(null);
       setQuizzes(await api.courseQuizzes(id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load quizzes');
+      setError(err instanceof Error ? err.message : 'Unable to load practice quizzes');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -37,7 +37,7 @@ export default function CourseQuizzesScreen() {
   }, [load]));
 
   if (loading) {
-    return <LoadingState message="Loading quizzes" />;
+    return <LoadingState message="Loading practice quizzes" />;
   }
 
   return (
@@ -47,8 +47,8 @@ export default function CourseQuizzesScreen() {
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       <View style={styles.header}>
-        <Text style={styles.title}>Saved Quizzes</Text>
-        <Text style={styles.subtitle}>{quizzes.length} quizzes across this course</Text>
+        <Text style={styles.title}>Practice Quizzes</Text>
+        <Text style={styles.subtitle}>{quizzes.length} practice set{quizzes.length === 1 ? '' : 's'} ready for this course</Text>
       </View>
 
       {quizzes.length ? (
@@ -58,14 +58,14 @@ export default function CourseQuizzesScreen() {
               <Card>
                 <Text style={styles.itemTitle}>{quiz.title}</Text>
                 <Text style={styles.itemMeta}>
-                  {quiz.questions.length} questions - document #{quiz.document_id}
+                  {quiz.questions.length} questions ready
                 </Text>
               </Card>
             </Link>
           ))}
         </ResponsiveGrid>
       ) : (
-        <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
+        <EmptyState title="No practice quizzes" message="Create a quiz from a source material and it will appear here." />
       )}
     </ScreenScrollView>
   );

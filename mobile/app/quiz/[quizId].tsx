@@ -32,7 +32,7 @@ export default function QuizScreen() {
       setQuiz(loadedQuiz);
       setDocument(await api.document(loadedQuiz.document_id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load quiz');
+      setError(err instanceof Error ? err.message : 'Unable to load this practice quiz');
     } finally {
       setLoading(false);
     }
@@ -60,14 +60,14 @@ export default function QuizScreen() {
       }));
       setResult(await api.submitQuiz(quiz.id, payload));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to submit quiz');
+      setError(err instanceof Error ? err.message : 'Unable to submit this practice quiz');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <LoadingState message="Loading quiz" />;
+    return <LoadingState message="Loading practice quiz" />;
   }
 
   const unansweredCount = quiz?.questions.filter((question) => !answers[question.id]).length ?? 0;
@@ -85,7 +85,7 @@ export default function QuizScreen() {
           </View>
           <Card>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>{result ? 'Quiz submitted' : 'Answer progress'}</Text>
+              <Text style={styles.progressTitle}>{result ? 'Review your practice' : 'Answer progress'}</Text>
               <Text style={styles.progressMeta}>
                 {answeredCount}/{quiz.questions.length} answered
               </Text>
@@ -95,7 +95,9 @@ export default function QuizScreen() {
             </View>
             <Text style={styles.resultMeta}>
               {result
-                ? `${result.correct_count} correct, ${result.total_questions - result.correct_count} missed. Weak topics update automatically after submission.`
+                ? result.missed_topics.length
+                  ? `Review ${result.missed_topics.length} weak area${result.missed_topics.length === 1 ? '' : 's'} before practicing again.`
+                  : 'No weak areas from this attempt. Keep the source fresh with another practice pass later.'
                 : unansweredCount > 0
                   ? `Answer ${unansweredCount} more question${unansweredCount === 1 ? '' : 's'} before submitting.`
                   : 'Ready to submit.'}
@@ -115,7 +117,7 @@ export default function QuizScreen() {
           })}
           {!result ? (
             <Button
-              title={submitting ? 'Submitting...' : unansweredCount > 0 ? `Answer ${unansweredCount} more` : 'Submit Answers'}
+              title={submitting ? 'Submitting...' : unansweredCount > 0 ? `Answer ${unansweredCount} more` : 'Submit Practice'}
               disabled={!canSubmit}
               onPress={submit}
             />
@@ -123,20 +125,29 @@ export default function QuizScreen() {
 
           {result ? (
             <Card>
-              <Text style={styles.resultTitle}>Score: {formatPercent(result.score)}</Text>
+              <Text style={styles.resultEyebrow}>Practice Result</Text>
+              <Text style={styles.resultTitle}>{formatPercent(result.score)}</Text>
               <Text style={styles.resultMeta}>{result.correct_count} of {result.total_questions} correct</Text>
               {result.missed_topics.length ? (
-                <Text style={styles.resultMeta}>Missed topics: {result.missed_topics.join(', ')}</Text>
-              ) : null}
+                <View style={styles.weakAreaBox}>
+                  <Text style={styles.weakAreaTitle}>Review Next</Text>
+                  <Text style={styles.resultMeta}>{result.missed_topics.join(', ')}</Text>
+                </View>
+              ) : (
+                <View style={styles.strongBox}>
+                  <Text style={styles.strongTitle}>No weak areas recorded</Text>
+                  <Text style={styles.resultMeta}>You answered every question correctly on this attempt.</Text>
+                </View>
+              )}
               <View style={styles.resultActions}>
                 {document ? (
                   <>
-                    <Button title="Back to Source Document" variant="secondary" onPress={() => router.push(`/documents/${document.id}`)} />
+                    <Button title="Review Source" variant="secondary" onPress={() => router.push(`/documents/${document.id}`)} />
                     <Button title="Back to Course" variant="secondary" onPress={() => router.push(`/courses/${document.course_id}`)} />
                   </>
                 ) : null}
                 <Button
-                  title="Retake Quiz"
+                  title="Practice Again"
                   variant="secondary"
                   onPress={() => {
                     setAnswers({});
@@ -163,18 +174,18 @@ function ExplanationBlock({ answer }: { answer: QuizAttemptResult['answers'][num
   return (
     <View style={styles.explanation}>
       <Text style={answer.is_correct ? styles.correct : styles.incorrect}>
-        {answer.is_correct ? 'Correct' : 'Missed'} - {answer.topic}
+        {answer.is_correct ? 'Correct' : 'Review'} - {answer.topic}
       </Text>
       <Text style={styles.resultMeta}>{parsed.summary}</Text>
       {parsed.sourceQuote ? (
         <View style={styles.quoteBox}>
-          <Text style={styles.quoteLabel}>Source quote</Text>
+          <Text style={styles.quoteLabel}>Source Evidence</Text>
           <Text style={styles.quoteText}>{parsed.sourceQuote}</Text>
         </View>
       ) : null}
       {parsed.wrongChoiceReasons.length ? (
         <View style={styles.rationaleBox}>
-          <Text style={styles.rationaleTitle}>Why other choices are wrong</Text>
+          <Text style={styles.rationaleTitle}>Why The Other Choices Do Not Fit</Text>
           {parsed.wrongChoiceReasons.map((reason) => (
             <Text key={reason} style={styles.rationaleText}>{reason}</Text>
           ))}
@@ -229,8 +240,15 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 34,
     fontWeight: '900',
+    lineHeight: 40,
+  },
+  resultEyebrow: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   resultMeta: {
     color: colors.text,
@@ -243,6 +261,26 @@ const styles = StyleSheet.create({
   resultActions: {
     gap: 8,
     marginTop: 12,
+  },
+  weakAreaBox: {
+    backgroundColor: colors.warningSurface,
+    borderRadius: 8,
+    gap: 5,
+    padding: 10,
+  },
+  weakAreaTitle: {
+    color: colors.primary,
+    fontWeight: '900',
+  },
+  strongBox: {
+    backgroundColor: colors.successSurface,
+    borderRadius: 8,
+    gap: 5,
+    padding: 10,
+  },
+  strongTitle: {
+    color: colors.text,
+    fontWeight: '900',
   },
   explanation: {
     borderTopColor: colors.border,

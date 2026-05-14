@@ -104,13 +104,13 @@ npm run export:web
 - Course detail: Study, Library, Practice, and Deadlines tabs with source upload, review notes, flashcards, quizzes, weak areas, and course actions
 - Weak-area review quiz: generate focused practice from missed quiz topics on the course Practice tab
 - Deadlines: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
-- Source detail: read full source, open original file, text-recognition guidance, source preview, review-note options, quiz options, generation feedback, and saved materials
+- Source detail: read full source, open original file, text-recognition guidance, source preview, review-note options, practice options, saved study-tool counts, and saved-material sections
 - Full text: complete readable source text with Save / Share support
-- Summary detail: full saved review notes with key points, key terms, source quotes, and Save / Share support
+- Review notes: full saved notes with overview, what to remember, key concepts, source evidence, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support
-- Quizzes: course-level saved quiz list with links back into quiz taking
-- Quiz: answer progress, submit attempt, highlighted answers, source quotes, distractor explanations, retake, and return links to the source document/course
-- Attempts: course-level quiz score history and missed-topic review
+- Practice quizzes: course-level saved quiz list with links back into quiz taking
+- Practice quiz: answer progress, submit practice, highlighted answers, source evidence, distractor explanations, weak-area review, practice again, and return links to the source/course
+- Practice history: course-level score history and weak-area review
 - Settings: backend presets, API base URL, backend access token status, health check, and current EAS update metadata
 
 ## Troubleshooting

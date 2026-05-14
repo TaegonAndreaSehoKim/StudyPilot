@@ -262,6 +262,11 @@ export default function DocumentDetailScreen() {
             <Text style={styles.optionDescription}>
               Read the original source, then create review notes, flashcards, or a practice quiz when you are ready.
             </Text>
+            <View style={styles.savedStrip}>
+              <SavedCount label="Notes" value={summaries.length} />
+              <SavedCount label="Cards" value={flashcards.length} />
+              <SavedCount label="Quizzes" value={quizzes.length} />
+            </View>
             <View style={[styles.actions, isTablet && styles.tabletActions]}>
               <Button title="Read Full Source" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
               <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
@@ -360,38 +365,45 @@ export default function DocumentDetailScreen() {
             </ResponsiveGrid>
           </Section>
 
-          <Section title="Latest Review Notes">
-            {summaries.length ? (
-              <>
-                <SummaryView summary={summaries[0]} />
-                <Button
-                  title="Open Saved Notes"
-                  variant="secondary"
-                  onPress={() => router.push(`/summaries/${summaries[0].id}` as Href)}
-                />
-              </>
-            ) : (
-              <EmptyState title="No review notes" message="Create review notes from this source." />
-            )}
-          </Section>
+          <Section title="Saved Study Tools">
+            <ResponsiveGrid minItemWidth={320}>
+              <View style={styles.section}>
+                <Text style={styles.subsectionTitle}>Latest Review Notes</Text>
+                {summaries.length ? (
+                  <>
+                    <SummaryView summary={summaries[0]} />
+                    <Button
+                      title="Open Saved Notes"
+                      variant="secondary"
+                      onPress={() => router.push(`/summaries/${summaries[0].id}` as Href)}
+                    />
+                  </>
+                ) : (
+                  <EmptyState title="No review notes" message="Create review notes from this source." />
+                )}
+              </View>
 
-          <Section title="Saved Flashcards">
-            {flashcards.length ? <FlashcardList flashcards={flashcards} /> : <EmptyState title="No flashcards" message="Create flashcards for quick review." />}
-          </Section>
+              <View style={styles.section}>
+                <Text style={styles.subsectionTitle}>Flashcards</Text>
+                {flashcards.length ? <FlashcardList flashcards={flashcards} /> : <EmptyState title="No flashcards" message="Create flashcards for quick review." />}
+              </View>
 
-          <Section title="Practice Quizzes">
-            {quizzes.length ? (
-              quizzes.map((quiz) => (
-                <Link key={quiz.id} href={`/quiz/${quiz.id}`} asChild>
-                  <Card>
-                    <Text style={styles.itemTitle}>{quiz.title}</Text>
-                    <Text style={styles.itemMeta}>{quiz.questions.length} questions</Text>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <EmptyState title="No practice quizzes" message="Create a quiz to test your understanding." />
-            )}
+              <View style={styles.section}>
+                <Text style={styles.subsectionTitle}>Practice Quizzes</Text>
+                {quizzes.length ? (
+                  quizzes.map((quiz) => (
+                    <Link key={quiz.id} href={`/quiz/${quiz.id}`} asChild>
+                      <Card>
+                        <Text style={styles.itemTitle}>{quiz.title}</Text>
+                        <Text style={styles.itemMeta}>{quiz.questions.length} questions</Text>
+                      </Card>
+                    </Link>
+                  ))
+                ) : (
+                  <EmptyState title="No practice quizzes" message="Create a quiz to test your understanding." />
+                )}
+              </View>
+            </ResponsiveGrid>
           </Section>
         </>
       ) : null}
@@ -420,6 +432,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {children}
+    </View>
+  );
+}
+
+function SavedCount({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.savedCount}>
+      <Text style={styles.savedCountValue}>{value}</Text>
+      <Text style={styles.savedCountLabel}>{label}</Text>
     </View>
   );
 }
@@ -495,6 +516,29 @@ const styles = StyleSheet.create({
   startCard: {
     backgroundColor: colors.infoSurface,
   },
+  savedStrip: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  savedCount: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  savedCountValue: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  savedCountLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
   optionTitle: {
     color: colors.text,
     fontSize: 16,
@@ -561,6 +605,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 17,
     fontWeight: '800',
+  },
+  subsectionTitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   itemTitle: {
     color: colors.text,

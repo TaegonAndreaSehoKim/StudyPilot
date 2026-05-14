@@ -6,16 +6,17 @@ import { cleanDisplayText } from '@/utils/text';
 import { Card } from './Card';
 
 export function SummaryView({ summary }: { summary: Summary }) {
-  const title = cleanDisplayText(summary.title, 'Study Summary');
+  const title = cleanDisplayText(summary.title, 'Review Notes');
   const overview = cleanDisplayText(summary.overview, 'No overview available.');
   const keyPoints = summary.key_points.map((point) => cleanDisplayText(point)).filter(Boolean);
 
   return (
     <Card>
       <Text style={styles.title}>{title}</Text>
+      <Text style={styles.kicker}>Overview</Text>
       <Text style={styles.body}>{overview}</Text>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Key Points</Text>
+        <Text style={styles.sectionTitle}>What To Remember</Text>
         {keyPoints.length ? (
           keyPoints.map((point, index) => (
             <Text key={`${point}-${index}`} style={styles.body}>
@@ -27,7 +28,7 @@ export function SummaryView({ summary }: { summary: Summary }) {
         )}
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Key Terms</Text>
+        <Text style={styles.sectionTitle}>Key Concepts</Text>
         {summary.key_terms.length ? (
           summary.key_terms.map((item, index) => (
             <Text key={`${item.term}-${index}`} style={styles.body}>
@@ -39,7 +40,7 @@ export function SummaryView({ summary }: { summary: Summary }) {
         )}
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Source Quotes</Text>
+        <Text style={styles.sectionTitle}>Source Evidence</Text>
         {summary.source_quotes.length ? (
           summary.source_quotes.map((item, index) => (
             <View key={`${item.quote}-${index}`} style={styles.quoteBlock}>
@@ -66,6 +67,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     lineHeight: 20,
+  },
+  kicker: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
   section: {
     gap: 8,

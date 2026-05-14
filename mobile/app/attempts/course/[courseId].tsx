@@ -26,7 +26,7 @@ export default function CourseAttemptsScreen() {
       setError(null);
       setAttempts(await api.courseAttempts(id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load attempts');
+      setError(err instanceof Error ? err.message : 'Unable to load practice history');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -38,7 +38,7 @@ export default function CourseAttemptsScreen() {
   }, [load]));
 
   if (loading) {
-    return <LoadingState message="Loading attempts" />;
+    return <LoadingState message="Loading practice history" />;
   }
 
   return (
@@ -48,8 +48,8 @@ export default function CourseAttemptsScreen() {
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       <View style={styles.header}>
-        <Text style={styles.title}>Quiz Attempts</Text>
-        <Text style={styles.subtitle}>{attempts.length} attempts across this course</Text>
+        <Text style={styles.title}>Practice History</Text>
+        <Text style={styles.subtitle}>{attempts.length} saved practice attempt{attempts.length === 1 ? '' : 's'} for this course</Text>
       </View>
 
       {attempts.length ? (
@@ -65,16 +65,16 @@ export default function CourseAttemptsScreen() {
                   {attempt.correct_count} of {attempt.total_questions} correct - {formatDate(attempt.created_at)}
                 </Text>
                 {attempt.missed_topics.length ? (
-                  <Text style={styles.itemMeta}>Missed: {attempt.missed_topics.join(', ')}</Text>
+                  <Text style={styles.itemMeta}>Weak areas: {attempt.missed_topics.join(', ')}</Text>
                 ) : (
-                  <Text style={styles.itemMeta}>No missed topics</Text>
+                  <Text style={styles.itemMeta}>No weak areas recorded</Text>
                 )}
               </Card>
             </Link>
           ))}
         </ResponsiveGrid>
       ) : (
-        <EmptyState title="No attempts" message="Submit a quiz and your scores will appear here." />
+        <EmptyState title="No practice history" message="Submit a practice quiz and your scores will appear here." />
       )}
     </ScreenScrollView>
   );
