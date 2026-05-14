@@ -37,6 +37,7 @@ Use the Settings screen to update and test the backend URL.
 - Android emulator usually needs `http://10.0.2.2:8000`.
 - Physical devices need your computer's LAN IP, such as `http://192.168.1.25:8000`.
 - EC2 deployments should use the associated Elastic IP, such as `http://<elastic-ip>:8000`.
+- The Settings screen includes presets for local iOS, Android emulator, and the current AWS EC2 backend.
 
 If using a physical device, start the backend with a host that accepts LAN traffic:
 
@@ -91,7 +92,7 @@ npm run export:web
 - Quizzes: course-level saved quiz list with links back into quiz taking
 - Quiz: answer questions, submit attempt, view highlighted answers, source quotes, and distractor explanations
 - Attempts: course-level quiz score history and missed-topic review
-- Settings: API base URL, backend access token, and health check
+- Settings: backend presets, API base URL, backend access token status, and health check
 
 ## Troubleshooting
 

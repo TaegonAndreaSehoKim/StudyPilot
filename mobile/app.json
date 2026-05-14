@@ -14,9 +14,17 @@
     "android": {
       "package": "com.sehokim1212.studypilot"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ca0cf904-9cf8-4577-9dfa-39b2babd5cb6"
+      }
     }
   }
 }
