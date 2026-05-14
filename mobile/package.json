@@ -10,8 +10,9 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web --output-dir .expo-export-smoke",
+    "smoke": "node scripts/smoke-check.mjs",
     "update:preview": "npx eas-cli@latest update --channel preview",
-    "check": "npm run typecheck && expo install --check && npm run export:web"
+    "check": "npm run typecheck && npm run smoke && expo install --check && npm run export:web"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

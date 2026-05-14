@@ -15,3 +15,5 @@ Suggested demo flow:
 The sample notes are intentionally short so fake-AI generation remains quick and predictable.
 
 For a full Expo Go checklist, see [mobile_walkthrough.md](mobile_walkthrough.md).
+
+For a short presentation-oriented script, see [demo_script.md](demo_script.md).

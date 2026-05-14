@@ -27,6 +27,9 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - weak-topic review quiz generation
 - dashboard endpoints for counts, recent activity, and weak topics
 - backend access token protection and in-memory rate limiting for mutating and AI-generation requests
+- EC2 Docker backend deployment notes and EAS preview update workflow
+- mobile smoke checks for route/config/update setup
+- repeatable mobile demo walkthrough and presentation script
 - pytest coverage for the core backend workflow
 - TypeScript mobile API client and screens for the main demo flow
 
@@ -50,6 +53,9 @@ What is stable:
 - mobile routing and API client structure
 - mobile dashboard, course, document, quiz, and settings screens
 - tablet-aware mobile layout containers and responsive card grids
+- EAS preview update setup for Expo Go device checks
+- mobile smoke checks through `npm run smoke`
+- demo walkthrough/script documentation
 
 What is still in progress:
 
@@ -57,14 +63,13 @@ What is still in progress:
 - UI polish after real device screenshots
 - hands-on validation of real scanned PDFs through Textract
 - stricter OpenAI JSON Schema enforcement
-- frontend/mobile automated testing
+- richer frontend/mobile automated testing beyond smoke checks
 - richer empty/error states and loading feedback
-- screenshot/demo documentation
+- screenshot capture documentation
 
 What is not built yet:
 
 - authentication
-- cloud deployment
 - managed database persistence
 - push notifications
 - vector search, embeddings, or RAG
@@ -79,6 +84,9 @@ Use these files first when reasoning about behavior:
 - `docs/architecture/overview.md`
 - `docs/architecture/schema.md`
 - `docs/deployment/aws_ec2_docker.md`
+- `docs/deployment/eas_preview_updates.md`
+- `docs/demo/mobile_walkthrough.md`
+- `docs/demo/demo_script.md`
 - `backend/app/main.py`
 - `backend/app/models.py`
 - `backend/app/schemas.py`
@@ -131,10 +139,10 @@ When choosing what to improve next, bias toward these:
 - run a full manual Expo demo flow against the local backend
 - exercise the EC2 Docker Compose deployment path with a real device
 - inspect and polish the tablet layout on a real iPad or tablet simulator
-- add mobile-level smoke testing or lightweight component checks
+- expand mobile smoke checks into lightweight component or interaction checks
 - continue hardening OpenAI structured-output validation with focused regression tests
 - refine fake AI output quality without making it nondeterministic
-- add screenshots or a short demo walkthrough
+- add screenshots or a short demo video walkthrough
 
 Lower priority for now:
 
@@ -203,9 +211,17 @@ cd mobile
 npm run typecheck
 ```
 
+Run mobile smoke checks for app config, routes, EAS preview setup, and backend-token wiring:
+
+```powershell
+cd mobile
+npm run smoke
+```
+
 For mobile changes that touch routing, dependencies, or imports, also run:
 
 ```powershell
+npm run smoke
 npx expo install --check
 npx expo export --platform web --output-dir .expo-export-smoke
 ```
@@ -273,9 +289,9 @@ Reasonable next milestones:
 
 - run and polish the full Expo manual demo
 - improve mobile UI density and interaction feedback
-- add frontend/mobile tests
+- expand frontend/mobile tests beyond smoke checks
 - strengthen OpenAI retry/fallback behavior around valid but low-quality model outputs
-- prepare demo screenshots and a walkthrough
+- prepare demo screenshots or a short video walkthrough
 - test the EC2 Docker Compose deployment path
 - plan managed database, S3, and HTTPS after the EC2 MVP is stable
 

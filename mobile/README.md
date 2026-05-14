@@ -70,6 +70,12 @@ Do not put `OPENAI_API_KEY` in the mobile app. The mobile app only stores the ba
 npm run typecheck
 ```
 
+Run mobile smoke checks for app config, route presence, EAS preview setup, and backend-token wiring:
+
+```bash
+npm run smoke
+```
+
 Run all mobile checks:
 
 ```bash
@@ -115,3 +121,9 @@ npm run export:web
 - Scanned PDFs are marked as requiring OCR. Use the document screen's Run OCR action when the backend has OCR enabled; the app starts an OCR job and polls until it completes or fails.
 - On tablets, rotate between portrait and landscape during manual testing because dashboard, course, document, schedule, quiz history, and saved-material screens use responsive grids.
 - Expo Go may not support manual in-app `expo-updates` checks. If the Settings screen reports that manual update checks are unavailable, publish a preview update and reopen the project from Expo Go.
+
+More detail:
+
+- EAS preview workflow: `docs/deployment/eas_preview_updates.md`
+- Manual demo checklist: `docs/demo/mobile_walkthrough.md`
+- Presentation script: `docs/demo/demo_script.md`

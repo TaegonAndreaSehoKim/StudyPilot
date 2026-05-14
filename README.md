@@ -98,6 +98,9 @@ Architecture notes:
 
 - `docs/architecture/overview.md`
 - `docs/architecture/schema.md`
+- `docs/deployment/eas_preview_updates.md`
+- `docs/demo/mobile_walkthrough.md`
+- `docs/demo/demo_script.md`
 
 Agent/developer guidance:
 
@@ -445,6 +448,13 @@ Run the mobile type check:
 ```bash
 cd mobile
 npm run typecheck
+```
+
+Run mobile smoke checks for app config, routes, preview-update setup, and backend-token wiring:
+
+```bash
+cd mobile
+npm run smoke
 ```
 
 Run all mobile local checks:
