@@ -72,6 +72,50 @@ export default function DashboardScreen() {
             <Metric label="Quizzes" value={dashboard.quiz_count} />
           </View>
 
+          <Section title="Study Focus">
+            <ResponsiveGrid minItemWidth={300}>
+              {schedule[0] ? (
+                <FocusCard
+                  eyebrow="Next Deadline"
+                  title={schedule[0].title}
+                  detail={`${schedule[0].course_title} - ${formatTimeRemaining(schedule[0].due_at, schedule[0].is_completed)}`}
+                  actionLabel="Open Schedule"
+                  href={`/schedule/course/${schedule[0].course_id}` as Href}
+                />
+              ) : null}
+              {dashboard.weak_topics[0] ? (
+                <FocusCard
+                  eyebrow="Weak Topic"
+                  title={dashboard.weak_topics[0].topic}
+                  detail={`Missed ${dashboard.weak_topics[0].miss_count} times. Generate a weak-topic quiz from the course Practice tab.`}
+                  actionLabel="Open Course"
+                  href={`/courses/${dashboard.weak_topics[0].course_id}` as Href}
+                />
+              ) : null}
+              {dashboard.recent_quizzes[0] ? (
+                <FocusCard
+                  eyebrow="Practice"
+                  title={dashboard.recent_quizzes[0].title}
+                  detail={`${dashboard.recent_quizzes[0].questions.length} questions ready`}
+                  actionLabel="Take Quiz"
+                  href={`/quiz/${dashboard.recent_quizzes[0].id}` as Href}
+                />
+              ) : null}
+              {dashboard.recent_summaries[0] ? (
+                <FocusCard
+                  eyebrow="Review"
+                  title={dashboard.recent_summaries[0].title}
+                  detail={`${summaryTypeLabel(dashboard.recent_summaries[0].summary_type)} summary`}
+                  actionLabel="Read Summary"
+                  href={`/summaries/${dashboard.recent_summaries[0].id}` as Href}
+                />
+              ) : null}
+              {!schedule.length && !dashboard.weak_topics.length && !dashboard.recent_quizzes.length && !dashboard.recent_summaries.length ? (
+                <EmptyState title="No study focus yet" message="Create a course, upload notes, and generate a summary or quiz to start a study loop." />
+              ) : null}
+            </ResponsiveGrid>
+          </Section>
+
           <ResponsiveGrid minItemWidth={340}>
             <Section title="Upcoming Schedule">
               {schedule.length ? (
@@ -113,7 +157,13 @@ export default function DashboardScreen() {
                   <Link key={document.id} href={`/documents/${document.id}`} asChild>
                     <Card>
                       <Text style={styles.itemTitle}>{document.filename}</Text>
-                      <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
+                      <Text style={styles.itemMeta}>{document.char_count} chars - {document.status} - {documentExtractionLabel(document.extraction_quality)}</Text>
+                      {document.file_type === '.pdf' ? (
+                        <Text style={styles.itemMeta}>
+                          {Math.round(document.extraction_coverage * 100)}% coverage
+                          {document.ocr_status !== 'not_required' ? ` - OCR ${document.ocr_status}` : ''}
+                        </Text>
+                      ) : null}
                     </Card>
                   </Link>
                 ))
@@ -155,10 +205,12 @@ export default function DashboardScreen() {
             <Section title="Weak Topics">
               {dashboard.weak_topics.length ? (
                 dashboard.weak_topics.map((topic) => (
-                  <Card key={topic.id}>
-                    <Text style={styles.itemTitle}>{topic.topic}</Text>
-                    <Text style={styles.itemMeta}>Missed {topic.miss_count} times</Text>
-                  </Card>
+                  <Link key={topic.id} href={`/courses/${topic.course_id}` as Href} asChild>
+                    <Card>
+                      <Text style={styles.itemTitle}>{topic.topic}</Text>
+                      <Text style={styles.itemMeta}>Missed {topic.miss_count} times - open course practice</Text>
+                    </Card>
+                  </Link>
                 ))
               ) : (
                 <EmptyState title="No weak topics" message="Missed quiz questions will appear here." />
@@ -187,6 +239,57 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </View>
   );
+}
+
+function FocusCard({
+  eyebrow,
+  title,
+  detail,
+  actionLabel,
+  href,
+}: {
+  eyebrow: string;
+  title: string;
+  detail: string;
+  actionLabel: string;
+  href: Href;
+}) {
+  return (
+    <Link href={href} asChild>
+      <Card style={styles.focusCard}>
+        <Text style={styles.focusEyebrow}>{eyebrow}</Text>
+        <Text style={styles.focusTitle}>{title}</Text>
+        <Text style={styles.focusDetail}>{detail}</Text>
+        <Text style={styles.focusAction}>{actionLabel}</Text>
+      </Card>
+    </Link>
+  );
+}
+
+function summaryTypeLabel(value: string): string {
+  if (value === 'concise') {
+    return 'Concise';
+  }
+  if (value === 'detailed') {
+    return 'Detailed';
+  }
+  if (value === 'exam') {
+    return 'Exam';
+  }
+  return value;
+}
+
+function documentExtractionLabel(value: string): string {
+  if (value === 'ocr') {
+    return 'OCR text';
+  }
+  if (value === 'poor') {
+    return 'OCR required';
+  }
+  if (value === 'partial') {
+    return 'partial extraction';
+  }
+  return 'good extraction';
 }
 
 const styles = StyleSheet.create({
@@ -241,6 +344,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     fontWeight: '800',
+  },
+  focusCard: {
+    backgroundColor: colors.infoSurface,
+  },
+  focusEyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  focusTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: '900',
+    lineHeight: 23,
+  },
+  focusDetail: {
+    color: colors.textMuted,
+    lineHeight: 20,
+  },
+  focusAction: {
+    color: colors.primary,
+    fontWeight: '900',
+    marginTop: 2,
   },
   itemTitle: {
     color: colors.text,

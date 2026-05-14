@@ -92,7 +92,7 @@ npm run export:web
 
 - Visual palette: warm study palette based on `#D9C3B0`, `#8C7161`, `#D9663D`, `#A64029`, and `#261714`
 - Responsive layout: phone-first screens use wider max-width containers and two-column card grids on tablet-sized displays
-- Dashboard: counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
+- Dashboard: study focus cards, counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
 - Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation
 - Course detail: tabbed overview, materials, practice, schedule, document upload, extraction-quality document cards, and course actions

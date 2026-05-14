@@ -42,7 +42,7 @@ StudyPilot currently supports:
 - course-level quiz attempt history
 - weak-topic review quiz generation
 - weak-topic tracking from missed questions
-- global dashboard with counts, upcoming schedule, recent courses, recent documents, recent generated materials, and weak topics
+- global dashboard with study focus cards, counts, upcoming schedule, recent courses, recent documents, recent generated materials, and weak topics
 - mobile API base URL settings
 - tablet-friendly responsive layouts for dashboard, course, document, schedule, quiz, and saved-material screens
 - backend access token protection and in-memory rate limiting for write and AI-generation requests
