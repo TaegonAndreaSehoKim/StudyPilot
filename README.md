@@ -205,6 +205,15 @@ For physical-device testing, run the backend with:
 uvicorn app.main:app --host 0.0.0.0 --reload
 ```
 
+To check the mobile app from Expo Go without keeping a local dev server running, publish a preview update after mobile changes:
+
+```bash
+cd mobile
+npm run update:preview -- --message "preview update"
+```
+
+Then reopen the StudyPilot project in Expo Go from the same Expo account. Use the Settings screen's App Update card to confirm the currently loaded update metadata when available.
+
 ---
 
 ## Environment Variables

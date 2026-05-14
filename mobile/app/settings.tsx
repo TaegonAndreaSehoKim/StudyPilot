@@ -1,5 +1,6 @@
+import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { api, getAccessToken, getApiBaseUrl, setAccessToken, setApiBaseUrl } from '@/api/client';
 import { Button } from '@/components/Button';
@@ -18,8 +19,10 @@ export default function SettingsScreen() {
   const [baseUrl, setBaseUrl] = useState('');
   const [accessToken, setLocalAccessToken] = useState('');
   const [status, setStatus] = useState<string | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     getApiBaseUrl().then(setBaseUrl);
@@ -52,6 +55,50 @@ export default function SettingsScreen() {
       setError(err instanceof Error ? err.message : 'Unable to connect to backend');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function checkForUpdate() {
+    try {
+      setCheckingUpdate(true);
+      setError(null);
+      setUpdateStatus(null);
+
+      if (!Updates.isEnabled) {
+        setUpdateStatus('EAS Update checks are not enabled in this runtime. In Expo Go, reopen the project after publishing a preview update.');
+        return;
+      }
+
+      const update = await Updates.checkForUpdateAsync();
+      if (!update.isAvailable) {
+        setUpdateStatus('No newer EAS update is available for this runtime.');
+        return;
+      }
+
+      const fetched = await Updates.fetchUpdateAsync();
+      if (!fetched.isNew) {
+        setUpdateStatus('The latest compatible update is already on this device.');
+        return;
+      }
+
+      Alert.alert(
+        'Update downloaded',
+        'Reload StudyPilot now to apply the downloaded update?',
+        [
+          { text: 'Later', style: 'cancel' },
+          { text: 'Reload', onPress: () => { void Updates.reloadAsync(); } },
+        ],
+      );
+      setUpdateStatus('Update downloaded. Reload the app to apply it.');
+    } catch (err) {
+      setUpdateStatus(
+        'Manual update checks are unavailable in Expo Go or local development. Reopen the project after publishing a preview update.',
+      );
+      if (err instanceof Error && !err.message.toLowerCase().includes('expo go')) {
+        setError(err.message);
+      }
+    } finally {
+      setCheckingUpdate(false);
     }
   }
 
@@ -110,11 +157,44 @@ export default function SettingsScreen() {
         </View>
         {status ? <Text style={styles.status}>{status}</Text> : null}
       </Card>
+
+      <Card>
+        <View style={styles.header}>
+          <Text style={styles.title}>App Update</Text>
+          <Text style={styles.badge}>{Updates.isEnabled ? 'Updates enabled' : 'Expo Go / Dev'}</Text>
+        </View>
+        <Text style={styles.noteSmall}>
+          Use this to confirm which EAS update is running. Expo Go usually applies preview updates when you reopen the project.
+        </Text>
+        <View style={styles.infoRows}>
+          <InfoRow label="Channel" value={Updates.channel || 'Expo Go compatible update'} />
+          <InfoRow label="Runtime" value={Updates.runtimeVersion || 'Not reported'} />
+          <InfoRow label="Update ID" value={Updates.updateId ? Updates.updateId.slice(0, 8) : 'Local or embedded'} />
+          <InfoRow label="Created" value={Updates.createdAt ? Updates.createdAt.toLocaleString() : 'Not reported'} />
+        </View>
+        <Button
+          title={checkingUpdate ? 'Checking...' : 'Check for EAS Update'}
+          variant="secondary"
+          disabled={checkingUpdate}
+          onPress={checkForUpdate}
+        />
+        {updateStatus ? <Text style={styles.helper}>{updateStatus}</Text> : null}
+      </Card>
+
       <Text style={styles.note}>
         Expo Go can use the AWS EC2 preset over HTTP for MVP testing. Standalone iOS or App Store builds should use an HTTPS backend.
         The backend access token is not an OpenAI API key.
       </Text>
     </ScreenScrollView>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue} numberOfLines={2}>{value}</Text>
+    </View>
   );
 }
 
@@ -155,6 +235,27 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 8,
+  },
+  infoRows: {
+    gap: 8,
+  },
+  infoRow: {
+    alignItems: 'flex-start',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    gap: 4,
+    paddingBottom: 8,
+  },
+  infoLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  infoValue: {
+    color: colors.text,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   input: {
     backgroundColor: colors.surface,

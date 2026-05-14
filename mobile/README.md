@@ -23,6 +23,19 @@ This project currently targets Expo SDK 54 so it can run in the App Store versio
 npx expo start --clear
 ```
 
+## Preview Updates Without A Local Dev Server
+
+For device checks through Expo Go after the project is already connected to EAS, publish a preview update:
+
+```bash
+cd mobile
+npm run update:preview -- --message "preview update"
+```
+
+Then reopen the StudyPilot project in Expo Go from the same Expo account. Expo Go applies compatible preview updates when the project is reopened, so the local `npx expo start` server does not need to stay running for this kind of check.
+
+Use `npx expo start` when you need live reload while actively coding. Use `npm run update:preview` when you want a stable mobile preview bundle available from Expo's servers.
+
 ## API Base URL
 
 Default:
@@ -90,9 +103,9 @@ npm run export:web
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support
 - Quizzes: course-level saved quiz list with links back into quiz taking
-- Quiz: answer questions, submit attempt, view highlighted answers, source quotes, and distractor explanations
+- Quiz: answer progress, submit attempt, highlighted answers, source quotes, distractor explanations, retake, and return links to the source document/course
 - Attempts: course-level quiz score history and missed-topic review
-- Settings: backend presets, API base URL, backend access token status, and health check
+- Settings: backend presets, API base URL, backend access token status, health check, and current EAS update metadata
 
 ## Troubleshooting
 
@@ -101,3 +114,4 @@ npm run export:web
 - If a physical device cannot connect, use the computer's LAN IP and allow local firewall access.
 - Scanned PDFs are marked as requiring OCR. Use the document screen's Run OCR action when the backend has OCR enabled; the app starts an OCR job and polls until it completes or fails.
 - On tablets, rotate between portrait and landscape during manual testing because dashboard, course, document, schedule, quiz history, and saved-material screens use responsive grids.
+- Expo Go may not support manual in-app `expo-updates` checks. If the Settings screen reports that manual update checks are unavailable, publish a preview update and reopen the project from Expo Go.

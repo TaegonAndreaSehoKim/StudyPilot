@@ -1,9 +1,9 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { Quiz, QuizAttemptResult } from '@/api/types';
+import type { DocumentDetail, Quiz, QuizAttemptResult } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
@@ -18,6 +18,7 @@ export default function QuizScreen() {
   const { quizId } = useLocalSearchParams<{ quizId: string }>();
   const id = Number(quizId);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,9 @@ export default function QuizScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setQuiz(await api.quiz(id));
+      const loadedQuiz = await api.quiz(id);
+      setQuiz(loadedQuiz);
+      setDocument(await api.document(loadedQuiz.document_id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load quiz');
     } finally {
@@ -68,6 +71,7 @@ export default function QuizScreen() {
   }
 
   const unansweredCount = quiz?.questions.filter((question) => !answers[question.id]).length ?? 0;
+  const answeredCount = quiz ? quiz.questions.length - unansweredCount : 0;
   const canSubmit = !!quiz && unansweredCount === 0 && !submitting;
 
   return (
@@ -75,7 +79,28 @@ export default function QuizScreen() {
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {quiz ? (
         <>
-          <Text style={styles.title}>{quiz.title}</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>{quiz.title}</Text>
+            {document ? <Text style={styles.subtitle}>From {document.filename}</Text> : null}
+          </View>
+          <Card>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressTitle}>{result ? 'Quiz submitted' : 'Answer progress'}</Text>
+              <Text style={styles.progressMeta}>
+                {answeredCount}/{quiz.questions.length} answered
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${quiz.questions.length ? (answeredCount / quiz.questions.length) * 100 : 0}%` }]} />
+            </View>
+            <Text style={styles.resultMeta}>
+              {result
+                ? `${result.correct_count} correct, ${result.total_questions - result.correct_count} missed. Weak topics update automatically after submission.`
+                : unansweredCount > 0
+                  ? `Answer ${unansweredCount} more question${unansweredCount === 1 ? '' : 's'} before submitting.`
+                  : 'Ready to submit.'}
+            </Text>
+          </Card>
           {quiz.questions.map((question) => {
             const answerResult = result?.answers.find((answer) => answer.question_id === question.id);
             return (
@@ -103,6 +128,23 @@ export default function QuizScreen() {
               {result.missed_topics.length ? (
                 <Text style={styles.resultMeta}>Missed topics: {result.missed_topics.join(', ')}</Text>
               ) : null}
+              <View style={styles.resultActions}>
+                {document ? (
+                  <>
+                    <Button title="Back to Source Document" variant="secondary" onPress={() => router.push(`/documents/${document.id}`)} />
+                    <Button title="Back to Course" variant="secondary" onPress={() => router.push(`/courses/${document.course_id}`)} />
+                  </>
+                ) : null}
+                <Button
+                  title="Retake Quiz"
+                  variant="secondary"
+                  onPress={() => {
+                    setAnswers({});
+                    setResult(null);
+                    setError(null);
+                  }}
+                />
+              </View>
               <View style={styles.explanations}>
                 {result.answers.map((answer) => (
                   <ExplanationBlock key={answer.question_id} answer={answer} />
@@ -147,10 +189,43 @@ const styles = StyleSheet.create({
     gap: 14,
     maxWidth: 920,
   },
+  header: {
+    gap: 4,
+  },
   title: {
     color: colors.text,
     fontSize: 24,
     fontWeight: '900',
+  },
+  subtitle: {
+    color: colors.textMuted,
+    lineHeight: 20,
+  },
+  progressHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  progressMeta: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  progressTrack: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    height: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    height: '100%',
   },
   resultTitle: {
     color: colors.text,
@@ -164,6 +239,10 @@ const styles = StyleSheet.create({
   explanations: {
     gap: 12,
     marginTop: 8,
+  },
+  resultActions: {
+    gap: 8,
+    marginTop: 12,
   },
   explanation: {
     borderTopColor: colors.border,
