@@ -10,6 +10,12 @@ Show that StudyPilot can turn uploaded course material into a study loop:
 course -> document -> summary -> flashcards -> quiz -> weak topics -> schedule
 ```
 
+In the mobile UI, the same flow is presented in learner-facing language:
+
+```text
+course -> source material -> review notes -> flashcards -> practice quiz -> weak areas -> deadlines
+```
+
 ## Demo Setup
 
 Use:
@@ -44,14 +50,14 @@ Open StudyPilot.
 Point out:
 
 - global counts
-- Study Focus cards
+- Continue Studying cards
 - upcoming schedule across all courses
-- recent summaries/quizzes/documents
-- weak topics
+- recent review notes, practice quizzes, and source materials
+- weak areas
 
 Say:
 
-> StudyPilot starts from the student's next study action, not just a file list. The dashboard pulls together deadlines, weak topics, recent generated materials, and practice items.
+> StudyPilot starts from the student's next study action, not just a file list. The dashboard pulls together deadlines, weak areas, recent generated materials, and practice items.
 
 ### 2. Course
 
@@ -59,37 +65,37 @@ Create or open `OMSCS AI`.
 
 Point out:
 
-- Overview tab
-- Materials tab
+- Study tab
+- Library tab
 - Practice tab
-- Schedule tab
+- Deadlines tab
 
 Say:
 
-> Each course acts as a study workspace. Documents, generated materials, quizzes, attempts, weak topics, and schedule items stay grouped by course, while the dashboard aggregates the important items globally.
+> Each course acts as a study workspace. Source materials, review notes, flashcards, quizzes, attempts, weak areas, and deadlines stay grouped by course, while the dashboard aggregates the important items globally.
 
-### 3. Document Upload
+### 3. Source Material
 
-Upload `docs/demo/omscs_ai_sample_notes.md`.
+Add `docs/demo/omscs_ai_sample_notes.md` as source material.
 
-Open the document detail screen.
+Open the source material screen.
 
 Point out:
 
-- extraction status
-- extracted text preview
+- study readiness
+- source preview
 - full extracted text link
 - original file link
 
 Say:
 
-> The backend extracts text and stores it. Generation uses the full extracted text, even though the document screen only shows a preview.
+> The backend extracts readable text and stores it. StudyPilot uses the full readable source, even though this screen only shows a preview.
 
-### 4. Summary
+### 4. Review Notes
 
-Generate a concise summary.
+Create Quick Review notes.
 
-Open the saved summary.
+Open the saved review notes.
 
 Point out:
 
@@ -101,13 +107,13 @@ Point out:
 
 Say:
 
-> The summary is saved as a durable study material and is available again from the course and dashboard. Source quotes help keep the generated output grounded in the uploaded notes.
+> The review notes are saved as durable study material and are available again from the course and dashboard. Source quotes help keep the generated output grounded in the uploaded notes.
 
 ### 5. Flashcards
 
-Return to the document.
+Return to the source material.
 
-Generate flashcards.
+Create flashcards.
 
 Open course flashcards from Materials.
 
@@ -117,7 +123,7 @@ Say:
 
 ### 6. Quiz
 
-Generate a quiz from the document.
+Create a practice quiz from the source material.
 
 Answer at least one question incorrectly.
 
@@ -127,10 +133,10 @@ Point out:
 
 - answer progress
 - score
-- missed topics
+- weak areas
 - highlighted choices
 - explanations and source quotes
-- return links to source document and course
+- return links to source material and course
 
 Say:
 
@@ -140,7 +146,7 @@ Say:
 
 Return to the course Practice tab.
 
-Generate a weak-topic quiz if weak topics are available.
+Create weak-area practice if weak areas are available.
 
 Say:
 
@@ -148,7 +154,7 @@ Say:
 
 ### 8. Schedule
 
-Open the Schedule tab.
+Open the Deadlines tab.
 
 Add an assignment or exam date.
 
@@ -162,12 +168,12 @@ Say:
 
 - Settings health check succeeds.
 - Course creation works.
-- Document upload and extraction work.
+- Source upload and text extraction work.
 - Full extracted text is readable.
-- Summary is generated and saved.
+- Review notes are generated and saved.
 - Flashcards are generated and reachable from course materials.
 - Quiz can be submitted.
-- Missed answers create weak topics.
+- Missed answers create weak areas.
 - Schedule item appears on the dashboard.
 
 ## Known Caveats To Mention
@@ -175,5 +181,5 @@ Say:
 - This MVP has no user authentication yet.
 - The EC2 backend currently uses HTTP for MVP testing.
 - SQLite and uploaded files are stored on the EC2 instance.
-- Generated study material can contain mistakes and should be checked against original course materials.
+- Generated study material can contain mistakes and should be checked against original source materials.
 - Scanned PDFs require OCR; text-based PDFs usually extract directly.

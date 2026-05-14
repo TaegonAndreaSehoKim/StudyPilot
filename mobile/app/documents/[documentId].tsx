@@ -22,17 +22,17 @@ type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }[] = [
   {
     type: 'concise',
-    title: 'Concise',
+    title: 'Quick Review',
     description: 'Core concepts and the broad flow of the material.',
   },
   {
     type: 'detailed',
-    title: 'Detailed',
-    description: 'General conceptual explanation, principles, and relationships over examples.',
+    title: 'Deep Review',
+    description: 'Concepts, principles, and relationships with less focus on examples.',
   },
   {
     type: 'exam',
-    title: 'Exam',
+    title: 'Exam Prep',
     description: 'Likely test points, similar-concept comparisons, and memorization anchors.',
   },
 ];
@@ -76,15 +76,15 @@ export default function DocumentDetailScreen() {
       if (uploaded === '1' && !showedUploadNotice.current) {
         showedUploadNotice.current = true;
         setNotice({
-          title: doc.status === 'needs_ocr' ? 'Document uploaded - OCR required' : 'Document uploaded',
+          title: doc.status === 'needs_ocr' ? 'This PDF needs text recognition' : 'Source material added',
           message:
             doc.status === 'needs_ocr'
-              ? 'StudyPilot saved the file, but the PDF has little or no embedded text. Run OCR before generating study materials.'
-              : 'StudyPilot extracted the document text. You can inspect the source or generate study materials from this screen.',
+              ? 'The file is saved, but StudyPilot needs to recognize the text before it can create review notes or practice.'
+              : 'StudyPilot can now use this source to create review notes, flashcards, and practice quizzes.',
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load document');
+      setError(err instanceof Error ? err.message : 'Unable to load this source material');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -103,12 +103,12 @@ export default function DocumentDetailScreen() {
       const summary = await api.createSummary(id, summaryType);
       setSummaries((current) => [summary, ...current]);
       setNotice({
-        title: 'Summary saved',
-        message: `${summary.title} is saved. Opening the full saved summary now.`,
+        title: 'Review notes saved',
+        message: `${summary.title} is saved. Opening the full notes now.`,
       });
       router.push(`/summaries/${summary.id}` as Href);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate summary');
+      setError(err instanceof Error ? err.message : 'Unable to create review notes');
     } finally {
       setWorking(null);
     }
@@ -123,10 +123,10 @@ export default function DocumentDetailScreen() {
       setFlashcards(generatedFlashcards);
       setNotice({
         title: 'Flashcards saved',
-        message: `${generatedFlashcards.length} flashcards are saved. Review them here or from the course Materials tab.`,
+        message: `${generatedFlashcards.length} flashcards are ready. You can review them here or from the course library.`,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate flashcards');
+      setError(err instanceof Error ? err.message : 'Unable to create flashcards');
     } finally {
       setWorking(null);
     }
@@ -141,7 +141,7 @@ export default function DocumentDetailScreen() {
       setQuizzes((current) => [quiz, ...current]);
       router.push(`/quiz/${quiz.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate quiz');
+      setError(err instanceof Error ? err.message : 'Unable to create a practice quiz');
     } finally {
       setWorking(null);
     }
@@ -157,11 +157,11 @@ export default function DocumentDetailScreen() {
       const refreshedDocument = await api.document(id);
       setDocument(refreshedDocument);
       setNotice({
-        title: 'OCR completed',
-        message: `StudyPilot extracted ${refreshedDocument.char_count} characters with ${refreshedDocument.extraction_method}. Job #${completedJob.id} is complete.`,
+        title: 'Text recognition completed',
+        message: `StudyPilot can now use more of this PDF for review notes and practice. Job #${completedJob.id} is complete.`,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to run OCR');
+      setError(err instanceof Error ? err.message : 'Unable to recognize text in this file');
     } finally {
       setWorking(null);
     }
@@ -172,7 +172,7 @@ export default function DocumentDetailScreen() {
       return startedJob;
     }
     if (startedJob.status === 'failed') {
-      throw new Error(startedJob.error_message || 'OCR failed');
+      throw new Error(startedJob.error_message || 'Text recognition failed');
     }
 
     for (let attempt = 0; attempt < OCR_POLL_ATTEMPTS; attempt += 1) {
@@ -182,10 +182,10 @@ export default function DocumentDetailScreen() {
         return job;
       }
       if (job.status === 'failed') {
-        throw new Error(job.error_message || 'OCR failed');
+        throw new Error(job.error_message || 'Text recognition failed');
       }
     }
-    throw new Error('OCR is still running. Pull to refresh this document in a moment.');
+    throw new Error('Text recognition is still running. Pull to refresh this source in a moment.');
   }
 
   async function openOriginalFile() {
@@ -193,14 +193,14 @@ export default function DocumentDetailScreen() {
       setError(null);
       await Linking.openURL(await api.documentDownloadUrl(id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to open original file');
+      setError(err instanceof Error ? err.message : 'Unable to open the original file');
     }
   }
 
   function confirmDeleteDocument() {
     Alert.alert(
       'Delete document?',
-      'This removes the uploaded document and generated summaries, flashcards, quizzes, and attempts.',
+      'This removes the source material and the review notes, flashcards, quizzes, and attempts created from it.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: deleteDocument },
@@ -219,20 +219,19 @@ export default function DocumentDetailScreen() {
         router.replace('/courses');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete document');
+      setError(err instanceof Error ? err.message : 'Unable to delete this source material');
     } finally {
       setDeleting(false);
     }
   }
 
   if (loading) {
-    return <LoadingState message="Loading document" />;
+    return <LoadingState message="Loading source material" />;
   }
 
   const canGenerate = document?.status === 'extracted';
   const actionDisabled = !!working || deleting || !canGenerate;
   const canRunOcr = document?.file_type === '.pdf' && ['available', 'recommended', 'error', 'queued', 'running'].includes(document.ocr_status);
-  const extractionLabel = document ? extractionQualityLabel(document) : '';
 
   return (
     <ScreenScrollView
@@ -242,11 +241,11 @@ export default function DocumentDetailScreen() {
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {working ? (
         <StatusBanner
-          title={working === 'ocr' ? 'Running OCR' : 'Generating study material'}
+          title={working === 'ocr' ? 'Recognizing text' : 'Creating your study material'}
           message={
             working === 'ocr'
-              ? 'StudyPilot is extracting text from scanned PDF pages. Keep the app open until OCR finishes.'
-              : 'StudyPilot is using the extracted document text. The saved result will appear on this screen when generation finishes.'
+              ? 'StudyPilot is reading scanned PDF pages. Keep the app open until this finishes.'
+              : 'StudyPilot is using this source material. The saved result will appear when it is ready.'
           }
         />
       ) : null}
@@ -255,29 +254,37 @@ export default function DocumentDetailScreen() {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>{document.filename}</Text>
-            <Text style={styles.subtitle}>
-              {document.char_count} chars - {document.status} - {extractionLabel}
-              {document.page_count ? ` - ${document.extracted_page_count}/${document.page_count} pages with embedded text` : ''}
-            </Text>
+            <Text style={styles.subtitle}>{sourceReadinessLabel(document)}</Text>
           </View>
+
+          <Card style={styles.startCard}>
+            <Text style={styles.sectionTitle}>Study From This Source</Text>
+            <Text style={styles.optionDescription}>
+              Read the original source, then create review notes, flashcards, or a practice quiz when you are ready.
+            </Text>
+            <View style={[styles.actions, isTablet && styles.tabletActions]}>
+              <Button title="Read Full Source" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
+              <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
+            </View>
+          </Card>
 
           {document.ocr_status !== 'not_required' ? (
             <Card style={styles.ocrCard}>
               <Text style={styles.optionTitle}>
-                {document.status === 'needs_ocr' ? 'OCR required' : document.ocr_status === 'completed' ? 'OCR completed' : 'OCR recommended'}
+                {document.status === 'needs_ocr' ? 'Text recognition needed' : document.ocr_status === 'completed' ? 'Text recognition complete' : 'Text recognition recommended'}
               </Text>
               <Text style={styles.qualityText}>
-                Extraction quality: {extractionLabel}. Coverage: {Math.round(document.extraction_coverage * 100)}%.
+                StudyPilot can read {Math.round(document.extraction_coverage * 100)}% of this PDF right now.
               </Text>
               <Text style={styles.optionDescription}>
                 {document.extraction_notes ||
-                  'Some pages have little or no embedded text. Scanned PDFs need OCR before StudyPilot can use the full material.'}
+                  'Some pages have little or no selectable text. Run text recognition so StudyPilot can use the full material.'}
               </Text>
               {document.ocr_status === 'completed' ? (
-                <Text style={styles.ocrDone}>OCR completed</Text>
+                <Text style={styles.ocrDone}>Ready to study</Text>
               ) : canRunOcr ? (
                 <Button
-                  title={working === 'ocr' ? 'Running OCR...' : document.ocr_status === 'queued' || document.ocr_status === 'running' ? 'Check OCR Status' : 'Run OCR'}
+                  title={working === 'ocr' ? 'Recognizing...' : document.ocr_status === 'queued' || document.ocr_status === 'running' ? 'Check Progress' : 'Recognize Text'}
                   disabled={!!working || deleting}
                   onPress={runOcr}
                 />
@@ -286,36 +293,34 @@ export default function DocumentDetailScreen() {
           ) : null}
 
           <Card>
-            <Text style={styles.sectionTitle}>Extracted Text Preview</Text>
+            <Text style={styles.sectionTitle}>Source Preview</Text>
             <Text style={styles.previewMeta}>
               {document.preview_is_truncated
-                ? `Showing first ${document.preview_char_count} of ${document.char_count} extracted chars. Generation uses the full extracted text.`
-                : `Showing all ${document.char_count} extracted chars.`}
+                ? 'This is only a preview. StudyPilot uses the full readable source when creating materials.'
+                : 'This source is short enough to show in full here.'}
             </Text>
-            <Text style={styles.preview}>{document.preview || 'No extracted text preview available.'}</Text>
+            <Text style={styles.preview}>{document.preview || 'No readable text is available yet.'}</Text>
           </Card>
 
           {!canGenerate ? (
             <EmptyState
-              title="Generation unavailable"
-              message="Study materials can only be generated after text is extracted. Run OCR if this is a scanned PDF."
+              title="Study tools are not ready yet"
+              message="Run text recognition if this is a scanned PDF, then create review notes or practice."
             />
           ) : null}
 
           <View style={[styles.actions, isTablet && styles.tabletActions]}>
-            <Button title="Open Full Extracted Text" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
-            <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
-            <Button title={deleting ? 'Deleting...' : 'Delete Document'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
+            <Button title={deleting ? 'Deleting...' : 'Delete Source'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
           </View>
 
-          <Section title="Generate Summaries">
+          <Section title="Create Review Notes">
             <ResponsiveGrid minItemWidth={280}>
               {SUMMARY_OPTIONS.map((option) => (
                 <Card key={option.type}>
-                  <Text style={styles.optionTitle}>{option.title} Summary</Text>
+                  <Text style={styles.optionTitle}>{option.title}</Text>
                   <Text style={styles.optionDescription}>{option.description}</Text>
                   <Button
-                    title={working === option.type ? 'Generating...' : `Generate ${option.title}`}
+                    title={working === option.type ? 'Creating...' : `Create ${option.title}`}
                     disabled={actionDisabled}
                     variant={option.type === 'concise' ? 'primary' : 'secondary'}
                     onPress={() => generateSummary(option.type)}
@@ -325,16 +330,16 @@ export default function DocumentDetailScreen() {
             </ResponsiveGrid>
           </Section>
 
-          <Section title="Generate Practice">
+          <Section title="Create Practice">
             <ResponsiveGrid minItemWidth={320}>
               <Card>
                 <Text style={styles.optionTitle}>Flashcards</Text>
                 <Text style={styles.optionDescription}>Create quick recall cards from the document concepts.</Text>
-                <Button title={working === 'flashcards' ? 'Generating...' : 'Generate Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
+                <Button title={working === 'flashcards' ? 'Creating...' : 'Create Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
               </Card>
 
               <Card>
-                <Text style={styles.optionTitle}>Quiz</Text>
+                <Text style={styles.optionTitle}>Practice Quiz</Text>
                 <Text style={styles.optionDescription}>Choose question count and difficulty before generating a quiz.</Text>
                 <SegmentedControl
                   label="Questions"
@@ -350,31 +355,31 @@ export default function DocumentDetailScreen() {
                   format={(value) => value}
                   onChange={setQuizDifficulty}
                 />
-                <Button title={working === 'quiz' ? 'Generating...' : 'Generate Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
+                <Button title={working === 'quiz' ? 'Creating...' : 'Create Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
               </Card>
             </ResponsiveGrid>
           </Section>
 
-          <Section title="Latest Summary">
+          <Section title="Latest Review Notes">
             {summaries.length ? (
               <>
                 <SummaryView summary={summaries[0]} />
                 <Button
-                  title="Open Saved Summary"
+                  title="Open Saved Notes"
                   variant="secondary"
                   onPress={() => router.push(`/summaries/${summaries[0].id}` as Href)}
                 />
               </>
             ) : (
-              <EmptyState title="No summary" message="Generate a summary from this document." />
+              <EmptyState title="No review notes" message="Create review notes from this source." />
             )}
           </Section>
 
-          <Section title="Flashcards">
-            {flashcards.length ? <FlashcardList flashcards={flashcards} /> : <EmptyState title="No flashcards" message="Generate flashcards for quick review." />}
+          <Section title="Saved Flashcards">
+            {flashcards.length ? <FlashcardList flashcards={flashcards} /> : <EmptyState title="No flashcards" message="Create flashcards for quick review." />}
           </Section>
 
-          <Section title="Quizzes">
+          <Section title="Practice Quizzes">
             {quizzes.length ? (
               quizzes.map((quiz) => (
                 <Link key={quiz.id} href={`/quiz/${quiz.id}`} asChild>
@@ -385,7 +390,7 @@ export default function DocumentDetailScreen() {
                 </Link>
               ))
             ) : (
-              <EmptyState title="No quizzes" message="Generate a quiz to test your understanding." />
+              <EmptyState title="No practice quizzes" message="Create a quiz to test your understanding." />
             )}
           </Section>
         </>
@@ -400,17 +405,14 @@ function delay(milliseconds: number): Promise<void> {
   });
 }
 
-function extractionQualityLabel(document: DocumentDetail): string {
-  if (document.extraction_quality === 'ocr') {
-    return 'OCR text';
-  }
-  if (document.extraction_quality === 'poor') {
-    return 'poor extraction';
+function sourceReadinessLabel(document: DocumentDetail): string {
+  if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
+    return 'Needs text recognition before StudyPilot can create reliable study tools.';
   }
   if (document.extraction_quality === 'partial') {
-    return 'partial extraction';
+    return 'Partially readable. Review the source text before creating study tools.';
   }
-  return 'good extraction';
+  return 'Ready for review notes, flashcards, and practice.';
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -472,6 +474,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textMuted,
+    lineHeight: 20,
   },
   preview: {
     color: colors.text,
@@ -488,6 +491,9 @@ const styles = StyleSheet.create({
   },
   tabletActions: {
     flexDirection: 'row',
+  },
+  startCard: {
+    backgroundColor: colors.infoSurface,
   },
   optionTitle: {
     color: colors.text,

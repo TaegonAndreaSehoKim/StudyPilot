@@ -19,10 +19,10 @@ import { formatDateTime, formatTimeRemaining } from '@/utils/format';
 type CourseTab = 'overview' | 'materials' | 'practice' | 'schedule';
 
 const COURSE_TABS: { key: CourseTab; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'materials', label: 'Materials' },
+  { key: 'overview', label: 'Study' },
+  { key: 'materials', label: 'Library' },
   { key: 'practice', label: 'Practice' },
-  { key: 'schedule', label: 'Schedule' },
+  { key: 'schedule', label: 'Deadlines' },
 ];
 
 export default function CourseDetailScreen() {
@@ -64,7 +64,7 @@ export default function CourseDetailScreen() {
       setAttempts(attemptList);
       setSchedule(scheduleList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to load course');
+      setError(err instanceof Error ? err.message : 'Unable to load this course');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -96,7 +96,7 @@ export default function CourseDetailScreen() {
       setActiveTab('materials');
       router.push(`/documents/${document.id}?uploaded=1` as Href);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to upload document');
+      setError(err instanceof Error ? err.message : 'Unable to add this source material');
     } finally {
       setUploading(false);
     }
@@ -111,7 +111,7 @@ export default function CourseDetailScreen() {
       setActiveTab('practice');
       router.push(`/quiz/${quiz.id}` as Href);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to generate weak-topic quiz');
+      setError(err instanceof Error ? err.message : 'Unable to create weak-area practice');
     } finally {
       setGeneratingReviewQuiz(false);
     }
@@ -120,7 +120,7 @@ export default function CourseDetailScreen() {
   function confirmDeleteCourse() {
     Alert.alert(
       'Delete course?',
-      'This removes the course, uploaded documents, generated study materials, quizzes, and weak topics.',
+      'This removes the course, source materials, review notes, flashcards, quizzes, and weak areas.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: deleteCourse },
@@ -142,7 +142,7 @@ export default function CourseDetailScreen() {
   }
 
   if (loading) {
-    return <LoadingState message="Loading course" />;
+    return <LoadingState message="Loading this course" />;
   }
 
   return (
@@ -153,14 +153,14 @@ export default function CourseDetailScreen() {
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {uploading ? (
         <StatusBanner
-          title="Uploading document"
-          message="Keep StudyPilot open while the file is copied, extracted, and saved to this course."
+          title="Adding source material"
+          message="Keep StudyPilot open while this source material is added to your course."
         />
       ) : null}
       {generatingReviewQuiz ? (
         <StatusBanner
           title="Generating review quiz"
-          message="StudyPilot is using missed topics and course documents to create a focused practice quiz."
+          message="StudyPilot is using your missed topics and course materials to create focused practice."
         />
       ) : null}
       {dashboard ? (
@@ -171,13 +171,13 @@ export default function CourseDetailScreen() {
           </View>
 
           <View style={styles.metrics}>
-            <Text style={styles.metric}>{dashboard.document_count} docs</Text>
-            <Text style={styles.metric}>{dashboard.summary_count} summaries</Text>
-            <Text style={styles.metric}>{dashboard.quiz_count} quizzes</Text>
+            <Text style={styles.metric}>{dashboard.document_count} sources</Text>
+            <Text style={styles.metric}>{dashboard.summary_count} review notes</Text>
+            <Text style={styles.metric}>{dashboard.quiz_count} practice sets</Text>
           </View>
 
           <View style={[styles.actions, isTablet && styles.tabletActions]}>
-            <Button title={uploading ? 'Uploading...' : 'Upload Document'} disabled={uploading || deleting} onPress={upload} />
+            <Button title={uploading ? 'Adding...' : 'Add Source Material'} disabled={uploading || deleting} onPress={upload} />
             <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
           </View>
 
@@ -196,20 +196,20 @@ export default function CourseDetailScreen() {
 
           {activeTab === 'overview' ? (
             <ResponsiveGrid minItemWidth={340}>
-              <Section title="Upcoming Schedule">
+              <Section title="Next Deadlines">
                 <ScheduleCards courseId={id} schedule={schedule.slice(0, 3)} />
               </Section>
 
-              <Section title="Weak Topics">
+              <Section title="Weak Areas">
                 {dashboard.weak_topics.length ? (
                   dashboard.weak_topics.map((topic) => (
                     <Card key={topic.id}>
                       <Text style={styles.itemTitle}>{topic.topic}</Text>
-                      <Text style={styles.itemMeta}>Missed {topic.miss_count} times</Text>
+                      <Text style={styles.itemMeta}>Missed {topic.miss_count} times - practice this next</Text>
                     </Card>
                   ))
                 ) : (
-                  <EmptyState title="No weak topics" message="Quiz misses for this course will appear here." />
+                  <EmptyState title="No weak areas yet" message="Missed quiz questions will show what to review next." />
                 )}
               </Section>
             </ResponsiveGrid>
@@ -217,57 +217,57 @@ export default function CourseDetailScreen() {
 
           {activeTab === 'materials' ? (
             <ResponsiveGrid minItemWidth={340}>
-              <Section title="Documents">
+              <Section title="Source Materials">
                 {documents.length ? (
                   documents.map((document) => (
                     <Link key={document.id} href={`/documents/${document.id}`} asChild>
                       <Card>
                         <Text style={styles.itemTitle}>{document.filename}</Text>
                         <Text style={styles.itemMeta}>
-                          {document.char_count} chars - {document.status} - {documentExtractionLabel(document)}
+                          {sourceStatusLabel(document)}
                         </Text>
                         {document.file_type === '.pdf' ? (
                           <Text style={styles.itemMeta}>
-                            {Math.round(document.extraction_coverage * 100)}% coverage
-                            {document.page_count ? ` - ${document.extracted_page_count}/${document.page_count} pages` : ''}
-                            {document.ocr_status !== 'not_required' ? ` - OCR ${document.ocr_status}` : ''}
+                            {document.ocr_status !== 'not_required'
+                              ? textRecognitionLabel(document.ocr_status)
+                              : `${Math.round(document.extraction_coverage * 100)}% of PDF text available`}
                           </Text>
                         ) : null}
                       </Card>
                     </Link>
                   ))
                 ) : (
-                  <EmptyState title="No documents" message="Upload .txt, .md, or text-based .pdf notes." />
+                  <EmptyState title="No source materials" message="Add lecture notes, markdown files, text files, or PDFs to start studying." />
                 )}
               </Section>
 
-              <Section title="Saved Summaries">
+              <Section title="Review Notes">
                 {summaries.length ? (
                   summaries.map((summary) => (
                     <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
                       <Card>
                         <Text style={styles.itemTitle}>{summary.title}</Text>
                         <Text style={styles.itemMeta}>
-                          {summary.summary_type} summary - document #{summary.document_id}
+                          {summaryTypeLabel(summary.summary_type)} notes
                         </Text>
                       </Card>
                     </Link>
                   ))
                 ) : (
-                  <EmptyState title="No summaries" message="Generate a summary from a document and it will appear here." />
+                  <EmptyState title="No review notes" message="Open a source material and create review notes from it." />
                 )}
               </Section>
 
-              <Section title="Saved Flashcards">
+              <Section title="Flashcards">
                 {flashcards.length ? (
                   <Link href={`/flashcards/course/${id}` as Href} asChild>
                     <Card>
-                      <Text style={styles.itemTitle}>Review Course Flashcards</Text>
-                      <Text style={styles.itemMeta}>{flashcards.length} cards saved across this course</Text>
+                      <Text style={styles.itemTitle}>Review Flashcards</Text>
+                      <Text style={styles.itemMeta}>{flashcards.length} cards ready for this course</Text>
                     </Card>
                   </Link>
                 ) : (
-                  <EmptyState title="No flashcards" message="Generate flashcards from a document and they will appear here." />
+                  <EmptyState title="No flashcards" message="Create flashcards from a source material for quick recall." />
                 )}
               </Section>
             </ResponsiveGrid>
@@ -277,34 +277,34 @@ export default function CourseDetailScreen() {
             <ResponsiveGrid minItemWidth={340}>
               <View style={styles.section}>
                 <Button
-                  title={generatingReviewQuiz ? 'Generating Review Quiz...' : 'Generate Weak Topic Quiz'}
+                  title={generatingReviewQuiz ? 'Creating Focus Quiz...' : 'Practice Weak Areas'}
                   disabled={generatingReviewQuiz || deleting || !dashboard.weak_topics.length || !documents.length}
                   onPress={generateReviewQuiz}
                 />
               </View>
-              <Section title="Saved Quizzes">
+              <Section title="Practice Quizzes">
                 {quizzes.length ? (
                   <Link href={`/quizzes/course/${id}` as Href} asChild>
                     <Card>
-                      <Text style={styles.itemTitle}>Review Course Quizzes</Text>
-                      <Text style={styles.itemMeta}>{quizzes.length} quizzes saved across this course</Text>
+                      <Text style={styles.itemTitle}>Open Practice Quizzes</Text>
+                      <Text style={styles.itemMeta}>{quizzes.length} quizzes ready for this course</Text>
                     </Card>
                   </Link>
                 ) : (
-                  <EmptyState title="No quizzes" message="Generate a quiz from a document and it will appear here." />
+                  <EmptyState title="No practice quizzes" message="Open a source material and create a quiz when you are ready to test yourself." />
                 )}
               </Section>
 
-              <Section title="Quiz Attempts">
+              <Section title="Practice History">
                 {attempts.length ? (
                   <Link href={`/attempts/course/${id}` as Href} asChild>
                     <Card>
-                      <Text style={styles.itemTitle}>Review Attempt History</Text>
-                      <Text style={styles.itemMeta}>{attempts.length} attempts recorded for this course</Text>
+                      <Text style={styles.itemTitle}>Review Scores</Text>
+                      <Text style={styles.itemMeta}>{attempts.length} attempts saved for this course</Text>
                     </Card>
                   </Link>
                 ) : (
-                  <EmptyState title="No attempts" message="Submit a quiz attempt and your scores will appear here." />
+                  <EmptyState title="No practice history" message="Quiz scores and missed topics appear after you submit answers." />
                 )}
               </Section>
             </ResponsiveGrid>
@@ -312,8 +312,8 @@ export default function CourseDetailScreen() {
 
           {activeTab === 'schedule' ? (
             <>
-              <Button title="Manage Schedule" variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
-              <Section title="Active Schedule">
+              <Button title="Manage Deadlines" variant="secondary" onPress={() => router.push(`/schedule/course/${id}` as Href)} />
+              <Section title="Active Deadlines">
                 <ScheduleCards courseId={id} schedule={schedule} />
               </Section>
             </>
@@ -326,7 +326,7 @@ export default function CourseDetailScreen() {
 
 function ScheduleCards({ courseId, schedule }: { courseId: number; schedule: ScheduleItem[] }) {
   if (!schedule.length) {
-    return <EmptyState title="No schedule items" message="Add assignment deadlines, exams, and course milestones." />;
+    return <EmptyState title="No deadlines yet" message="Add assignments, exams, readings, or project milestones." />;
   }
 
   return (
@@ -355,17 +355,37 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function documentExtractionLabel(document: Document): string {
-  if (document.extraction_quality === 'ocr') {
-    return 'OCR text';
-  }
-  if (document.extraction_quality === 'poor') {
-    return 'OCR required';
+function sourceStatusLabel(document: Document): string {
+  if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
+    return 'Needs text recognition before studying';
   }
   if (document.extraction_quality === 'partial') {
-    return 'partial extraction';
+    return 'Partially readable - check source text first';
   }
-  return 'good extraction';
+  return 'Ready for review notes and practice';
+}
+
+function textRecognitionLabel(value: string): string {
+  if (value === 'completed') {
+    return 'Text recognition complete';
+  }
+  if (value === 'queued' || value === 'running') {
+    return 'Text recognition in progress';
+  }
+  return 'Text recognition available';
+}
+
+function summaryTypeLabel(value: string): string {
+  if (value === 'concise') {
+    return 'Quick review';
+  }
+  if (value === 'detailed') {
+    return 'Deep review';
+  }
+  if (value === 'exam') {
+    return 'Exam prep';
+  }
+  return value;
 }
 
 const styles = StyleSheet.create({

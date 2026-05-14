@@ -98,15 +98,15 @@ npm run export:web
 
 - Visual palette: warm study palette based on `#D9C3B0`, `#8C7161`, `#D9663D`, `#A64029`, and `#261714`
 - Responsive layout: phone-first screens use wider max-width containers and two-column card grids on tablet-sized displays
-- Dashboard: study focus cards, counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
-- Dashboard schedule: upcoming deadlines and exams across all courses
+- Dashboard: Continue Studying cards, counts, recent courses, recent sources, review notes, practice quizzes, and weak areas
+- Dashboard deadlines: upcoming assignments and exams across all courses
 - Courses: course list and course creation
-- Course detail: tabbed overview, materials, practice, schedule, document upload, extraction-quality document cards, and course actions
-- Weak-topic review quiz: generate focused practice from missed quiz topics on the course Practice tab
-- Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
-- Document detail: upload result guidance, extraction quality and coverage diagnostics, OCR-required guidance, extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
-- Full text: complete extracted document text with Save / Share support
-- Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
+- Course detail: Study, Library, Practice, and Deadlines tabs with source upload, review notes, flashcards, quizzes, weak areas, and course actions
+- Weak-area review quiz: generate focused practice from missed quiz topics on the course Practice tab
+- Deadlines: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
+- Source detail: read full source, open original file, text-recognition guidance, source preview, review-note options, quiz options, generation feedback, and saved materials
+- Full text: complete readable source text with Save / Share support
+- Summary detail: full saved review notes with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support
 - Quizzes: course-level saved quiz list with links back into quiz taking
 - Quiz: answer progress, submit attempt, highlighted answers, source quotes, distractor explanations, retake, and return links to the source document/course
