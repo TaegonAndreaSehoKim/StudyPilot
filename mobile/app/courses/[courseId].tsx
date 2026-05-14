@@ -92,9 +92,9 @@ export default function CourseDetailScreen() {
         name: asset.name,
         mimeType: asset.mimeType,
       });
-      await load();
+      setDocuments((current) => [document, ...current.filter((item) => item.id !== document.id)]);
       setActiveTab('materials');
-      router.push(`/documents/${document.id}`);
+      router.push(`/documents/${document.id}?uploaded=1` as Href);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to upload document');
     } finally {
@@ -223,7 +223,16 @@ export default function CourseDetailScreen() {
                     <Link key={document.id} href={`/documents/${document.id}`} asChild>
                       <Card>
                         <Text style={styles.itemTitle}>{document.filename}</Text>
-                        <Text style={styles.itemMeta}>{document.char_count} chars - {document.status}</Text>
+                        <Text style={styles.itemMeta}>
+                          {document.char_count} chars - {document.status} - {documentExtractionLabel(document)}
+                        </Text>
+                        {document.file_type === '.pdf' ? (
+                          <Text style={styles.itemMeta}>
+                            {Math.round(document.extraction_coverage * 100)}% coverage
+                            {document.page_count ? ` - ${document.extracted_page_count}/${document.page_count} pages` : ''}
+                            {document.ocr_status !== 'not_required' ? ` - OCR ${document.ocr_status}` : ''}
+                          </Text>
+                        ) : null}
                       </Card>
                     </Link>
                   ))
@@ -344,6 +353,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       {children}
     </View>
   );
+}
+
+function documentExtractionLabel(document: Document): string {
+  if (document.extraction_quality === 'ocr') {
+    return 'OCR text';
+  }
+  if (document.extraction_quality === 'poor') {
+    return 'OCR required';
+  }
+  if (document.extraction_quality === 'partial') {
+    return 'partial extraction';
+  }
+  return 'good extraction';
 }
 
 const styles = StyleSheet.create({

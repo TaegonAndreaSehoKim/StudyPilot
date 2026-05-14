@@ -82,10 +82,10 @@ npm run export:web
 - Dashboard: counts, recent courses, recent documents, recent summaries, recent quizzes, weak topics
 - Dashboard schedule: upcoming deadlines and exams across all courses
 - Courses: course list and course creation
-- Course detail: tabbed overview, materials, practice, schedule, document upload, and course actions
+- Course detail: tabbed overview, materials, practice, schedule, document upload, extraction-quality document cards, and course actions
 - Weak-topic review quiz: generate focused practice from missed quiz topics on the course Practice tab
 - Schedule: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
-- Document detail: extraction quality and coverage diagnostics, OCR-required guidance, extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
+- Document detail: upload result guidance, extraction quality and coverage diagnostics, OCR-required guidance, extracted preview, full extracted text link, original file link, summary mode cards, quiz options, generation feedback, generated materials
 - Full text: complete extracted document text with Save / Share support
 - Summary detail: full saved summary with key points, key terms, source quotes, and Save / Share support
 - Flashcards: course-level saved card review with Save / Share support

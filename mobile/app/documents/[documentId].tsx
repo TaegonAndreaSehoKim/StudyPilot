@@ -1,6 +1,6 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
@@ -43,7 +43,7 @@ const OCR_POLL_ATTEMPTS = 80;
 const OCR_POLL_INTERVAL_MS = 1500;
 
 export default function DocumentDetailScreen() {
-  const { documentId } = useLocalSearchParams<{ documentId: string }>();
+  const { documentId, uploaded } = useLocalSearchParams<{ documentId: string; uploaded?: string }>();
   const id = Number(documentId);
   const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [summaries, setSummaries] = useState<Summary[]>([]);
@@ -57,6 +57,7 @@ export default function DocumentDetailScreen() {
   const [quizDifficulty, setQuizDifficulty] = useState<QuizDifficulty>('mixed');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const showedUploadNotice = useRef(false);
   const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
@@ -72,6 +73,16 @@ export default function DocumentDetailScreen() {
       setSummaries(summaryList);
       setFlashcards(cardList);
       setQuizzes(quizList);
+      if (uploaded === '1' && !showedUploadNotice.current) {
+        showedUploadNotice.current = true;
+        setNotice({
+          title: doc.status === 'needs_ocr' ? 'Document uploaded - OCR required' : 'Document uploaded',
+          message:
+            doc.status === 'needs_ocr'
+              ? 'StudyPilot saved the file, but the PDF has little or no embedded text. Run OCR before generating study materials.'
+              : 'StudyPilot extracted the document text. You can inspect the source or generate study materials from this screen.',
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load document');
     } finally {
