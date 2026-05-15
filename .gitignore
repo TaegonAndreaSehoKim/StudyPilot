@@ -35,6 +35,9 @@ backend/app/storage/*
 backend/app/storage/documents/*
 !backend/app/storage/documents/.gitkeep
 
+# Local-only reference files for Codex/user review
+docs/files_for_codex/
+
 # Node / Expo
 node_modules/
 .expo/

@@ -36,6 +36,20 @@ class SourceSection:
     sentences: list[str]
 
 
+TOPIC_WORD_STOP = {
+    "slide",
+    "section",
+    "source",
+    "notes",
+    "note",
+    "chunk",
+    "overview",
+    "study",
+    "core",
+    "concept",
+}
+
+
 def _meaningful_lines(text: str) -> list[str]:
     lines = []
     for line in text.splitlines():
@@ -47,7 +61,7 @@ def _meaningful_lines(text: str) -> list[str]:
 
 def _first_line(text: str) -> str:
     for line in _meaningful_lines(text):
-        return line[:80]
+        return re.sub(r"^Section:\s*", "", line, flags=re.IGNORECASE)[:80]
     return "Study Notes"
 
 
@@ -113,6 +127,11 @@ def _keywords(text: str, limit: int = 8) -> list[str]:
         "study",
         "summary",
         "concept",
+        "core",
+        "chunk",
+        "overview",
+        "slide",
+        "section",
         "supported",
         "uploaded",
         "material",
@@ -186,35 +205,93 @@ def _is_insufficient(text: str) -> bool:
     return len(re.sub(r"\s+", "", text)) < 80 or not _sentences(text)
 
 
+def _looks_like_meta_summary(*parts: str) -> bool:
+    text = " ".join(part for part in parts if isinstance(part, str)).lower()
+    if not text:
+        return False
+    meta_phrases = (
+        "source notes",
+        "uploaded notes",
+        "uploaded course notes",
+        "chunk 1",
+        "chunk 2",
+        "chunk 3",
+        "chunk 4",
+        "study material",
+    )
+    if any(phrase in text for phrase in meta_phrases):
+        return True
+    if re.fullmatch(r"(chunk|overview|section|slide|source|notes)[\s:.\-]*", text.strip()):
+        return True
+    return False
+
+
 def _best_sentence_for_topic(topic: str, sentences: list[str]) -> str:
-    topic_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", topic)}
+    topic_words = _topic_words(topic)
     if not topic_words:
         return sentences[0] if sentences else "The uploaded source text is limited."
     for sentence in sentences:
-        sentence_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", sentence)}
+        sentence_words = _topic_words(sentence)
         if topic_words & sentence_words:
             return sentence
     return sentences[0] if sentences else "The uploaded source text is limited."
 
 
 def _section_for_topic(topic: str, sections: list[SourceSection]) -> SourceSection | None:
-    topic_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", topic)}
+    topic_words = _topic_words(topic)
+    if not topic_words:
+        return sections[0] if sections else None
+    best_title_match: tuple[int, SourceSection] | None = None
     for section in sections:
-        title_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", section.title)}
-        if topic_words & title_words:
-            return section
+        title_words = _topic_words(section.title)
+        score = len(topic_words & title_words)
+        if score and (best_title_match is None or score > best_title_match[0]):
+            best_title_match = (score, section)
+    if best_title_match:
+        return best_title_match[1]
+
+    best_content_match: tuple[int, SourceSection] | None = None
     for section in sections:
-        content_words = {word.lower() for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", section.content)}
-        if topic_words & content_words:
-            return section
+        content_words = _topic_words(section.content)
+        score = len(topic_words & content_words)
+        if score and (best_content_match is None or score > best_content_match[0]):
+            best_content_match = (score, section)
+    if best_content_match:
+        return best_content_match[1]
     return sections[0] if sections else None
 
 
+def _topic_words(text: str) -> set[str]:
+    return {
+        word.lower()
+        for word in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{2,}\b", text)
+        if word.lower() not in TOPIC_WORD_STOP
+    }
+
+
 def _section_summary(section: SourceSection, max_sentences: int = 2) -> str:
-    selected = section.sentences[:max_sentences]
+    selected = _study_sentences(section.sentences)[:max_sentences]
     if not selected:
         return _excerpt(section.content)
     return " ".join(selected)
+
+
+def _study_sentences(sentences: list[str]) -> list[str]:
+    filler_prefixes = (
+        "let's discuss",
+        "let's take",
+        "now let's",
+        "now here's",
+        "here's",
+        "so here",
+    )
+    filtered = []
+    for sentence in sentences:
+        normalized = sentence.lower().replace("’", "'").lstrip()
+        if normalized.startswith(filler_prefixes):
+            continue
+        filtered.append(sentence)
+    return filtered or sentences
 
 
 def _overview_from_sections(sections: list[SourceSection], summary_type: str) -> str:
@@ -222,19 +299,29 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
     if not names:
         return "The uploaded notes contain limited extractable study context."
     topic_text = ", ".join(names[:-1]) + (f", and {names[-1]}" if len(names) > 1 else names[0])
+    concrete_flow = " ".join(_section_summary(section, 1) for section in sections[:2])
     if summary_type == "exam":
-        return f"These notes are organized around {topic_text}. For exam review, focus on likely test points, comparisons with similar concepts, and memorization anchors."
+        return (
+            f"These notes are organized around {topic_text}. For exam review, use the summary to identify "
+            f"test points, testable definitions, exceptions, comparisons, and memorization anchors. {concrete_flow}"
+        )
     if summary_type == "detailed":
-        return f"These notes cover {topic_text}. This detailed summary emphasizes the general principles and conceptual roles of each topic rather than examples."
-    return f"These notes focus on {topic_text}. The concise summary follows the broad flow of the material and highlights the central concepts."
+        return (
+            f"These notes cover {topic_text}. This detailed summary explains the general principles, "
+            f"conceptual roles, and relationships needed to study without rereading the full source. {concrete_flow}"
+        )
+    return (
+        f"These notes focus on {topic_text}. The concise summary follows the broad flow of the material "
+        f"while still explaining the central concepts in study-ready form. {concrete_flow}"
+    )
 
 
 def _concise_point(section: SourceSection) -> str:
-    return f"Core concept - {section.title}: {_section_summary(section, 1)}"
+    return f"Core concept - {section.title}: {_section_summary(section, 2)}"
 
 
 def _detailed_point(section: SourceSection) -> str:
-    return f"Concept overview - {section.title}: {_section_summary(section, 2)}"
+    return f"Concept overview - {section.title}: {_section_summary(section, 3)}"
 
 
 def _exam_points(sections: list[SourceSection]) -> list[str]:
@@ -444,14 +531,35 @@ class OpenAIProvider(AIProvider):
             return False
         if not all(isinstance(value.get(key), str) and value[key].strip() for key in ("title", "overview")):
             return False
-        if not isinstance(value.get("key_points"), list) or not value["key_points"]:
+        if _looks_like_meta_summary(value["title"], value["overview"]):
             return False
-        if not all(isinstance(point, str) and point.strip() for point in value["key_points"]):
+        overview = value["overview"].strip()
+        if len(overview) < 120:
             return False
-        if not isinstance(value.get("key_terms"), list):
+        if not isinstance(value.get("key_points"), list) or len(value["key_points"]) < 3:
             return False
-        if not isinstance(value.get("source_quotes"), list):
+        if not all(isinstance(point, str) and len(point.strip()) >= 60 for point in value["key_points"]):
             return False
+        if any(_looks_like_meta_summary(point) for point in value["key_points"]):
+            return False
+        key_terms = value.get("key_terms")
+        if not isinstance(key_terms, list) or len(key_terms) < 3:
+            return False
+        for item in key_terms:
+            if not isinstance(item, dict):
+                return False
+            if not all(isinstance(item.get(key), str) and item[key].strip() for key in ("term", "definition")):
+                return False
+            if _looks_like_meta_summary(item["term"]):
+                return False
+        source_quotes = value.get("source_quotes")
+        if not isinstance(source_quotes, list) or len(source_quotes) < 2:
+            return False
+        for item in source_quotes:
+            if not isinstance(item, dict):
+                return False
+            if not all(isinstance(item.get(key), str) and item[key].strip() for key in ("quote", "reason")):
+                return False
         return True
 
     def _valid_flashcards(self, value: Any) -> bool:
@@ -586,29 +694,36 @@ class OpenAIProvider(AIProvider):
     def _summary_prompt(self, document_text: str, summary_type: str) -> str:
         guidance = {
             "concise": (
-                "Focus on core concepts and the broad flow of the material. "
-                "Do not over-explain details; show how the major ideas connect."
+                "Focus on core concepts and the broad flow of the material. Explain what each major idea means, "
+                "how the ideas connect, and why they matter. Keep it compact, but do not reduce it to labels."
             ),
             "detailed": (
                 "Give a general conceptual explanation of the ideas covered in the source. "
-                "Prioritize principles, definitions, mechanisms, and relationships over examples."
+                "Prioritize principles, definitions, mechanisms, and relationships over examples. "
+                "Use examples only when they clarify the underlying principle."
             ),
             "exam": (
                 "Organize the output around likely test points, comparisons with similar concepts, "
-                "and memorization anchors. Make exam-facing distinctions explicit."
+                "exceptions, failure cases, and memorization anchors. Make exam-facing distinctions explicit."
             ),
         }.get(summary_type, "Write a source-grounded study summary.")
         return (
             "You are generating study material from uploaded course notes.\n"
+            "The result must be self-contained enough that a student can study from the summary alone for first-pass review.\n"
             "Return only a valid JSON object with keys: title, overview, key_points, key_terms, source_quotes.\n"
             "Rules:\n"
             "- Use only facts supported by the notes.\n"
-            "- Preserve section structure when available.\n"
+            "- Preserve section structure when available, but explain the content instead of merely listing section titles.\n"
             "- If notes are insufficient, say that explicitly.\n"
-            "- key_terms must include definitions grounded in the notes.\n"
-            "- source_quotes must be short snippets copied from the notes.\n"
-            "- For concise summaries, emphasize core concepts and the big-picture flow.\n"
-            "- For detailed summaries, explain the concepts at a general theoretical level and avoid centering the output on examples.\n"
+            "- Do not write vague meta summaries such as 'these notes discuss...' without explaining the actual ideas.\n"
+            "- Do not use Chunk, Source Notes, uploaded notes, section, or slide as key concepts unless those are actual source concepts.\n"
+            "- overview must be 2-4 sentences that state the main topic, the conceptual flow, and the major conclusions.\n"
+            "- key_points must contain 5-8 study-ready points. Each point must name the concept, explain it, and state why it matters or how it is used.\n"
+            "- key_terms must contain 5-10 concrete terms with source-grounded definitions, not generic labels.\n"
+            "- source_quotes must contain 3-5 short snippets copied from the notes with a reason for each quote.\n"
+            "- Include constraints, exceptions, comparisons, or failure cases when the source contains them.\n"
+            "- For concise summaries, emphasize core concepts and the big-picture flow while keeping each point explanatory.\n"
+            "- For detailed summaries, explain concepts at a general theoretical level and avoid centering the output on examples.\n"
             "- For exam summaries, include key_points labeled or phrased as test points, similar-concept comparisons, and memorization points.\n"
             f"- Summary mode: {summary_type}. {guidance}\n\n"
             f"Notes:\n{document_text[:30000]}"

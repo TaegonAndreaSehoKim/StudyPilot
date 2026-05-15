@@ -6,23 +6,44 @@ from app.services.document_structure import build_study_context
 from app.services.study_outputs import normalize_flashcards_result, normalize_quiz_result, normalize_summary_result
 
 
+DIRECT_STUDY_CONTEXT_MAX_CHARS = 28000
+CHUNKED_STUDY_CONTEXT_MAX_CHARS = 24000
+CHUNKED_STUDY_CONTEXT_OVERLAP_CHARS = 1000
+
+
 class StudyGenerator:
     def __init__(self, ai_provider: AIProvider) -> None:
         self.ai_provider = ai_provider
 
     def _prepared_text(self, document_text: str, focus_topics: list[str] | None = None) -> str:
         study_context = build_study_context(document_text, focus_topics=focus_topics)
-        chunks = chunk_text(study_context)
+        if len(study_context) <= DIRECT_STUDY_CONTEXT_MAX_CHARS:
+            return study_context
+
+        chunks = chunk_text(
+            study_context,
+            max_chars=CHUNKED_STUDY_CONTEXT_MAX_CHARS,
+            overlap_chars=CHUNKED_STUDY_CONTEXT_OVERLAP_CHARS,
+        )
         if len(chunks) <= 1:
             return study_context
         intermediate = []
         for index, chunk in enumerate(chunks, start=1):
-            summary = self.ai_provider.generate_summary(chunk, "concise")
-            normalized = normalize_summary_result(summary, chunk, "concise")
-            terms = ", ".join(term["term"] for term in normalized["key_terms"][:5])
-            points = "; ".join(normalized["key_points"][:5])
+            summary = self.ai_provider.generate_summary(chunk, "detailed")
+            normalized = normalize_summary_result(summary, chunk, "detailed")
+            terms = "\n".join(
+                f"- {term['term']}: {term['definition']}" for term in normalized["key_terms"][:8]
+            )
+            points = "\n".join(f"- {point}" for point in normalized["key_points"][:8])
+            quotes = "\n".join(
+                f"- {quote['quote']} ({quote['reason']})" for quote in normalized["source_quotes"][:4]
+            )
             intermediate.append(
-                f"Chunk {index}\nOverview: {normalized['overview']}\nKey terms: {terms}\nKey points: {points}"
+                f"Source Part {index}\n"
+                f"Part overview: {normalized['overview']}\n"
+                f"Concrete study points:\n{points}\n"
+                f"Concept definitions:\n{terms}\n"
+                f"Source evidence:\n{quotes}"
             )
         prefix = ""
         if focus_topics:

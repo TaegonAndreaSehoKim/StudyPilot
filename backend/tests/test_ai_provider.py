@@ -40,15 +40,44 @@ def provider_with_response(response: DummyResponse) -> OpenAIProvider:
 def test_openai_provider_parses_json_code_fence() -> None:
     provider = provider_with_response(
         DummyResponse(
-            '```json\n{"title":"Notes","overview":"Grounded.","key_points":["One"],"key_terms":[],"source_quotes":[]}\n```'
+            "```json\n"
+            '{"title":"Search Study Guide",'
+            '"overview":"Search algorithms help an agent explore a state space by expanding possible states, '
+            'comparing paths, and using heuristics when exhaustive search is too expensive. The notes connect '
+            'search to rational action because the agent must choose actions that move it toward goals.",'
+            '"key_points":["Search algorithms organize problem solving as movement through a state space, so the student should understand what states, actions, and paths represent before memorizing algorithm names.",'
+            '"Heuristics matter because they estimate which paths are promising, allowing the search process to focus effort when exhaustive exploration would be too costly.",'
+            '"The source frames search as part of rational agency, which means the algorithm is useful because it supports choosing actions that achieve goals."],'
+            '"key_terms":[{"term":"Search algorithm","definition":"A method for exploring state spaces to find paths or solutions."},'
+            '{"term":"State space","definition":"The set of possible states that can be explored during problem solving."},'
+            '{"term":"Heuristic","definition":"A source-supported guide for prioritizing promising paths."}],'
+            '"source_quotes":[{"quote":"Search algorithms explore state spaces","reason":"Shows the core mechanism."},'
+            '{"quote":"uses heuristics","reason":"Shows how search can be guided."}]}'
+            "\n```"
         )
     )
 
     result = provider.generate_summary("AI search uses heuristics.", "concise")
 
-    assert result["title"] == "Notes"
-    assert result["overview"] == "Grounded."
-    assert result["key_points"] == ["One"]
+    assert result["title"] == "Search Study Guide"
+    assert "state space" in result["overview"]
+    assert len(result["key_points"]) == 3
+
+
+def test_openai_provider_rejects_shallow_meta_summary() -> None:
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"Quick Review","overview":"These notes focus on Source Notes. The concise summary follows the broad flow.",'
+            '"key_points":["Core concept - Source Notes: Chunk 1 Overview repeats the source labels without explaining concepts."],'
+            '"key_terms":[{"term":"Chunk 1","definition":"Chunk overview."}],'
+            '"source_quotes":[{"quote":"Chunk 1 Overview","reason":"Meta text."}]}'
+        )
+    )
+
+    result = provider.generate_summary("Linear programming constraints define a convex feasible region.", "concise")
+
+    assert "Concise Summary" in result["title"]
+    assert "Source Notes" not in [term["term"] for term in result["key_terms"]]
 
 
 def test_openai_provider_accepts_wrapped_flashcards() -> None:

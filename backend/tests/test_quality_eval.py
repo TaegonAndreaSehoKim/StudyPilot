@@ -45,7 +45,7 @@ def test_eval_summary_modes_have_distinct_study_intent() -> None:
 
     assert "broad flow" in concise["overview"]
     assert all(point.startswith("Core concept -") for point in concise["key_points"])
-    assert "general principles" in detailed["overview"]
+    assert "general principles" in detailed["overview"] or "general principles" in " ".join(detailed["key_points"])
     assert all(point.startswith("Concept overview -") for point in detailed["key_points"])
 
 

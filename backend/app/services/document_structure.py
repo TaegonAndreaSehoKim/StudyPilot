@@ -17,6 +17,7 @@ GENERIC_SECTION_TITLE = "Source Notes"
 
 def prepare_study_text(text: str) -> str:
     normalized = normalize_extracted_text(text)
+    normalized = _insert_study_boundaries(normalized)
     lines = [line.rstrip() for line in normalized.splitlines()]
     repeated_lines = _repeated_noise_lines(lines)
     cleaned_lines = []
@@ -96,6 +97,8 @@ def _looks_like_heading(line: str) -> bool:
         return False
     if line.startswith(("#", "##", "###")):
         return True
+    if re.match(r"^\(?slide\s+\d+\)?\s+", cleaned, flags=re.IGNORECASE):
+        return True
     if re.match(r"^(chapter|section|lecture|unit|module)\s+\d+", cleaned, flags=re.IGNORECASE):
         return True
     if re.match(r"^\d+(?:\.\d+)*\s+[A-Z]", cleaned):
@@ -111,8 +114,12 @@ def _clean_heading(line: str) -> str:
     return normalize_inline_text(line.strip("# -*\t:"))
 
 
+def _insert_study_boundaries(text: str) -> str:
+    text = re.sub(r"\s*\*{3,}\s*", "\n", text)
+    return re.sub(r"(?<!\n)(\(\s*Slide\s+\d+\s*\)\s+)", r"\n\1", text, flags=re.IGNORECASE)
+
+
 def _append_section(sections: list[StudySection], title: str, lines: list[str]) -> None:
     content = "\n".join(lines).strip()
     if content:
         sections.append(StudySection(title=title, content=content))
-
