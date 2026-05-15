@@ -57,6 +57,7 @@ export default function DocumentDetailScreen() {
   const [quizDifficulty, setQuizDifficulty] = useState<QuizDifficulty>('mixed');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const [sourcePreviewExpanded, setSourcePreviewExpanded] = useState(false);
   const showedUploadNotice = useRef(false);
   const isTablet = useTabletLayout();
 
@@ -232,6 +233,13 @@ export default function DocumentDetailScreen() {
   const canGenerate = document?.status === 'extracted';
   const actionDisabled = !!working || deleting || !canGenerate;
   const canRunOcr = document?.file_type === '.pdf' && ['available', 'recommended', 'error', 'queued', 'running'].includes(document.ocr_status);
+  const sourcePreview = document?.preview || '';
+  const collapsedPreviewLimit = 900;
+  const canExpandPreview = sourcePreview.length > collapsedPreviewLimit || !!document?.preview_is_truncated;
+  const shownPreview =
+    !sourcePreview || sourcePreviewExpanded || !canExpandPreview
+      ? sourcePreview
+      : `${sourcePreview.slice(0, collapsedPreviewLimit).trimEnd()}...`;
 
   return (
     <ScreenScrollView
@@ -300,11 +308,22 @@ export default function DocumentDetailScreen() {
           <Card>
             <Text style={styles.sectionTitle}>Source Preview</Text>
             <Text style={styles.previewMeta}>
-              {document.preview_is_truncated
-                ? 'This is only a preview. StudyPilot uses the full readable source when creating materials.'
-                : 'This source is short enough to show in full here.'}
+              {sourcePreviewExpanded
+                ? 'Expanded preview. Use Full Source for the complete extracted text.'
+                : 'A short preview is shown here so the study tools stay easy to reach.'}
             </Text>
-            <Text style={styles.preview}>{document.preview || 'No readable text is available yet.'}</Text>
+            <Text style={styles.preview}>{shownPreview || 'No readable text is available yet.'}</Text>
+            {canExpandPreview ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSourcePreviewExpanded((current) => !current)}
+                style={styles.previewToggle}
+              >
+                <Text style={styles.previewToggleText}>
+                  {sourcePreviewExpanded ? 'Show Less ^' : 'Show More v'}
+                </Text>
+              </Pressable>
+            ) : null}
           </Card>
 
           {!canGenerate ? (
@@ -506,6 +525,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 8,
+  },
+  previewToggle: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  previewToggleText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '900',
   },
   actions: {
     gap: 10,

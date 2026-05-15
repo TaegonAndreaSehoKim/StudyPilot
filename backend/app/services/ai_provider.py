@@ -694,37 +694,41 @@ class OpenAIProvider(AIProvider):
     def _summary_prompt(self, document_text: str, summary_type: str) -> str:
         guidance = {
             "concise": (
-                "Focus on core concepts and the broad flow of the material. Explain what each major idea means, "
-                "how the ideas connect, and why they matter. Keep it compact, but do not reduce it to labels."
+                "Rewrite the source into a compact teaching explanation. Focus on the core concepts, the broad "
+                "flow of the argument, and the minimum details needed to understand the material without rereading it."
             ),
             "detailed": (
-                "Give a general conceptual explanation of the ideas covered in the source. "
-                "Prioritize principles, definitions, mechanisms, and relationships over examples. "
-                "Use examples only when they clarify the underlying principle."
+                "Rewrite the source as a conceptual study guide. Explain the principles, definitions, mechanisms, "
+                "relationships, assumptions, and consequences in your own words. Use examples only after explaining "
+                "the underlying idea."
             ),
             "exam": (
-                "Organize the output around likely test points, comparisons with similar concepts, "
-                "exceptions, failure cases, and memorization anchors. Make exam-facing distinctions explicit."
+                "Rewrite the source for exam preparation. Emphasize likely test points, definitions that must be "
+                "memorized, comparisons with similar concepts, exceptions, failure cases, and common confusions."
             ),
         }.get(summary_type, "Write a source-grounded study summary.")
         return (
-            "You are generating study material from uploaded course notes.\n"
-            "The result must be self-contained enough that a student can study from the summary alone for first-pass review.\n"
+            "You are StudyPilot's study-note writer.\n"
+            "Your job is not to make a thin abstract. Your job is to read the source and re-explain the content and concepts in your own words.\n"
+            "The result must be self-contained enough that a student can study from the generated notes without opening the original source for first-pass review.\n"
             "Return only a valid JSON object with keys: title, overview, key_points, key_terms, source_quotes.\n"
             "Rules:\n"
             "- Use only facts supported by the notes.\n"
-            "- Preserve section structure when available, but explain the content instead of merely listing section titles.\n"
+            "- Reorganize the explanation when it helps learning, but do not invent facts beyond the source.\n"
+            "- Preserve section structure when useful, but explain the concepts instead of merely listing section titles or transcript order.\n"
             "- If notes are insufficient, say that explicitly.\n"
             "- Do not write vague meta summaries such as 'these notes discuss...' without explaining the actual ideas.\n"
             "- Do not use Chunk, Source Notes, uploaded notes, section, or slide as key concepts unless those are actual source concepts.\n"
-            "- overview must be 2-4 sentences that state the main topic, the conceptual flow, and the major conclusions.\n"
-            "- key_points must contain 5-8 study-ready points. Each point must name the concept, explain it, and state why it matters or how it is used.\n"
-            "- key_terms must contain 5-10 concrete terms with source-grounded definitions, not generic labels.\n"
+            "- overview must be 3-5 sentences that teach the main topic, the conceptual flow, and the major conclusions.\n"
+            "- key_points must contain 5-8 study-ready teaching notes. Each point must explain a concept in your own words, include the source's important conditions or exceptions, and state why the idea matters.\n"
+            "- key_terms must contain 5-10 concrete terms with source-grounded definitions written as if teaching a student, not as dictionary fragments.\n"
             "- source_quotes must contain 3-5 short snippets copied from the notes with a reason for each quote.\n"
             "- Include constraints, exceptions, comparisons, or failure cases when the source contains them.\n"
-            "- For concise summaries, emphasize core concepts and the big-picture flow while keeping each point explanatory.\n"
-            "- For detailed summaries, explain concepts at a general theoretical level and avoid centering the output on examples.\n"
-            "- For exam summaries, include key_points labeled or phrased as test points, similar-concept comparisons, and memorization points.\n"
+            "- Prefer explanatory phrases like 'This means...', 'The reason this matters is...', and 'The key distinction is...' when they make the concept clearer.\n"
+            "- Avoid copying long source sentences into key_points. Quotes belong only in source_quotes.\n"
+            "- For concise summaries, create a compact conceptual rewrite with the big-picture flow and enough detail to study from.\n"
+            "- For detailed summaries, create a deeper teaching explanation of concepts, principles, relationships, and assumptions.\n"
+            "- For exam summaries, label or phrase key_points as test points, similar-concept comparisons, exception/failure cases, and memorization anchors.\n"
             f"- Summary mode: {summary_type}. {guidance}\n\n"
             f"Notes:\n{document_text[:30000]}"
         )

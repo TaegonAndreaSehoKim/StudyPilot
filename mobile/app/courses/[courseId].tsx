@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
@@ -41,27 +41,23 @@ export default function CourseDetailScreen() {
   const [uploading, setUploading] = useState(false);
   const [generatingReviewQuiz, setGeneratingReviewQuiz] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const [materialsLoaded, setMaterialsLoaded] = useState(false);
+  const [practiceLoaded, setPracticeLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [courseDashboard, docs, summaryList, cardList, quizList, attemptList, scheduleList] = await Promise.all([
+      const [courseDashboard, docs, scheduleList] = await Promise.all([
         api.courseDashboard(id),
         api.courseDocuments(id),
-        api.courseSummaries(id),
-        api.courseFlashcards(id),
-        api.courseQuizzes(id),
-        api.courseAttempts(id),
         api.courseSchedule(id, false),
       ]);
       setDashboard(courseDashboard);
       setDocuments(docs);
-      setSummaries(summaryList);
-      setFlashcards(cardList);
-      setQuizzes(quizList);
-      setAttempts(attemptList);
       setSchedule(scheduleList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load this course');
@@ -71,9 +67,75 @@ export default function CourseDetailScreen() {
     }
   }, [id]);
 
+  const loadMaterials = useCallback(async () => {
+    try {
+      setMaterialsLoading(true);
+      setError(null);
+      const [summaryList, cardList] = await Promise.all([
+        api.courseSummaries(id),
+        api.courseFlashcards(id),
+      ]);
+      setSummaries(summaryList);
+      setFlashcards(cardList);
+      setMaterialsLoaded(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load course library');
+    } finally {
+      setMaterialsLoading(false);
+    }
+  }, [id]);
+
+  const loadPractice = useCallback(async () => {
+    try {
+      setPracticeLoading(true);
+      setError(null);
+      const [quizList, attemptList] = await Promise.all([
+        api.courseQuizzes(id),
+        api.courseAttempts(id),
+      ]);
+      setQuizzes(quizList);
+      setAttempts(attemptList);
+      setPracticeLoaded(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load practice sets');
+    } finally {
+      setPracticeLoading(false);
+    }
+  }, [id]);
+
   useFocusEffect(useCallback(() => {
     void load();
-  }, [load]));
+    if (activeTab === 'materials') {
+      void loadMaterials();
+    }
+    if (activeTab === 'practice') {
+      void loadPractice();
+    }
+  }, [activeTab, load, loadMaterials, loadPractice]));
+
+  useEffect(() => {
+    if (activeTab === 'materials' && !materialsLoaded && !materialsLoading) {
+      void loadMaterials();
+    }
+    if (activeTab === 'practice' && !practiceLoaded && !practiceLoading) {
+      void loadPractice();
+    }
+  }, [activeTab, loadMaterials, loadPractice, materialsLoaded, materialsLoading, practiceLoaded, practiceLoading]);
+
+  async function refreshCourse() {
+    setRefreshing(true);
+    await load();
+    if (activeTab === 'materials') {
+      await loadMaterials();
+    }
+    if (activeTab === 'practice') {
+      await loadPractice();
+    }
+  }
+
+  function openTab(tab: CourseTab) {
+    setActiveTab(tab);
+  }
 
   async function upload() {
     try {
@@ -93,6 +155,7 @@ export default function CourseDetailScreen() {
         mimeType: asset.mimeType,
       });
       setDocuments((current) => [document, ...current.filter((item) => item.id !== document.id)]);
+      setMaterialsLoaded(false);
       setActiveTab('materials');
       router.push(`/documents/${document.id}?uploaded=1` as Href);
     } catch (err) {
@@ -108,6 +171,7 @@ export default function CourseDetailScreen() {
       setError(null);
       const quiz = await api.createReviewQuiz(id, 5, 'medium');
       setQuizzes((current) => [quiz, ...current]);
+      setPracticeLoaded(true);
       setActiveTab('practice');
       router.push(`/quiz/${quiz.id}` as Href);
     } catch (err) {
@@ -148,7 +212,7 @@ export default function CourseDetailScreen() {
   return (
     <ScreenScrollView
       contentContainerStyle={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshCourse} />}
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {uploading ? (
@@ -171,9 +235,9 @@ export default function CourseDetailScreen() {
           </View>
 
           <View style={styles.metrics}>
-            <Text style={styles.metric}>{dashboard.document_count} sources</Text>
-            <Text style={styles.metric}>{dashboard.summary_count} review notes</Text>
-            <Text style={styles.metric}>{dashboard.quiz_count} practice sets</Text>
+            <MetricButton label="sources" value={dashboard.document_count} onPress={() => openTab('materials')} />
+            <MetricButton label="review notes" value={dashboard.summary_count} onPress={() => openTab('materials')} />
+            <MetricButton label="practice sets" value={dashboard.quiz_count} onPress={() => openTab('practice')} />
           </View>
 
           <View style={[styles.actions, isTablet && styles.tabletActions]}>
@@ -186,7 +250,7 @@ export default function CourseDetailScreen() {
               <Pressable
                 key={tab.key}
                 accessibilityRole="button"
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => openTab(tab.key)}
                 style={[styles.tab, activeTab === tab.key && styles.activeTab]}
               >
                 <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>{tab.label}</Text>
@@ -216,98 +280,106 @@ export default function CourseDetailScreen() {
           ) : null}
 
           {activeTab === 'materials' ? (
-            <ResponsiveGrid minItemWidth={340}>
-              <Section title="Source Materials">
-                {documents.length ? (
-                  documents.map((document) => (
-                    <Link key={document.id} href={`/documents/${document.id}`} asChild>
-                      <Card>
-                        <Text style={styles.itemTitle}>{document.filename}</Text>
-                        <Text style={styles.itemMeta}>
-                          {sourceStatusLabel(document)}
-                        </Text>
-                        {document.file_type === '.pdf' ? (
+            materialsLoading && !materialsLoaded ? (
+              <LoadingState message="Loading course library" />
+            ) : (
+              <ResponsiveGrid minItemWidth={340}>
+                <Section title="Source Materials">
+                  {documents.length ? (
+                    documents.map((document) => (
+                      <Link key={document.id} href={`/documents/${document.id}`} asChild>
+                        <Card>
+                          <Text style={styles.itemTitle}>{document.filename}</Text>
                           <Text style={styles.itemMeta}>
-                            {document.ocr_status !== 'not_required'
-                              ? textRecognitionLabel(document.ocr_status)
-                              : `${Math.round(document.extraction_coverage * 100)}% of PDF text available`}
+                            {sourceStatusLabel(document)}
                           </Text>
-                        ) : null}
-                      </Card>
-                    </Link>
-                  ))
-                ) : (
-                  <EmptyState title="No source materials" message="Add lecture notes, markdown files, text files, or PDFs to start studying." />
-                )}
-              </Section>
+                          {document.file_type === '.pdf' ? (
+                            <Text style={styles.itemMeta}>
+                              {document.ocr_status !== 'not_required'
+                                ? textRecognitionLabel(document.ocr_status)
+                                : `${Math.round(document.extraction_coverage * 100)}% of PDF text available`}
+                            </Text>
+                          ) : null}
+                        </Card>
+                      </Link>
+                    ))
+                  ) : (
+                    <EmptyState title="No source materials" message="Add lecture notes, markdown files, text files, or PDFs to start studying." />
+                  )}
+                </Section>
 
-              <Section title="Review Notes">
-                {summaries.length ? (
-                  summaries.map((summary) => (
-                    <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
+                <Section title="Review Notes">
+                  {summaries.length ? (
+                    summaries.map((summary) => (
+                      <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
+                        <Card>
+                          <Text style={styles.itemTitle}>{summary.title}</Text>
+                          <Text style={styles.itemMeta}>
+                            {summaryTypeLabel(summary.summary_type)} notes
+                          </Text>
+                        </Card>
+                      </Link>
+                    ))
+                  ) : (
+                    <EmptyState title="No review notes" message="Open a source material and create review notes from it." />
+                  )}
+                </Section>
+
+                <Section title="Flashcards">
+                  {flashcards.length ? (
+                    <Link href={`/flashcards/course/${id}` as Href} asChild>
                       <Card>
-                        <Text style={styles.itemTitle}>{summary.title}</Text>
-                        <Text style={styles.itemMeta}>
-                          {summaryTypeLabel(summary.summary_type)} notes
-                        </Text>
+                        <Text style={styles.itemTitle}>Review Flashcards</Text>
+                        <Text style={styles.itemMeta}>{flashcards.length} cards ready for this course</Text>
                       </Card>
                     </Link>
-                  ))
-                ) : (
-                  <EmptyState title="No review notes" message="Open a source material and create review notes from it." />
-                )}
-              </Section>
-
-              <Section title="Flashcards">
-                {flashcards.length ? (
-                  <Link href={`/flashcards/course/${id}` as Href} asChild>
-                    <Card>
-                      <Text style={styles.itemTitle}>Review Flashcards</Text>
-                      <Text style={styles.itemMeta}>{flashcards.length} cards ready for this course</Text>
-                    </Card>
-                  </Link>
-                ) : (
-                  <EmptyState title="No flashcards" message="Create flashcards from a source material for quick recall." />
-                )}
-              </Section>
-            </ResponsiveGrid>
+                  ) : (
+                    <EmptyState title="No flashcards" message="Create flashcards from a source material for quick recall." />
+                  )}
+                </Section>
+              </ResponsiveGrid>
+            )
           ) : null}
 
           {activeTab === 'practice' ? (
-            <ResponsiveGrid minItemWidth={340}>
-              <View style={styles.section}>
-                <Button
-                  title={generatingReviewQuiz ? 'Creating Focus Quiz...' : 'Practice Weak Areas'}
-                  disabled={generatingReviewQuiz || deleting || !dashboard.weak_topics.length || !documents.length}
-                  onPress={generateReviewQuiz}
-                />
-              </View>
-              <Section title="Practice Quizzes">
-                {quizzes.length ? (
-                  <Link href={`/quizzes/course/${id}` as Href} asChild>
-                    <Card>
-                      <Text style={styles.itemTitle}>Open Practice Quizzes</Text>
-                      <Text style={styles.itemMeta}>{quizzes.length} quizzes ready for this course</Text>
-                    </Card>
-                  </Link>
-                ) : (
-                  <EmptyState title="No practice quizzes" message="Open a source material and create a quiz when you are ready to test yourself." />
-                )}
-              </Section>
+            practiceLoading && !practiceLoaded ? (
+              <LoadingState message="Loading practice sets" />
+            ) : (
+              <ResponsiveGrid minItemWidth={340}>
+                <View style={styles.section}>
+                  <Button
+                    title={generatingReviewQuiz ? 'Creating Focus Quiz...' : 'Practice Weak Areas'}
+                    disabled={generatingReviewQuiz || deleting || !dashboard.weak_topics.length || !documents.length}
+                    onPress={generateReviewQuiz}
+                  />
+                </View>
+                <Section title="Practice Quizzes">
+                  {quizzes.length ? (
+                    <Link href={`/quizzes/course/${id}` as Href} asChild>
+                      <Card>
+                        <Text style={styles.itemTitle}>Open Practice Quizzes</Text>
+                        <Text style={styles.itemMeta}>{quizzes.length} quizzes ready for this course</Text>
+                      </Card>
+                    </Link>
+                  ) : (
+                    <EmptyState title="No practice quizzes" message="Open a source material and create a quiz when you are ready to test yourself." />
+                  )}
+                </Section>
 
-              <Section title="Practice History">
-                {attempts.length ? (
-                  <Link href={`/attempts/course/${id}` as Href} asChild>
-                    <Card>
-                      <Text style={styles.itemTitle}>Review Scores</Text>
-                      <Text style={styles.itemMeta}>{attempts.length} attempts saved for this course</Text>
-                    </Card>
-                  </Link>
-                ) : (
-                  <EmptyState title="No practice history" message="Quiz scores and missed topics appear after you submit answers." />
-                )}
-              </Section>
-            </ResponsiveGrid>
+                <Section title="Practice History">
+                  {attempts.length ? (
+                    <Link href={`/attempts/course/${id}` as Href} asChild>
+                      <Card>
+                        <Text style={styles.itemTitle}>Review Scores</Text>
+                        <Text style={styles.itemMeta}>{attempts.length} attempts saved for this course</Text>
+                      </Card>
+                    </Link>
+                  ) : (
+                    <EmptyState title="No practice history" message="Quiz scores and missed topics appear after you submit answers." />
+                  )}
+                </Section>
+              </ResponsiveGrid>
+            )
           ) : null}
 
           {activeTab === 'schedule' ? (
@@ -352,6 +424,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <Text style={styles.sectionTitle}>{title}</Text>
       {children}
     </View>
+  );
+}
+
+function MetricButton({ label, value, onPress }: { label: string; value: number; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.metric}>
+      <Text style={styles.metricText}>{value} {label}</Text>
+    </Pressable>
   );
 }
 
@@ -419,10 +499,14 @@ const styles = StyleSheet.create({
   metric: {
     backgroundColor: colors.surfaceMuted,
     borderRadius: 8,
-    color: colors.text,
-    fontWeight: '800',
+    minHeight: 36,
+    justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 7,
+  },
+  metricText: {
+    color: colors.text,
+    fontWeight: '800',
   },
   tabs: {
     backgroundColor: colors.surfaceMuted,
