@@ -140,12 +140,6 @@ export default function QuizScreen() {
               variant="secondary"
               onPress={createSimilarQuiz}
             />
-            <Button
-              title={deleting ? 'Deleting...' : 'Delete Quiz'}
-              disabled={submitting || regenerating || deleting}
-              variant="danger"
-              onPress={confirmDeleteQuiz}
-            />
           </View>
           <Card>
             <View style={styles.progressHeader}>
@@ -189,13 +183,11 @@ export default function QuizScreen() {
 
           {result ? (
             <Card>
-              <Text style={styles.resultEyebrow}>Practice Result</Text>
-              <Text style={styles.resultTitle}>{formatPercent(result.score)}</Text>
-              <Text style={styles.resultMeta}>{result.correct_count} of {result.total_questions} correct</Text>
+              <Text style={styles.resultEyebrow}>Review Next</Text>
               {result.missed_topics.length ? (
                 <View style={styles.weakAreaBox}>
-                  <Text style={styles.weakAreaTitle}>Review Next</Text>
-                  <Text style={styles.resultMeta}>{result.missed_topics.join(', ')}</Text>
+                  <Text style={styles.weakAreaTitle}>{result.missed_topics.join(', ')}</Text>
+                  <Text style={styles.resultMeta}>Revisit these topics before creating another practice quiz.</Text>
                 </View>
               ) : (
                 <View style={styles.strongBox}>
@@ -203,6 +195,15 @@ export default function QuizScreen() {
                   <Text style={styles.resultMeta}>You answered every question correctly on this attempt.</Text>
                 </View>
               )}
+              <View style={styles.scoreRow}>
+                <View>
+                  <Text style={styles.resultEyebrow}>Score</Text>
+                  <Text style={styles.resultTitle}>{formatPercent(result.score)}</Text>
+                </View>
+                <View style={styles.scoreMetaBox}>
+                  <Text style={styles.resultMeta}>{result.correct_count} of {result.total_questions} correct</Text>
+                </View>
+              </View>
               <View style={styles.resultActions}>
                 {document ? (
                   <>
@@ -228,6 +229,17 @@ export default function QuizScreen() {
               </View>
             </Card>
           ) : null}
+
+          <Card>
+            <Text style={styles.resultEyebrow}>Quiz Management</Text>
+            <Text style={styles.resultMeta}>Delete this quiz only when you no longer need its questions or saved attempts.</Text>
+            <Button
+              title={deleting ? 'Deleting...' : 'Delete Quiz'}
+              disabled={submitting || regenerating || deleting}
+              variant="danger"
+              onPress={confirmDeleteQuiz}
+            />
+          </Card>
         </>
       ) : null}
     </ScreenScrollView>
@@ -329,6 +341,16 @@ const styles = StyleSheet.create({
   resultActions: {
     gap: 8,
     marginTop: 12,
+  },
+  scoreRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+    justifyContent: 'space-between',
+  },
+  scoreMetaBox: {
+    alignItems: 'flex-end',
+    flex: 1,
   },
   weakAreaBox: {
     backgroundColor: colors.warningSurface,

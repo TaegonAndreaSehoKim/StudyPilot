@@ -16,12 +16,13 @@ export function SummaryView({ summary }: { summary: Summary }) {
       <Text style={styles.kicker}>Overview</Text>
       <Text style={styles.body}>{overview}</Text>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What To Remember</Text>
+        <Text style={styles.sectionTitle}>Key Ideas</Text>
         {keyPoints.length ? (
           keyPoints.map((point, index) => (
-            <Text key={`${point}-${index}`} style={styles.body}>
-              {index + 1}. {point}
-            </Text>
+            <View key={`${point}-${index}`} style={styles.numberedRow}>
+              <Text style={styles.number}>{index + 1}</Text>
+              <Text style={styles.body}>{point}</Text>
+            </View>
           ))
         ) : (
           <Text style={styles.body}>No key points available.</Text>
@@ -31,9 +32,10 @@ export function SummaryView({ summary }: { summary: Summary }) {
         <Text style={styles.sectionTitle}>Key Concepts</Text>
         {summary.key_terms.length ? (
           summary.key_terms.map((item, index) => (
-            <Text key={`${item.term}-${index}`} style={styles.body}>
-              {cleanDisplayText(item.term, 'Term')}: {cleanDisplayText(item.definition, 'No definition available.')}
-            </Text>
+            <View key={`${item.term}-${index}`} style={styles.termBlock}>
+              <Text style={styles.term}>{cleanDisplayText(item.term, 'Term')}</Text>
+              <Text style={styles.body}>{cleanDisplayText(item.definition, 'No definition available.')}</Text>
+            </View>
           ))
         ) : (
           <Text style={styles.body}>No key terms available.</Text>
@@ -59,9 +61,9 @@ export function SummaryView({ summary }: { summary: Summary }) {
 const styles = StyleSheet.create({
   title: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 24,
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 26,
   },
   body: {
     color: colors.text,
@@ -78,10 +80,34 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    color: colors.textMuted,
+    color: colors.text,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '900',
     textTransform: 'uppercase',
+  },
+  numberedRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  number: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '900',
+    minWidth: 26,
+    overflow: 'hidden',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    textAlign: 'center',
+  },
+  termBlock: {
+    gap: 4,
+  },
+  term: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '900',
   },
   quoteBlock: {
     backgroundColor: colors.surfaceMuted,

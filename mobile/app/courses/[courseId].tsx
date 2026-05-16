@@ -240,12 +240,6 @@ export default function CourseDetailScreen() {
             <MetricButton label="practice sets" value={dashboard.quiz_count} onPress={() => openTab('practice')} />
           </View>
 
-          <View style={[styles.actions, isTablet && styles.tabletActions]}>
-            <Button title="Start Study Session" onPress={() => router.push(`/study/course/${id}` as Href)} />
-            <Button title={uploading ? 'Adding...' : 'Add Source Material'} disabled={uploading || deleting} onPress={upload} />
-            <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
-          </View>
-
           <View style={styles.tabs}>
             {COURSE_TABS.map((tab) => (
               <Pressable
@@ -267,6 +261,7 @@ export default function CourseDetailScreen() {
                 <Text style={styles.itemMeta}>{courseReadinessSummary(documents, dashboard.summary_count, dashboard.quiz_count)}</Text>
                 <View style={[styles.actions, isTablet && styles.tabletActions]}>
                   <Button title="Start Study Session" onPress={() => router.push(`/study/course/${id}` as Href)} />
+                  <Button title={uploading ? 'Adding...' : 'Add Source'} disabled={uploading || deleting} variant="secondary" onPress={upload} />
                   {schedule.length ? (
                     <Button title="View Deadlines" variant="secondary" onPress={() => openTab('schedule')} />
                   ) : null}
@@ -307,6 +302,9 @@ export default function CourseDetailScreen() {
               <LoadingState message="Loading course library" />
             ) : (
               <ResponsiveGrid minItemWidth={340}>
+                <View style={styles.section}>
+                  <Button title={uploading ? 'Adding...' : 'Add Source Material'} disabled={uploading || deleting} onPress={upload} />
+                </View>
                 <Section title="Source Materials">
                   {documents.length ? (
                     documents.map((document) => (
@@ -414,6 +412,14 @@ export default function CourseDetailScreen() {
               </Section>
             </>
           ) : null}
+
+          <Section title="Course Management">
+            <Card>
+              <Text style={styles.itemTitle}>Course Settings</Text>
+              <Text style={styles.itemMeta}>Delete this course only when you no longer need its sources, notes, quizzes, attempts, and deadlines.</Text>
+              <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
+            </Card>
+          </Section>
         </>
       ) : null}
     </ScreenScrollView>
@@ -640,10 +646,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   todayCard: {
-    backgroundColor: colors.infoSurface,
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
   todayEyebrow: {
-    color: colors.textMuted,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',

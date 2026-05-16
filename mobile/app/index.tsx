@@ -55,22 +55,19 @@ export default function DashboardScreen() {
         <Text style={styles.subtitle}>Pick up where your studying needs attention.</Text>
       </View>
 
-      <View style={[styles.actions, isTablet && styles.tabletActions]}>
-        <Button title="New Course" onPress={() => router.push('/courses/new')} />
-        <Button title="My Courses" variant="secondary" onPress={() => router.push('/courses')} />
-        <Button title="Settings" variant="secondary" onPress={() => router.push('/settings')} />
-      </View>
-
       {loading ? <LoadingState message="Loading your study dashboard" /> : null}
 
       {dashboard ? (
         <>
-          <View style={styles.grid}>
-            <Metric label="Courses" value={dashboard.course_count} />
-            <Metric label="Sources" value={dashboard.document_count} />
-            <Metric label="Review Notes" value={dashboard.summary_count} />
-            <Metric label="Practice Sets" value={dashboard.quiz_count} />
-          </View>
+          <Card style={styles.todayCard}>
+            <Text style={styles.eyebrow}>Today</Text>
+            <Text style={styles.todayTitle}>{dashboardHeadline(dashboard, schedule)}</Text>
+            <Text style={styles.todayDetail}>{dashboardMessage(dashboard, schedule)}</Text>
+            <View style={[styles.actions, isTablet && styles.tabletActions]}>
+              <Button title={dashboardPrimaryActionLabel(dashboard, schedule)} onPress={() => openDashboardPrimaryAction(dashboard, schedule)} />
+              <Button title="My Courses" variant="secondary" onPress={() => router.push('/courses')} />
+            </View>
+          </Card>
 
           <Section title="Due Soon">
             {schedule.length ? (
@@ -127,6 +124,18 @@ export default function DashboardScreen() {
               ) : null}
             </ResponsiveGrid>
           </Section>
+
+          <View style={[styles.actions, isTablet && styles.tabletActions]}>
+            <Button title="New Course" variant="secondary" onPress={() => router.push('/courses/new')} />
+            <Button title="Settings" variant="secondary" onPress={() => router.push('/settings')} />
+          </View>
+
+          <View style={styles.grid}>
+            <Metric label="Courses" value={dashboard.course_count} />
+            <Metric label="Sources" value={dashboard.document_count} />
+            <Metric label="Review Notes" value={dashboard.summary_count} />
+            <Metric label="Practice" value={dashboard.quiz_count} />
+          </View>
 
           <ResponsiveGrid minItemWidth={340}>
             <Section title="Recent Courses">
@@ -260,6 +269,74 @@ function FocusCard({
   );
 }
 
+function dashboardHeadline(dashboard: Dashboard, schedule: GlobalScheduleItem[]): string {
+  if (schedule[0]) {
+    return `${formatTimeRemaining(schedule[0].due_at, schedule[0].is_completed)}: ${schedule[0].title}`;
+  }
+  if (dashboard.weak_topics[0]) {
+    return `Review ${dashboard.weak_topics[0].topic}`;
+  }
+  if (dashboard.recent_quizzes[0]) {
+    return 'Resume practice';
+  }
+  if (dashboard.recent_summaries[0]) {
+    return 'Review latest notes';
+  }
+  return 'Set up your first study loop';
+}
+
+function dashboardMessage(dashboard: Dashboard, schedule: GlobalScheduleItem[]): string {
+  if (schedule[0]) {
+    return `${schedule[0].course_title} has the next deadline. Open it first, then review notes or practice.`;
+  }
+  if (dashboard.weak_topics[0]) {
+    return 'A missed topic is ready for review. Practice it before adding more material.';
+  }
+  if (dashboard.recent_quizzes[0]) {
+    return 'A practice quiz is ready. Use it to turn review into active recall.';
+  }
+  if (dashboard.recent_summaries[0]) {
+    return 'Review notes are ready. Read them once, then create practice from the source.';
+  }
+  return 'Create a course, add a source, then build review notes and practice.';
+}
+
+function dashboardPrimaryActionLabel(dashboard: Dashboard, schedule: GlobalScheduleItem[]): string {
+  if (schedule[0]) {
+    return 'Open Deadline';
+  }
+  if (dashboard.weak_topics[0]) {
+    return 'Review Course';
+  }
+  if (dashboard.recent_quizzes[0]) {
+    return 'Start Practice';
+  }
+  if (dashboard.recent_summaries[0]) {
+    return 'Read Notes';
+  }
+  return 'Create Course';
+}
+
+function openDashboardPrimaryAction(dashboard: Dashboard, schedule: GlobalScheduleItem[]) {
+  if (schedule[0]) {
+    router.push(`/schedule/course/${schedule[0].course_id}` as Href);
+    return;
+  }
+  if (dashboard.weak_topics[0]) {
+    router.push(`/courses/${dashboard.weak_topics[0].course_id}` as Href);
+    return;
+  }
+  if (dashboard.recent_quizzes[0]) {
+    router.push(`/quiz/${dashboard.recent_quizzes[0].id}` as Href);
+    return;
+  }
+  if (dashboard.recent_summaries[0]) {
+    router.push(`/summaries/${dashboard.recent_summaries[0].id}` as Href);
+    return;
+  }
+  router.push('/courses/new');
+}
+
 function summaryTypeLabel(value: string): string {
   if (value === 'concise') {
     return 'Concise';
@@ -345,6 +422,26 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     fontWeight: '800',
+  },
+  todayCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+  },
+  eyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  todayTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '900',
+    lineHeight: 28,
+  },
+  todayDetail: {
+    color: colors.textMuted,
+    lineHeight: 20,
   },
   focusCard: {
     backgroundColor: colors.infoSurface,

@@ -141,7 +141,7 @@ export default function SummaryDetailScreen() {
           {document ? (
             <Link href={`/documents/${document.id}`} asChild>
               <Card>
-                <Text style={styles.itemTitle}>Source Material</Text>
+                <Text style={styles.itemTitle}>Study Source</Text>
                 <Text style={styles.itemMeta}>{document.filename}</Text>
                 <Text style={styles.itemHint}>Open the source to read the original context or create more practice.</Text>
               </Card>
@@ -160,15 +160,20 @@ export default function SummaryDetailScreen() {
               variant="secondary"
               onPress={regenerateSummary}
             />
+          </View>
+
+          <SummaryView summary={summary} />
+
+          <Card>
+            <Text style={styles.itemTitle}>Notes Management</Text>
+            <Text style={styles.itemHint}>Delete these notes only when you no longer want them in the source or course library.</Text>
             <Button
               title={deleting ? 'Deleting...' : 'Delete Notes'}
               disabled={sharing || regenerating || deleting}
               variant="danger"
               onPress={confirmDeleteSummary}
             />
-          </View>
-
-          <SummaryView summary={summary} />
+          </Card>
         </>
       ) : null}
     </ScreenScrollView>

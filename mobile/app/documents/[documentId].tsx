@@ -274,18 +274,31 @@ export default function DocumentDetailScreen() {
           </View>
 
           <Card style={styles.startCard}>
-            <Text style={styles.sectionTitle}>Study From This Source</Text>
+            <Text style={styles.sectionTitle}>Next Step</Text>
             <Text style={styles.optionDescription}>
-              Read the original source, then create review notes, flashcards, or a practice quiz when you are ready.
+              {nextSourceActionMessage(document)}
             </Text>
+            <View style={[styles.actions, isTablet && styles.tabletActions]}>
+              {canRunOcr && !canGenerate ? (
+                <Button
+                  title={working === 'ocr' ? 'Recognizing...' : 'Recognize Text'}
+                  disabled={!!working || deleting}
+                  onPress={runOcr}
+                />
+              ) : (
+                <Button
+                  title={working === 'concise' ? 'Creating...' : 'Create Quick Review'}
+                  disabled={actionDisabled}
+                  onPress={() => generateSummary('concise')}
+                />
+              )}
+              <Button title="Read Full Source" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
+              <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
+            </View>
             <View style={styles.savedStrip}>
               <SavedCount label="Notes" value={summaries.length} />
               <SavedCount label="Cards" value={flashcards.length} />
               <SavedCount label="Quizzes" value={quizzes.length} />
-            </View>
-            <View style={[styles.actions, isTablet && styles.tabletActions]}>
-              <Button title="Read Full Source" variant="secondary" onPress={() => router.push(`/documents/${id}/text` as Href)} />
-              <Button title="Open Original File" variant="secondary" onPress={openOriginalFile} />
             </View>
           </Card>
 
@@ -342,10 +355,6 @@ export default function DocumentDetailScreen() {
               message="Run text recognition if this is a scanned PDF, then create review notes or practice."
             />
           ) : null}
-
-          <View style={[styles.actions, isTablet && styles.tabletActions]}>
-            <Button title={deleting ? 'Deleting...' : 'Delete Source'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
-          </View>
 
           <Section title="Create Review Notes">
             <ResponsiveGrid minItemWidth={280}>
@@ -434,6 +443,14 @@ export default function DocumentDetailScreen() {
               </View>
             </ResponsiveGrid>
           </Section>
+
+          <Section title="Source Management">
+            <Card>
+              <Text style={styles.itemTitle}>Source Settings</Text>
+              <Text style={styles.itemMeta}>Delete this source only when you no longer need its review notes, flashcards, quizzes, and attempts.</Text>
+              <Button title={deleting ? 'Deleting...' : 'Delete Source'} disabled={!!working || deleting} variant="danger" onPress={confirmDeleteDocument} />
+            </Card>
+          </Section>
         </>
       ) : null}
     </ScreenScrollView>
@@ -454,6 +471,16 @@ function sourceReadinessLabel(document: DocumentDetail): string {
     return 'Partially readable. Review the source text before creating study tools.';
   }
   return 'Ready for review notes, flashcards, and practice.';
+}
+
+function nextSourceActionMessage(document: DocumentDetail): string {
+  if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
+    return 'Run text recognition first so StudyPilot can use the source reliably.';
+  }
+  if (document.extraction_quality === 'partial') {
+    return 'This source is partially readable. Check the full text, then create review notes from the readable content.';
+  }
+  return 'Create review notes first, then turn this source into flashcards or a practice quiz.';
 }
 
 function workingTitle(working: string): string {
@@ -656,7 +683,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   startCard: {
-    backgroundColor: colors.infoSurface,
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
   savedStrip: {
     flexDirection: 'row',
