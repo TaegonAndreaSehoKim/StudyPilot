@@ -57,6 +57,7 @@ check('Setup guide documents preview update command', () => setupDoc.includes('n
   'app/summaries/[summaryId].tsx',
   'app/quiz/[quizId].tsx',
   'app/schedule/course/[courseId].tsx',
+  'app/study/course/[courseId].tsx',
 ].forEach((route) => {
   check(`Route exists: ${route}`, () => existsFromMobile(route));
 });

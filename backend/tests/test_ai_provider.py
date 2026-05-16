@@ -122,6 +122,17 @@ def test_openai_provider_reads_nested_response_payload() -> None:
     assert len(result["questions"]) == 1
 
 
+def test_quiz_prompt_requires_conceptual_explanations() -> None:
+    provider = provider_with_response(DummyResponse("{}"))
+
+    prompt = provider._quiz_prompt("Linear programs can be infeasible or unbounded.", 5, "mixed")
+
+    assert "concept-understanding questions" in prompt
+    assert "plausible misunderstandings" in prompt
+    assert "Why other choices are wrong" in prompt
+    assert "exceptions, constraints, or failure cases" in prompt
+
+
 def test_openai_provider_falls_back_for_malformed_summary_shape() -> None:
     provider = provider_with_response(DummyResponse('{"title":"Notes","overview":"Missing arrays","key_points":["One"]}'))
 

@@ -20,6 +20,8 @@ Core capabilities:
 - Save and share review notes as PDFs from the mobile app.
 - Take quizzes and track missed topics as weak areas.
 - Create weak-area practice quizzes.
+- Run a course-level Study Session that combines deadlines, review notes, practice, weak areas, and source health.
+- See source reading quality before generation so partial PDFs and OCR needs are clear.
 - Track assignments, exams, readings, projects, and deadlines per course.
 - See Continue Studying cards, recent work, deadlines, and weak areas on the dashboard.
 - Run locally with fake AI, or use OpenAI from the backend only.
@@ -96,8 +98,9 @@ Full setup guide: [Local setup](docs/setup/local_setup.md).
 7. Create a practice quiz.
 8. Submit answers with at least one miss.
 9. Review weak areas.
-10. Add an assignment or exam deadline.
-11. Return to the dashboard and continue studying from the next recommended action.
+10. Start a course Study Session.
+11. Add an assignment or exam deadline.
+12. Return to the dashboard and continue studying from the next recommended action.
 
 Demo docs:
 
@@ -139,7 +142,7 @@ Stable MVP foundation:
 - OpenAI provider path from backend only
 - EC2 backend deployment path tested
 - Expo Go preview workflow tested
-- learner-focused mobile UX for dashboard, course, source, review-note, and practice screens
+- learner-focused mobile UX for dashboard, course, source, Study Session, review-note, and practice screens
 
 Still intentionally out of scope:
 

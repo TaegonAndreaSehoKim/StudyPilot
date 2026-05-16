@@ -241,6 +241,7 @@ export default function CourseDetailScreen() {
           </View>
 
           <View style={[styles.actions, isTablet && styles.tabletActions]}>
+            <Button title="Start Study Session" onPress={() => router.push(`/study/course/${id}` as Href)} />
             <Button title={uploading ? 'Adding...' : 'Add Source Material'} disabled={uploading || deleting} onPress={upload} />
             <Button title={deleting ? 'Deleting...' : 'Delete Course'} disabled={uploading || deleting} variant="danger" onPress={confirmDeleteCourse} />
           </View>
@@ -259,24 +260,46 @@ export default function CourseDetailScreen() {
           </View>
 
           {activeTab === 'overview' ? (
-            <ResponsiveGrid minItemWidth={340}>
-              <Section title="Next Deadlines">
-                <ScheduleCards courseId={id} schedule={schedule.slice(0, 3)} />
-              </Section>
+            <>
+              <Card style={styles.todayCard}>
+                <Text style={styles.todayEyebrow}>Today</Text>
+                <Text style={styles.todayTitle}>{todayHeadline(schedule[0], dashboard.weak_topics[0]?.topic)}</Text>
+                <Text style={styles.itemMeta}>{courseReadinessSummary(documents, dashboard.summary_count, dashboard.quiz_count)}</Text>
+                <View style={[styles.actions, isTablet && styles.tabletActions]}>
+                  <Button title="Start Study Session" onPress={() => router.push(`/study/course/${id}` as Href)} />
+                  {schedule.length ? (
+                    <Button title="View Deadlines" variant="secondary" onPress={() => openTab('schedule')} />
+                  ) : null}
+                </View>
+              </Card>
 
-              <Section title="Weak Areas">
-                {dashboard.weak_topics.length ? (
-                  dashboard.weak_topics.map((topic) => (
-                    <Card key={topic.id}>
-                      <Text style={styles.itemTitle}>{topic.topic}</Text>
-                      <Text style={styles.itemMeta}>Missed {topic.miss_count} times - practice this next</Text>
-                    </Card>
-                  ))
-                ) : (
-                  <EmptyState title="No weak areas yet" message="Missed quiz questions will show what to review next." />
-                )}
-              </Section>
-            </ResponsiveGrid>
+              <ResponsiveGrid minItemWidth={340}>
+                <Section title="Next Deadlines">
+                  <ScheduleCards courseId={id} schedule={schedule.slice(0, 3)} />
+                </Section>
+
+                <Section title="Weak Areas">
+                  {dashboard.weak_topics.length ? (
+                    dashboard.weak_topics.map((topic) => (
+                      <Card key={topic.id}>
+                        <Text style={styles.itemTitle}>{topic.topic}</Text>
+                        <Text style={styles.itemMeta}>Missed {topic.miss_count} times - practice this next</Text>
+                      </Card>
+                    ))
+                  ) : (
+                    <EmptyState title="No weak areas yet" message="Missed quiz questions will show what to review next." />
+                  )}
+                </Section>
+
+                <Section title="Source Readiness">
+                  <Card>
+                    <Text style={styles.itemTitle}>{sourceReadinessHeadline(documents)}</Text>
+                    <Text style={styles.itemMeta}>{sourceReadinessDetail(documents)}</Text>
+                    <Button title="Open Library" variant="secondary" onPress={() => openTab('materials')} />
+                  </Card>
+                </Section>
+              </ResponsiveGrid>
+            </>
           ) : null}
 
           {activeTab === 'materials' ? (
@@ -290,6 +313,7 @@ export default function CourseDetailScreen() {
                       <Link key={document.id} href={`/documents/${document.id}`} asChild>
                         <Card>
                           <Text style={styles.itemTitle}>{document.filename}</Text>
+                          <Text style={styles.qualityPill}>{sourceQualityLabel(document)}</Text>
                           <Text style={styles.itemMeta}>
                             {sourceStatusLabel(document)}
                           </Text>
@@ -435,6 +459,56 @@ function MetricButton({ label, value, onPress }: { label: string; value: number;
   );
 }
 
+function todayHeadline(deadline: ScheduleItem | undefined, weakTopic: string | undefined): string {
+  if (deadline) {
+    return `${formatTimeRemaining(deadline.due_at, deadline.is_completed)}: ${deadline.title}`;
+  }
+  if (weakTopic) {
+    return `Review weak area: ${weakTopic}`;
+  }
+  return 'Keep the course moving';
+}
+
+function courseReadinessSummary(documents: Document[], summaryCount: number, quizCount: number): string {
+  const readable = documents.filter((document) => document.status === 'extracted').length;
+  if (!documents.length) {
+    return 'Add a source first, then create notes and practice.';
+  }
+  if (!readable) {
+    return 'Your sources need readable text before StudyPilot can create reliable study tools.';
+  }
+  if (!summaryCount) {
+    return 'Readable sources are ready. Create review notes before starting a study session.';
+  }
+  if (!quizCount) {
+    return 'Review notes are ready. Add a practice quiz to test understanding.';
+  }
+  return 'Sources, notes, and practice are ready for a focused study pass.';
+}
+
+function sourceReadinessHeadline(documents: Document[]): string {
+  const attention = documents.filter((document) => document.status === 'needs_ocr' || document.extraction_quality === 'partial' || document.extraction_quality === 'poor').length;
+  if (!documents.length) {
+    return 'No sources yet';
+  }
+  if (attention) {
+    return `${attention} source${attention === 1 ? '' : 's'} need attention`;
+  }
+  return 'Sources are ready';
+}
+
+function sourceReadinessDetail(documents: Document[]): string {
+  const readable = documents.filter((document) => document.status === 'extracted').length;
+  if (!documents.length) {
+    return 'Add lecture notes, PDFs, or markdown files to begin.';
+  }
+  const attention = documents.filter((document) => document.status === 'needs_ocr' || document.extraction_quality === 'partial' || document.extraction_quality === 'poor').length;
+  if (attention) {
+    return `${readable} readable, ${attention} may need OCR or source review before generation.`;
+  }
+  return `${readable} readable source${readable === 1 ? '' : 's'} available for review notes and practice.`;
+}
+
 function sourceStatusLabel(document: Document): string {
   if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
     return 'Needs text recognition before studying';
@@ -443,6 +517,19 @@ function sourceStatusLabel(document: Document): string {
     return 'Partially readable - check source text first';
   }
   return 'Ready for review notes and practice';
+}
+
+function sourceQualityLabel(document: Document): string {
+  if (document.ocr_status === 'completed') {
+    return 'OCR complete';
+  }
+  if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
+    return 'Needs OCR';
+  }
+  if (document.extraction_quality === 'partial') {
+    return `${Math.round(document.extraction_coverage * 100)}% readable`;
+  }
+  return 'Ready';
 }
 
 function textRecognitionLabel(value: string): string {
@@ -551,5 +638,30 @@ const styles = StyleSheet.create({
   itemMeta: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+  todayCard: {
+    backgroundColor: colors.infoSurface,
+  },
+  todayEyebrow: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  todayTitle: {
+    color: colors.text,
+    fontSize: 21,
+    fontWeight: '900',
+    lineHeight: 27,
+  },
+  qualityPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '900',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
 });

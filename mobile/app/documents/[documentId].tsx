@@ -289,6 +289,8 @@ export default function DocumentDetailScreen() {
             </View>
           </Card>
 
+          <ExtractionQualityCard document={document} />
+
           {document.ocr_status !== 'not_required' ? (
             <Card style={styles.ocrCard}>
               <Text style={styles.optionTitle}>
@@ -504,6 +506,58 @@ function workingMessage(working: string, step: number): string {
   return sequence[step % sequence.length];
 }
 
+function ExtractionQualityCard({ document }: { document: DocumentDetail }) {
+  const percentReadable = Math.round(document.extraction_coverage * 100);
+  return (
+    <Card style={qualityCardStyle(document)}>
+      <Text style={styles.sectionTitle}>Source Reading Quality</Text>
+      <Text style={styles.qualityHeadline}>{qualityHeadline(document)}</Text>
+      <Text style={styles.optionDescription}>
+        {document.page_count > 0
+          ? `${document.extracted_page_count} of ${document.page_count} pages have readable text.`
+          : `${document.char_count} readable characters extracted.`}
+      </Text>
+      <View style={styles.qualityTrack}>
+        <View style={[styles.qualityFill, { width: `${Math.max(6, percentReadable)}%` }]} />
+      </View>
+      <Text style={styles.previewMeta}>{qualityDetail(document)}</Text>
+    </Card>
+  );
+}
+
+function qualityCardStyle(document: DocumentDetail) {
+  if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
+    return styles.qualityWarningCard;
+  }
+  if (document.extraction_quality === 'partial') {
+    return styles.qualityPartialCard;
+  }
+  return styles.qualityReadyCard;
+}
+
+function qualityHeadline(document: DocumentDetail): string {
+  if (document.ocr_status === 'completed') {
+    return 'OCR text is available';
+  }
+  if (document.status === 'needs_ocr' || document.extraction_quality === 'poor') {
+    return 'This source needs OCR before reliable studying';
+  }
+  if (document.extraction_quality === 'partial') {
+    return 'Some pages may be missing text';
+  }
+  return 'Ready for review notes and practice';
+}
+
+function qualityDetail(document: DocumentDetail): string {
+  if (document.extraction_notes) {
+    return document.extraction_notes;
+  }
+  if (document.extraction_quality === 'good' || document.extraction_quality === 'ocr') {
+    return 'StudyPilot can use this extracted text for summaries, flashcards, and quizzes.';
+  }
+  return 'If the generated material feels incomplete, run text recognition or check the full source text.';
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -642,6 +696,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 18,
+  },
+  qualityHeadline: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  qualityTrack: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    height: 10,
+    overflow: 'hidden',
+  },
+  qualityFill: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    height: '100%',
+  },
+  qualityReadyCard: {
+    backgroundColor: colors.successSurface,
+  },
+  qualityPartialCard: {
+    backgroundColor: colors.infoSurface,
+  },
+  qualityWarningCard: {
+    backgroundColor: colors.warningSurface,
   },
   ocrCard: {
     backgroundColor: colors.warningSurface,

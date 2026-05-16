@@ -27,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="quizzes/course/[courseId]" options={{ title: 'Practice Quizzes' }} />
         <Stack.Screen name="attempts/course/[courseId]" options={{ title: 'Practice History' }} />
         <Stack.Screen name="schedule/course/[courseId]" options={{ title: 'Deadlines' }} />
+        <Stack.Screen name="study/course/[courseId]" options={{ title: 'Study Session' }} />
         <Stack.Screen name="quiz/[quizId]" options={{ title: 'Practice Quiz' }} />
       </Stack>
     </>

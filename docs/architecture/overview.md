@@ -33,7 +33,8 @@ FastAPI backend
 9. The user takes a quiz.
 10. The backend scores the attempt and updates weak topics.
 11. The user can generate weak-topic review quizzes from missed topics.
-12. Dashboard endpoints surface counts, recent activity, generated materials, schedules, and weak topics.
+12. The mobile app can guide a course-level Study Session using deadlines, recent notes, practice, weak topics, and source health.
+13. Dashboard endpoints surface counts, recent activity, generated materials, schedules, and weak topics.
 
 ## Backend
 
@@ -73,6 +74,8 @@ Main responsibilities:
 - call the FastAPI backend through `fetch`
 - pick local documents through `expo-document-picker`
 - render summaries, flashcards, quizzes, and attempt results
+- surface source extraction quality and OCR readiness before generation
+- guide course-level Study Sessions from existing course data
 
 Important files:
 
@@ -80,6 +83,7 @@ Important files:
 - `app/index.tsx`: dashboard
 - `app/courses/`: course list, creation, detail, upload
 - `app/documents/[documentId].tsx`: document preview and generated materials
+- `app/study/course/[courseId].tsx`: course-level Study Session
 - `app/quiz/[quizId].tsx`: quiz taking and result review
 - `app/settings.tsx`: API base URL and health check
 - `src/api/client.ts`: backend client
