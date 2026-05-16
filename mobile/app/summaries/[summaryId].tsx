@@ -1,8 +1,9 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
+import type { Href } from 'expo-router';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Summary } from '@/api/types';
@@ -23,6 +24,8 @@ export default function SummaryDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -71,6 +74,53 @@ export default function SummaryDetailScreen() {
     }
   }
 
+  async function regenerateSummary() {
+    if (!summary || !document) {
+      return;
+    }
+    try {
+      setRegenerating(true);
+      setError(null);
+      const newSummary = await api.createSummary(document.id, summary.summary_type as 'concise' | 'detailed' | 'exam');
+      router.replace(`/summaries/${newSummary.id}` as Href);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to regenerate review notes');
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
+  function confirmDeleteSummary() {
+    Alert.alert(
+      'Delete review notes?',
+      'This removes these saved notes from the source and course library. The original source material stays available.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteSummary },
+      ],
+    );
+  }
+
+  async function deleteSummary() {
+    if (!summary) {
+      return;
+    }
+    try {
+      setDeleting(true);
+      setError(null);
+      await api.deleteSummary(summary.id);
+      if (document) {
+        router.replace(`/documents/${document.id}` as Href);
+      } else {
+        router.back();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete review notes');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <LoadingState message="Loading review notes" />;
   }
@@ -98,7 +148,25 @@ export default function SummaryDetailScreen() {
             </Link>
           ) : null}
 
-          <Button title={sharing ? 'Creating PDF...' : 'Save / Share PDF'} disabled={sharing} onPress={shareSummary} />
+          <View style={styles.actions}>
+            <Button
+              title={sharing ? 'Creating PDF...' : 'Save / Share PDF'}
+              disabled={sharing || regenerating || deleting}
+              onPress={shareSummary}
+            />
+            <Button
+              title={regenerating ? 'Regenerating...' : 'Regenerate Notes'}
+              disabled={!document || sharing || regenerating || deleting}
+              variant="secondary"
+              onPress={regenerateSummary}
+            />
+            <Button
+              title={deleting ? 'Deleting...' : 'Delete Notes'}
+              disabled={sharing || regenerating || deleting}
+              variant="danger"
+              onPress={confirmDeleteSummary}
+            />
+          </View>
 
           <SummaryView summary={summary} />
         </>
@@ -150,5 +218,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
+  },
+  actions: {
+    gap: 8,
   },
 });

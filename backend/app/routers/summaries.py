@@ -75,6 +75,13 @@ def get_summary(summary_id: int, db: Session = Depends(get_db)) -> SummaryOut:
     return _summary_out(_summary_or_404(db, summary_id))
 
 
+@router.delete("/summaries/{summary_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_summary(summary_id: int, db: Session = Depends(get_db)) -> None:
+    summary = _summary_or_404(db, summary_id)
+    db.delete(summary)
+    db.commit()
+
+
 @router.get("/courses/{course_id}/summaries", response_model=list[SummaryOut])
 def list_course_summaries(course_id: int, db: Session = Depends(get_db)) -> list[SummaryOut]:
     if db.get(Course, course_id) is None:

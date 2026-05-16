@@ -35,3 +35,15 @@ def test_get_missing_summary_returns_404(client: TestClient) -> None:
     response = client.get("/summaries/999999")
 
     assert response.status_code == 404
+
+
+def test_delete_summary(client: TestClient, document_id: int) -> None:
+    create_response = client.post(f"/documents/{document_id}/summaries", json={"summary_type": "concise"})
+    assert create_response.status_code == 201
+    summary_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/summaries/{summary_id}")
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/summaries/{summary_id}")
+    assert get_response.status_code == 404

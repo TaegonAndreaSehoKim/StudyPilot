@@ -75,6 +75,24 @@ def test_list_course_quizzes_missing_course(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_delete_quiz_removes_quiz_and_attempts(client: TestClient, document_id: int) -> None:
+    quiz_response = client.post(f"/documents/{document_id}/quizzes", json={"question_count": 2, "difficulty": "mixed"})
+    assert quiz_response.status_code == 201
+    quiz = quiz_response.json()
+    answers = [
+        {"question_id": question["id"], "selected_answer": question["correct_answer"]}
+        for question in quiz["questions"]
+    ]
+    attempt_response = client.post(f"/quizzes/{quiz['id']}/attempts", json={"answers": answers})
+    assert attempt_response.status_code == 201
+
+    delete_response = client.delete(f"/quizzes/{quiz['id']}")
+
+    assert delete_response.status_code == 204
+    assert client.get(f"/quizzes/{quiz['id']}").status_code == 404
+    assert client.get(f"/quizzes/{quiz['id']}/attempts").status_code == 404
+
+
 def test_list_course_attempts_missing_course(client: TestClient) -> None:
     response = client.get("/courses/999999/attempts")
 

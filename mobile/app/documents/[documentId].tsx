@@ -1,6 +1,6 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
@@ -51,6 +51,7 @@ export default function DocumentDetailScreen() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
+  const [workingStep, setWorkingStep] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [quizCount, setQuizCount] = useState(5);
@@ -95,6 +96,17 @@ export default function DocumentDetailScreen() {
   useFocusEffect(useCallback(() => {
     void load();
   }, [load]));
+
+  useEffect(() => {
+    if (!working) {
+      setWorkingStep(0);
+      return undefined;
+    }
+    const interval = setInterval(() => {
+      setWorkingStep((current) => current + 1);
+    }, 2600);
+    return () => clearInterval(interval);
+  }, [working]);
 
   async function generateSummary(summaryType: SummaryType) {
     try {
@@ -249,12 +261,8 @@ export default function DocumentDetailScreen() {
       {error ? <ErrorState message={error} onRetry={load} /> : null}
       {working ? (
         <StatusBanner
-          title={working === 'ocr' ? 'Recognizing text' : 'Creating your study material'}
-          message={
-            working === 'ocr'
-              ? 'StudyPilot is reading scanned PDF pages. Keep the app open until this finishes.'
-              : 'StudyPilot is using this source material. The saved result will appear when it is ready.'
-          }
+          title={workingTitle(working)}
+          message={workingMessage(working, workingStep)}
         />
       ) : null}
       {notice ? <StatusBanner title={notice.title} message={notice.message} variant="success" /> : null}
@@ -444,6 +452,56 @@ function sourceReadinessLabel(document: DocumentDetail): string {
     return 'Partially readable. Review the source text before creating study tools.';
   }
   return 'Ready for review notes, flashcards, and practice.';
+}
+
+function workingTitle(working: string): string {
+  if (working === 'ocr') {
+    return 'Recognizing text';
+  }
+  if (working === 'quiz') {
+    return 'Creating practice quiz';
+  }
+  if (working === 'flashcards') {
+    return 'Creating flashcards';
+  }
+  return 'Writing review notes';
+}
+
+function workingMessage(working: string, step: number): string {
+  const messages: Record<string, string[]> = {
+    ocr: [
+      'Reading scanned PDF pages.',
+      'Extracting text that was not selectable in the original file.',
+      'Saving the recognized text back to this source.',
+    ],
+    flashcards: [
+      'Finding recall-worthy concepts in the source.',
+      'Turning the concepts into question and answer cards.',
+      'Saving the flashcards to this course library.',
+    ],
+    quiz: [
+      'Finding concepts that can be tested.',
+      'Writing multiple-choice questions and distractors.',
+      'Saving the practice quiz so you can review it later.',
+    ],
+    concise: [
+      'Reading the source and identifying the main conceptual flow.',
+      'Rewriting the key ideas as compact study notes.',
+      'Saving the review notes to this source and course library.',
+    ],
+    detailed: [
+      'Reading the source and grouping related concepts.',
+      'Re-explaining definitions, mechanisms, and relationships.',
+      'Saving the deeper review notes to this course library.',
+    ],
+    exam: [
+      'Reading the source for likely test points.',
+      'Writing comparisons, exceptions, and memorization anchors.',
+      'Saving the exam prep notes to this course library.',
+    ],
+  };
+  const sequence = messages[working] || messages.concise;
+  return sequence[step % sequence.length];
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

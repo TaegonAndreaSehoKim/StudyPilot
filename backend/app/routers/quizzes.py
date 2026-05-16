@@ -166,6 +166,15 @@ def get_quiz(quiz_id: int, db: Session = Depends(get_db)) -> QuizOut:
     return _quiz_out(quiz)
 
 
+@router.delete("/quizzes/{quiz_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_quiz(quiz_id: int, db: Session = Depends(get_db)) -> None:
+    quiz = db.get(Quiz, quiz_id)
+    if quiz is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+    db.delete(quiz)
+    db.commit()
+
+
 @router.get("/quizzes/{quiz_id}/attempts", response_model=list[QuizAttemptResult])
 def list_quiz_attempts(quiz_id: int, db: Session = Depends(get_db)) -> list[QuizAttemptResult]:
     if db.get(Quiz, quiz_id) is None:

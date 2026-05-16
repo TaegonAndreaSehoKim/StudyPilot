@@ -103,6 +103,7 @@ export const api = {
   documentDownloadUrl: async (documentId: number) => `${await getApiBaseUrl()}/documents/${documentId}/download`,
   deleteDocument: (documentId: number) => request<void>(`/documents/${documentId}`, { method: 'DELETE' }),
   summary: (summaryId: number) => request<Summary>(`/summaries/${summaryId}`),
+  deleteSummary: (summaryId: number) => request<void>(`/summaries/${summaryId}`, { method: 'DELETE' }),
   courseSummaries: (courseId: number) => request<Summary[]>(`/courses/${courseId}/summaries`),
   summaries: (documentId: number) => request<Summary[]>(`/documents/${documentId}/summaries`),
   createSummary: (documentId: number, summary_type: 'concise' | 'detailed' | 'exam') =>
@@ -130,6 +131,7 @@ export const api = {
   documentQuizzes: (documentId: number) => request<Quiz[]>(`/documents/${documentId}/quizzes`),
   courseQuizzes: (courseId: number) => request<Quiz[]>(`/courses/${courseId}/quizzes`),
   quiz: (quizId: number) => request<Quiz>(`/quizzes/${quizId}`),
+  deleteQuiz: (quizId: number) => request<void>(`/quizzes/${quizId}`, { method: 'DELETE' }),
   quizAttempts: (quizId: number) => request<QuizAttemptResult[]>(`/quizzes/${quizId}/attempts`),
   courseAttempts: (courseId: number) => request<CourseQuizAttempt[]>(`/courses/${courseId}/attempts`),
   courseSchedule: (courseId: number, includeCompleted = true) =>

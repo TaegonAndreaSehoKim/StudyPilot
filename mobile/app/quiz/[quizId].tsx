@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { DocumentDetail, Quiz, QuizAttemptResult } from '@/api/types';
@@ -23,6 +24,8 @@ export default function QuizScreen() {
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -66,6 +69,53 @@ export default function QuizScreen() {
     }
   }
 
+  async function createSimilarQuiz() {
+    if (!quiz || !document) {
+      return;
+    }
+    try {
+      setRegenerating(true);
+      setError(null);
+      const newQuiz = await api.createQuiz(document.id, quiz.questions.length || 5, 'mixed');
+      router.replace(`/quiz/${newQuiz.id}` as Href);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create another practice quiz');
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
+  function confirmDeleteQuiz() {
+    Alert.alert(
+      'Delete practice quiz?',
+      'This removes the quiz and its saved attempts. Weak-topic history from past attempts is kept for now.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteQuiz },
+      ],
+    );
+  }
+
+  async function deleteQuiz() {
+    if (!quiz) {
+      return;
+    }
+    try {
+      setDeleting(true);
+      setError(null);
+      await api.deleteQuiz(quiz.id);
+      if (document) {
+        router.replace(`/documents/${document.id}` as Href);
+      } else {
+        router.back();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this practice quiz');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return <LoadingState message="Loading practice quiz" />;
   }
@@ -82,6 +132,20 @@ export default function QuizScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{quiz.title}</Text>
             {document ? <Text style={styles.subtitle}>From {document.filename}</Text> : null}
+          </View>
+          <View style={styles.managementActions}>
+            <Button
+              title={regenerating ? 'Creating...' : 'Create Similar Quiz'}
+              disabled={!document || submitting || regenerating || deleting}
+              variant="secondary"
+              onPress={createSimilarQuiz}
+            />
+            <Button
+              title={deleting ? 'Deleting...' : 'Delete Quiz'}
+              disabled={submitting || regenerating || deleting}
+              variant="danger"
+              onPress={confirmDeleteQuiz}
+            />
           </View>
           <Card>
             <View style={styles.progressHeader}>
@@ -149,6 +213,7 @@ export default function QuizScreen() {
                 <Button
                   title="Practice Again"
                   variant="secondary"
+                  disabled={regenerating || deleting}
                   onPress={() => {
                     setAnswers({});
                     setResult(null);
@@ -216,6 +281,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  managementActions: {
+    gap: 8,
   },
   progressTitle: {
     color: colors.text,

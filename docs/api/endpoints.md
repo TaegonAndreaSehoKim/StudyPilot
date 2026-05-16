@@ -51,6 +51,7 @@ The mobile app stores only the backend URL and optional backend access token. It
 - `POST /documents/{document_id}/summaries`
 - `GET /documents/{document_id}/summaries`
 - `GET /summaries/{summary_id}`
+- `DELETE /summaries/{summary_id}`
 - `GET /courses/{course_id}/summaries`
 
 ### Flashcards
@@ -66,6 +67,7 @@ The mobile app stores only the backend URL and optional backend access token. It
 - `GET /documents/{document_id}/quizzes`
 - `GET /courses/{course_id}/quizzes`
 - `GET /quizzes/{quiz_id}`
+- `DELETE /quizzes/{quiz_id}`
 - `GET /quizzes/{quiz_id}/attempts`
 - `GET /courses/{course_id}/attempts`
 - `POST /quizzes/{quiz_id}/attempts`
