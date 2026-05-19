@@ -375,62 +375,66 @@ export default function DocumentDetailScreen() {
             />
           ) : null}
 
-          <Section title="Create Review Notes">
-            <ResponsiveGrid minItemWidth={280}>
-              <Card style={styles.explanationCard}>
-                <Text style={styles.optionTitle}>Additional Explanation</Text>
+          <Section title="Generate Study Tools">
+            <Card>
+              <View style={styles.toolHeader}>
+                <Text style={styles.toolEyebrow}>From this source</Text>
                 <Text style={styles.optionDescription}>
-                  Build a slower, richer teaching guide when the lecture is hard to understand.
+                  Choose one output type. Notes and explanations open after they are saved; practice tools stay in this source library.
                 </Text>
-                <Button
-                  title={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
+              </View>
+              <View style={[styles.toolGrid, isTablet && styles.tabletToolGrid]}>
+                <ToolAction
+                  title="Additional Explanation"
+                  description="Use this when the lecture is hard to understand and needs slower teaching."
+                  buttonTitle={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
                   disabled={actionDisabled}
+                  highlight
                   onPress={generateExplanation}
                 />
-              </Card>
-              {SUMMARY_OPTIONS.map((option) => (
-                <Card key={option.type}>
-                  <Text style={styles.optionTitle}>{option.title}</Text>
-                  <Text style={styles.optionDescription}>{option.description}</Text>
-                  <Button
-                    title={working === option.type ? 'Creating...' : `Create ${option.title}`}
+                {SUMMARY_OPTIONS.map((option) => (
+                  <ToolAction
+                    key={option.type}
+                    title={option.title}
+                    description={option.description}
+                    buttonTitle={working === option.type ? 'Creating...' : `Create ${option.title}`}
                     disabled={actionDisabled}
                     variant={option.type === 'concise' ? 'primary' : 'secondary'}
                     onPress={() => generateSummary(option.type)}
                   />
-                </Card>
-              ))}
-            </ResponsiveGrid>
-          </Section>
-
-          <Section title="Create Practice">
-            <ResponsiveGrid minItemWidth={320}>
-              <Card>
-                <Text style={styles.optionTitle}>Flashcards</Text>
-                <Text style={styles.optionDescription}>Create quick recall cards from the document concepts.</Text>
-                <Button title={working === 'flashcards' ? 'Creating...' : 'Create Flashcards'} disabled={actionDisabled} variant="secondary" onPress={generateFlashcards} />
-              </Card>
-
-              <Card>
-                <Text style={styles.optionTitle}>Practice Quiz</Text>
-                <Text style={styles.optionDescription}>Choose question count and difficulty before generating a quiz.</Text>
-                <SegmentedControl
-                  label="Questions"
-                  options={QUIZ_COUNTS}
-                  value={quizCount}
-                  format={(value) => `${value}`}
-                  onChange={setQuizCount}
+                ))}
+                <ToolAction
+                  title="Flashcards"
+                  description="Create quick recall cards from the document concepts."
+                  buttonTitle={working === 'flashcards' ? 'Creating...' : 'Create Flashcards'}
+                  disabled={actionDisabled}
+                  variant="secondary"
+                  onPress={generateFlashcards}
                 />
-                <SegmentedControl
-                  label="Difficulty"
-                  options={QUIZ_DIFFICULTIES}
-                  value={quizDifficulty}
-                  format={(value) => value}
-                  onChange={setQuizDifficulty}
-                />
-                <Button title={working === 'quiz' ? 'Creating...' : 'Create Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
-              </Card>
-            </ResponsiveGrid>
+                <ToolAction
+                  title="Practice Quiz"
+                  description="Generate a multiple-choice quiz with the selected count and difficulty."
+                  buttonTitle={working === 'quiz' ? 'Creating...' : 'Create Quiz'}
+                  disabled={actionDisabled}
+                  onPress={generateQuiz}
+                >
+                  <SegmentedControl
+                    label="Questions"
+                    options={QUIZ_COUNTS}
+                    value={quizCount}
+                    format={(value) => `${value}`}
+                    onChange={setQuizCount}
+                  />
+                  <SegmentedControl
+                    label="Difficulty"
+                    options={QUIZ_DIFFICULTIES}
+                    value={quizDifficulty}
+                    format={(value) => value}
+                    onChange={setQuizDifficulty}
+                  />
+                </ToolAction>
+              </View>
+            </Card>
           </Section>
 
           <Section title="Saved Study Tools">
@@ -638,6 +642,37 @@ function SavedCount({ label, value }: { label: string; value: number }) {
   );
 }
 
+function ToolAction({
+  title,
+  description,
+  buttonTitle,
+  disabled,
+  onPress,
+  variant = 'primary',
+  highlight = false,
+  children,
+}: {
+  title: string;
+  description: string;
+  buttonTitle: string;
+  disabled: boolean;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary';
+  highlight?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View style={[styles.toolAction, highlight && styles.highlightToolAction]}>
+      <View style={styles.toolTextBlock}>
+        <Text style={styles.optionTitle}>{title}</Text>
+        <Text style={styles.optionDescription}>{description}</Text>
+      </View>
+      {children ? <View style={styles.toolControls}>{children}</View> : null}
+      <Button title={buttonTitle} disabled={disabled} variant={variant} onPress={onPress} />
+    </View>
+  );
+}
+
 function SegmentedControl<T extends string | number>({
   label,
   options,
@@ -756,6 +791,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  toolHeader: {
+    gap: 4,
+  },
+  toolEyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  toolGrid: {
+    gap: 10,
+  },
+  tabletToolGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  toolAction: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexGrow: 1,
+    gap: 10,
+    minWidth: 250,
+    padding: 12,
+  },
+  highlightToolAction: {
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primary,
+  },
+  toolTextBlock: {
+    gap: 4,
+  },
+  toolControls: {
+    gap: 10,
+  },
   qualityText: {
     color: colors.text,
     fontSize: 13,
@@ -786,10 +857,6 @@ const styles = StyleSheet.create({
   },
   qualityWarningCard: {
     backgroundColor: colors.warningSurface,
-  },
-  explanationCard: {
-    backgroundColor: colors.primarySurface,
-    borderColor: colors.primary,
   },
   ocrCard: {
     backgroundColor: colors.warningSurface,

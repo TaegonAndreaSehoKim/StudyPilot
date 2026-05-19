@@ -18,10 +18,10 @@ import { colors } from '@/constants/colors';
 type SummaryType = Exclude<StudyNoteType, 'explanation'>;
 type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 
-const SUMMARY_OPTIONS: { type: SummaryType; title: string }[] = [
-  { type: 'concise', title: 'Quick Review' },
-  { type: 'detailed', title: 'Deep Review' },
-  { type: 'exam', title: 'Exam Prep' },
+const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }[] = [
+  { type: 'concise', title: 'Quick Review', description: 'Core concepts and broad flow across the section.' },
+  { type: 'detailed', title: 'Deep Review', description: 'Concepts, principles, and relationships across all readable sources.' },
+  { type: 'exam', title: 'Exam Prep', description: 'Likely test points, comparisons, and memorization anchors.' },
 ];
 
 const QUIZ_COUNTS = [5, 10, 15];
@@ -292,39 +292,45 @@ export default function SectionDetailScreen() {
             <EmptyState title="No readable sources yet" message="Add extracted text, markdown, or readable PDFs before generating section-level study tools." />
           ) : null}
 
-          <Section title="Create Section Review Notes">
-            <ResponsiveGrid minItemWidth={280}>
-              <Card style={styles.explanationCard}>
-                <Text style={styles.optionTitle}>Additional Explanation</Text>
-                <Text style={styles.optionDescription}>Create a slower, richer teaching guide from all readable sources in this section.</Text>
-                <Button
-                  title={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
+          <Section title="Generate Section Tools">
+            <Card>
+              <View style={styles.toolHeader}>
+                <Text style={styles.toolEyebrow}>From all readable section sources</Text>
+                <Text style={styles.optionDescription}>
+                  Use this panel after the section has every lecture, reading, or exam-scope source you want included.
+                </Text>
+              </View>
+              <View style={[styles.toolGrid, isTablet && styles.tabletToolGrid]}>
+                <ToolAction
+                  title="Additional Explanation"
+                  description="Create a slower, richer teaching guide from the full section source set."
+                  buttonTitle={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
                   disabled={actionDisabled}
+                  highlight
                   onPress={generateExplanation}
                 />
-              </Card>
-              {SUMMARY_OPTIONS.map((option) => (
-                <Card key={option.type}>
-                  <Text style={styles.optionTitle}>{option.title}</Text>
-                  <Text style={styles.optionDescription}>Generate notes from all readable sources in this section.</Text>
-                  <Button
-                    title={working === option.type ? 'Creating...' : `Create ${option.title}`}
+                {SUMMARY_OPTIONS.map((option) => (
+                  <ToolAction
+                    key={option.type}
+                    title={option.title}
+                    description={option.description}
+                    buttonTitle={working === option.type ? 'Creating...' : `Create ${option.title}`}
                     disabled={actionDisabled}
                     variant={option.type === 'concise' ? 'primary' : 'secondary'}
                     onPress={() => generateSummary(option.type)}
                   />
-                </Card>
-              ))}
-            </ResponsiveGrid>
-          </Section>
-
-          <Section title="Create Section Practice">
-            <Card>
-              <Text style={styles.optionTitle}>Practice Quiz</Text>
-              <Text style={styles.optionDescription}>Questions are generated from the combined section source set.</Text>
-              <SegmentedControl label="Questions" options={QUIZ_COUNTS} value={quizCount} format={(value) => `${value}`} onChange={setQuizCount} />
-              <SegmentedControl label="Difficulty" options={QUIZ_DIFFICULTIES} value={quizDifficulty} format={(value) => value} onChange={setQuizDifficulty} />
-              <Button title={working === 'quiz' ? 'Creating...' : 'Create Quiz'} disabled={actionDisabled} onPress={generateQuiz} />
+                ))}
+                <ToolAction
+                  title="Practice Quiz"
+                  description="Questions are generated from the combined section source set."
+                  buttonTitle={working === 'quiz' ? 'Creating...' : 'Create Quiz'}
+                  disabled={actionDisabled}
+                  onPress={generateQuiz}
+                >
+                  <SegmentedControl label="Questions" options={QUIZ_COUNTS} value={quizCount} format={(value) => `${value}`} onChange={setQuizCount} />
+                  <SegmentedControl label="Difficulty" options={QUIZ_DIFFICULTIES} value={quizDifficulty} format={(value) => value} onChange={setQuizDifficulty} />
+                </ToolAction>
+              </View>
             </Card>
           </Section>
 
@@ -457,6 +463,37 @@ function Metric({ label, value }: { label: string; value: number }) {
   );
 }
 
+function ToolAction({
+  title,
+  description,
+  buttonTitle,
+  disabled,
+  onPress,
+  variant = 'primary',
+  highlight = false,
+  children,
+}: {
+  title: string;
+  description: string;
+  buttonTitle: string;
+  disabled: boolean;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary';
+  highlight?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View style={[styles.toolAction, highlight && styles.highlightToolAction]}>
+      <View style={styles.toolTextBlock}>
+        <Text style={styles.optionTitle}>{title}</Text>
+        <Text style={styles.optionDescription}>{description}</Text>
+      </View>
+      {children ? <View style={styles.toolControls}>{children}</View> : null}
+      <Button title={buttonTitle} disabled={disabled} variant={variant} onPress={onPress} />
+    </View>
+  );
+}
+
 function SegmentedControl<T extends string | number>({
   label,
   options,
@@ -539,10 +576,6 @@ const styles = StyleSheet.create({
   editCard: {
     backgroundColor: colors.surfaceSubtle,
   },
-  explanationCard: {
-    backgroundColor: colors.primarySurface,
-    borderColor: colors.primary,
-  },
   startCard: {
     backgroundColor: colors.primarySurface,
     borderColor: colors.primary,
@@ -610,6 +643,42 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  toolHeader: {
+    gap: 4,
+  },
+  toolEyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  toolGrid: {
+    gap: 10,
+  },
+  tabletToolGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  toolAction: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexGrow: 1,
+    gap: 10,
+    minWidth: 250,
+    padding: 12,
+  },
+  highlightToolAction: {
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primary,
+  },
+  toolTextBlock: {
+    gap: 4,
+  },
+  toolControls: {
+    gap: 10,
   },
   itemTitle: {
     color: colors.text,
