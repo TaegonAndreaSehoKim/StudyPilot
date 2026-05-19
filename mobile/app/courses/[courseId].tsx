@@ -45,6 +45,7 @@ export default function CourseDetailScreen() {
   const [editingCourse, setEditingCourse] = useState(false);
   const [savingCourse, setSavingCourse] = useState(false);
   const [creatingSection, setCreatingSection] = useState(false);
+  const [showSectionForm, setShowSectionForm] = useState(false);
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
   const [editTitle, setEditTitle] = useState('');
@@ -229,6 +230,7 @@ export default function CourseDetailScreen() {
       setSections((current) => [section, ...current.filter((item) => item.id !== section.id)]);
       setSectionTitle('');
       setSectionDescription('');
+      setShowSectionForm(false);
       setNotice('Study section created. Add the relevant source materials inside it.');
       router.push(`/sections/${section.id}` as Href);
     } catch (err) {
@@ -281,6 +283,8 @@ export default function CourseDetailScreen() {
   if (loading) {
     return <LoadingState message="Loading this course" />;
   }
+
+  const shouldShowSectionForm = showSectionForm || !sections.length;
 
   return (
     <ScreenScrollView
@@ -380,28 +384,45 @@ export default function CourseDetailScreen() {
 
               <ResponsiveGrid minItemWidth={340}>
                 <Section title="Study Sections">
-                  <Card style={styles.createSectionCard}>
-                    <Text style={styles.itemTitle}>Create Section</Text>
-                    <Text style={styles.itemMeta}>Use a unit, chapter, midterm, or final exam scope, then add all matching source materials inside it.</Text>
-                    <Text style={styles.inputLabel}>Name</Text>
-                    <TextInput
-                      value={sectionTitle}
-                      onChangeText={setSectionTitle}
-                      placeholder="Midterm 1, Unit 3, Final Exam"
-                      placeholderTextColor={colors.textFaint}
-                      style={styles.input}
-                    />
-                    <Text style={styles.inputLabel}>Description</Text>
-                    <TextInput
-                      value={sectionDescription}
-                      onChangeText={setSectionDescription}
-                      placeholder="Scope, topics, or exam coverage"
-                      placeholderTextColor={colors.textFaint}
-                      multiline
-                      style={[styles.input, styles.descriptionInput]}
-                    />
-                    <Button title={creatingSection ? 'Creating...' : 'Create Section'} disabled={creatingSection} onPress={createSection} />
-                  </Card>
+                  {sections.length ? (
+                    <View style={[styles.sectionToolbar, isTablet && styles.tabletActions]}>
+                      <Button
+                        title={showSectionForm ? 'Hide Section Form' : 'New Section'}
+                        variant="secondary"
+                        disabled={creatingSection}
+                        onPress={() => setShowSectionForm((current) => !current)}
+                      />
+                    </View>
+                  ) : null}
+                  {shouldShowSectionForm ? (
+                    <Card style={styles.createSectionCard}>
+                      <Text style={styles.itemTitle}>Create Section</Text>
+                      <Text style={styles.itemMeta}>Use a unit, chapter, midterm, or final exam scope, then add all matching source materials inside it.</Text>
+                      <Text style={styles.inputLabel}>Name</Text>
+                      <TextInput
+                        value={sectionTitle}
+                        onChangeText={setSectionTitle}
+                        placeholder="Midterm 1, Unit 3, Final Exam"
+                        placeholderTextColor={colors.textFaint}
+                        style={styles.input}
+                      />
+                      <Text style={styles.inputLabel}>Description</Text>
+                      <TextInput
+                        value={sectionDescription}
+                        onChangeText={setSectionDescription}
+                        placeholder="Scope, topics, or exam coverage"
+                        placeholderTextColor={colors.textFaint}
+                        multiline
+                        style={[styles.input, styles.descriptionInput]}
+                      />
+                      <View style={[styles.actions, isTablet && styles.tabletActions]}>
+                        <Button title={creatingSection ? 'Creating...' : 'Create Section'} disabled={creatingSection} onPress={createSection} />
+                        {sections.length ? (
+                          <Button title="Cancel" variant="secondary" disabled={creatingSection} onPress={() => setShowSectionForm(false)} />
+                        ) : null}
+                      </View>
+                    </Card>
+                  ) : null}
                   {sections.length ? (
                     sections.map((section) => (
                       <Link key={section.id} href={`/sections/${section.id}` as Href} asChild>
@@ -451,10 +472,19 @@ export default function CourseDetailScreen() {
             materialsLoading && !materialsLoaded ? (
               <LoadingState message="Loading course library" />
             ) : (
-              <ResponsiveGrid minItemWidth={340}>
-                <View style={styles.section}>
+              <>
+                <View style={[styles.libraryToolbar, isTablet && styles.tabletActions]}>
                   <Button title={uploading ? 'Adding...' : 'Add Source Material'} disabled={uploading || deleting} onPress={upload} />
+                  <Button
+                    title="New Section"
+                    variant="secondary"
+                    onPress={() => {
+                      setActiveTab('overview');
+                      setShowSectionForm(true);
+                    }}
+                  />
                 </View>
+                <ResponsiveGrid minItemWidth={340}>
                 <Section title="Source Materials">
                   {documents.length ? (
                     documents.map((document) => (
@@ -526,7 +556,8 @@ export default function CourseDetailScreen() {
                     <EmptyState title="No flashcards" message="Create flashcards from a source material for quick recall." />
                   )}
                 </Section>
-              </ResponsiveGrid>
+                </ResponsiveGrid>
+              </>
             )
           ) : null}
 
@@ -807,6 +838,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actions: {
+    gap: 10,
+  },
+  sectionToolbar: {
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  libraryToolbar: {
     gap: 10,
   },
   tabletActions: {
