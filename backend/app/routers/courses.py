@@ -80,6 +80,8 @@ def delete_course(
 ) -> None:
     course = get_course_or_404(db, course_id)
     documents = list(course.documents)
+    for document in documents:
+        document.section_id = None
     db.delete(course)
     db.commit()
     remove_document_files(documents, Path(settings.storage_dir))
