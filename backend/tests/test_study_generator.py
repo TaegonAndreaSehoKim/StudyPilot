@@ -34,6 +34,27 @@ class MalformedAIProvider(AIProvider):
         }
 
 
+class LabeledSummaryProvider(AIProvider):
+    def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
+        return {
+            "title": "Movement Notes",
+            "overview": "Movement notes explain how agents update position over time.",
+            "key_points": [
+                "Additional explanation - Seek behavior: Seek computes a direction to the target and updates incrementally.",
+                "Concept overview - Arrive behavior: Arrive slows near the target to avoid jitter.",
+                "Core concept - Update loop: The game loop limits how much movement logic can run each frame.",
+            ],
+            "key_terms": [{"term": "Seek", "definition": "A movement behavior that heads toward a target."}],
+            "source_quotes": [{"quote": "Seek computes a direction to the target", "reason": "Shows the movement rule."}],
+        }
+
+    def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
+        return []
+
+    def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
+        return {"title": "Quiz", "questions": []}
+
+
 class CapturingFakeAIProvider(FakeAIProvider):
     def __init__(self) -> None:
         self.last_summary_input = ""
@@ -59,6 +80,18 @@ def test_study_generator_normalizes_malformed_summary() -> None:
     assert summary["key_points"]
     assert summary["key_terms"][0]["term"]
     assert summary["source_quotes"][0]["quote"]
+
+
+def test_summary_normalization_removes_repetitive_point_labels() -> None:
+    generator = StudyGenerator(LabeledSummaryProvider())
+
+    summary = generator.generate_summary(_source_text(), "explanation")
+
+    assert summary["key_points"][0].startswith("Seek computes")
+    assert summary["key_points"][1].startswith("Arrive slows")
+    assert summary["key_points"][2].startswith("The game loop")
+    assert all("Additional explanation -" not in point for point in summary["key_points"])
+    assert all("Concept overview -" not in point for point in summary["key_points"])
 
 
 def test_study_generator_normalizes_malformed_flashcards_to_requested_count() -> None:

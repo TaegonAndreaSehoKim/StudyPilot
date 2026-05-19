@@ -17,6 +17,14 @@ SUMMARY_META_PATTERNS = (
     "chunk overview",
 )
 
+SUMMARY_POINT_PREFIX_RE = re.compile(
+    r"^\s*(?:"
+    r"core\s+concept|concept\s+overview|additional\s+explanation|test\s+point|"
+    r"similar\s+concept\s+comparison|memorization\s+point|exam\s+focus|key\s+idea"
+    r")\s*(?:[-:]\s*)?(?:[^:]{1,120}:\s*)?",
+    flags=re.IGNORECASE,
+)
+
 
 def _clean_text(value: Any, fallback: str) -> str:
     if isinstance(value, str):
@@ -51,6 +59,15 @@ def _looks_like_internal_summary_label(value: str) -> bool:
     return any(pattern in clean for pattern in SUMMARY_META_PATTERNS)
 
 
+def _clean_summary_point(value: Any) -> str:
+    cleaned = _clean_text(value, "")
+    previous = None
+    while cleaned and cleaned != previous:
+        previous = cleaned
+        cleaned = SUMMARY_POINT_PREFIX_RE.sub("", cleaned, count=1).strip()
+    return cleaned
+
+
 def _keywords(document_text: str, limit: int) -> list[str]:
     words = re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", document_text)
     stop = {"that", "this", "with", "from", "have", "will", "into", "about", "their", "there"}
@@ -73,7 +90,7 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
     sentences = _sentences(document_text)
     fallback_overview = " ".join(sentences[:2]) or _excerpt(document_text)
     key_points = source.get("key_points") if isinstance(source.get("key_points"), list) else []
-    normalized_points = [_clean_text(point, "") for point in key_points]
+    normalized_points = [_clean_summary_point(point) for point in key_points]
     normalized_points = [point for point in normalized_points if point and not _looks_like_internal_summary_label(point)]
     if not normalized_points:
         normalized_points = sentences[:5] or [_excerpt(document_text)]

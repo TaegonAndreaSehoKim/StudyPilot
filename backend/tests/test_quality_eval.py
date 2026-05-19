@@ -32,9 +32,9 @@ def test_eval_summary_uses_section_topics_and_source_terms() -> None:
     assert any("state spaces" in point for point in summary["key_points"])
     assert "test points" in summary["overview"]
     assert all(not point.startswith("Section:") for point in summary["key_points"])
-    assert any(point.startswith("Test point -") for point in summary["key_points"])
-    assert any(point.startswith("Similar concept comparison -") for point in summary["key_points"])
-    assert any(point.startswith("Memorization point -") for point in summary["key_points"])
+    assert any("exam review" in point.lower() for point in summary["key_points"])
+    assert any("distinguish" in point.lower() for point in summary["key_points"])
+    assert any("memorizing" in point.lower() for point in summary["key_points"])
 
 
 def test_eval_summary_modes_have_distinct_study_intent() -> None:
@@ -44,9 +44,9 @@ def test_eval_summary_modes_have_distinct_study_intent() -> None:
     detailed = generator.generate_summary(EVAL_NOTES, "detailed")
 
     assert "broad flow" in concise["overview"]
-    assert all(point.startswith("Core concept -") for point in concise["key_points"])
+    assert all(not point.startswith("Core concept -") for point in concise["key_points"])
+    assert all(not point.startswith("Concept overview -") for point in detailed["key_points"])
     assert "general principles" in detailed["overview"] or "general principles" in " ".join(detailed["key_points"])
-    assert all(point.startswith("Concept overview -") for point in detailed["key_points"])
 
 
 def test_transcript_style_detailed_summary_uses_real_concepts_not_pipeline_labels() -> None:

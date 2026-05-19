@@ -559,17 +559,17 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
 
 
 def _concise_point(section: SourceSection) -> str:
-    return f"Core concept - {section.title}: {_teaching_summary(section, 2)}"
+    return _teaching_summary(section, 2)
 
 
 def _detailed_point(section: SourceSection) -> str:
-    return f"Concept overview - {section.title}: {_teaching_summary(section, 3)}"
+    return _teaching_summary(section, 3)
 
 
 def _explanation_point(section: SourceSection) -> str:
     explanation = _teaching_summary(section, 3)
     return (
-        f"Additional explanation - {section.title}: {explanation} "
+        f"{explanation} "
         "This part should be studied as a causal explanation, not as a term to memorize in isolation. "
         "Ask what problem this concept solves, what simplification it introduces, and what tradeoff it creates for an agent running inside a real-time game loop."
     )
@@ -579,16 +579,15 @@ def _exam_points(sections: list[SourceSection]) -> list[str]:
     points: list[str] = []
     for index, section in enumerate(sections[:4]):
         detail = _teaching_summary(section, 2)
-        points.append(f"Test point - {section.title}: {detail}")
+        points.append(f"For exam review, connect this idea to the source claim: {detail}")
         if len(sections) > 1:
             other = sections[(index + 1) % len(sections)]
             points.append(
-                f"Similar concept comparison - {section.title} vs {other.title}: "
-                f"distinguish the source claim about {section.title} from the source claim about {other.title}."
+                f"Distinguish {section.title} from {other.title} by comparing what each source section says, "
+                "what problem each concept solves, and what assumption would make the ideas easy to confuse."
             )
         points.append(
-            f"Memorization point - {section.title}: "
-            "remember the terms and relationships stated in this section rather than unsupported examples."
+            f"When memorizing {section.title}, focus on the terms and relationships stated in the source rather than unsupported examples."
         )
     return points
 
@@ -1021,6 +1020,7 @@ class OpenAIProvider(AIProvider):
             "- If notes are insufficient, say that explicitly.\n"
             "- Do not write vague meta summaries such as 'these notes discuss...' or 'this section covers...' without explaining the actual ideas.\n"
             "- Do not use Chunk, Source Part, Source Material, Source Notes, Concrete study points, Concept definitions, Source evidence, uploaded notes, section, slide, or page as key concepts unless those are actual course concepts.\n"
+            "- Do not begin key_points with repetitive UI-style labels such as 'Core concept -', 'Concept overview -', 'Additional explanation -', 'Test point -', or similar headings. The app already labels the output type.\n"
             "- Do not use page labels, file labels, bullet artifacts, or OCR/PDF text artifacts as concepts. Ignore strings like 'Page 3 of 37', 'A ...', or spaced heading text such as 'Ty p e o f M o v e m e n t'. Infer the intended phrase and teach the actual course concept.\n"
             "- Clean obvious extraction artifacts before writing. For example, read 'de.nition' as 'definition', '.xed' as 'fixed', and '.oats' as 'floats'.\n"
             "- Reject slide-copy style. A bad key point is 'Concept overview - Page 3: Type of Movement'. A good key point explains the distinction between discrete and continuous movement, how representation affects algorithms, and why the game loop changes how movement code is written.\n"
