@@ -96,6 +96,7 @@ async function request<T>(path: string, options: ApiRequestOptions = {}): Promis
 
 export const api = {
   health: () => request<{ status: string; app: string }>('/health'),
+  checkAccessToken: () => request<{ status: string; app: string }>('/auth/check', { method: 'POST' }),
   dashboard: () => request<Dashboard>('/dashboard'),
   courses: () => request<Course[]>('/courses'),
   course: (courseId: number) => request<Course>(`/courses/${courseId}`),

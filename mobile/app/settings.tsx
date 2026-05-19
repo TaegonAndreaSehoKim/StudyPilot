@@ -50,7 +50,8 @@ export default function SettingsScreen() {
       await setApiBaseUrl(baseUrl);
       await setAccessToken(accessToken);
       const health = await api.health();
-      setStatus(`${health.app} backend is ${health.status} at ${baseUrl.trim()}`);
+      await api.checkAccessToken();
+      setStatus(`${health.app} backend is ${health.status} at ${baseUrl.trim()}. Backend access token is valid for write requests.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to connect to backend');
     } finally {

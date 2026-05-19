@@ -69,6 +69,19 @@ def test_mutations_require_access_token_when_configured(tmp_path: Path, monkeypa
     assert correct.status_code == 201
 
 
+def test_auth_check_verifies_configured_access_token(tmp_path: Path, monkeypatch) -> None:
+    client = make_client(tmp_path, monkeypatch, token="secret")
+
+    missing = client.post("/auth/check")
+    wrong = client.post("/auth/check", headers={"X-StudyPilot-Key": "wrong"})
+    correct = client.post("/auth/check", headers={"X-StudyPilot-Key": "secret"})
+
+    assert missing.status_code == 401
+    assert wrong.status_code == 401
+    assert correct.status_code == 200
+    assert correct.json() == {"status": "ok", "app": "StudyPilot"}
+
+
 def test_production_requires_configured_access_token(tmp_path: Path, monkeypatch) -> None:
     client = make_client(tmp_path, monkeypatch, environment="production")
 
