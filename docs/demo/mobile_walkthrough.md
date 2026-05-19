@@ -35,24 +35,25 @@ http://3.23.120.213:8000
 6. Confirm the App Update card is visible when testing through EAS preview updates.
 7. Return to the dashboard.
 8. Create a course named `OMSCS AI`.
-9. Open the course and upload `docs/demo/omscs_ai_sample_notes.md`.
-10. Open the uploaded source material.
-11. Open Full Extracted Text and confirm the full source is readable.
-12. Return to the source screen.
-13. Create Quick Review notes.
-14. Open the saved review notes and confirm full content is readable.
-15. Return to the source screen.
-16. Create flashcards.
-17. Return to the course Library tab and open course flashcards.
+9. In the Study tab, create a section such as `Midterm 1`.
+10. Open the section and add `docs/demo/omscs_ai_sample_notes.md` as section source material.
+11. Open the uploaded source material.
+12. Open Full Extracted Text and confirm the full source is readable.
+13. Return to the source screen.
+14. In Generate Study Tools, create Additional Explanation or Quick Review notes.
+15. Open the saved review notes and confirm full content is readable.
+16. Return to the source screen.
+17. Create flashcards from the same Generate Study Tools panel.
 18. Create a practice quiz from the source.
 19. Confirm the quiz answer progress card updates as choices are selected.
 20. Submit the quiz with at least one wrong answer.
 21. Confirm result actions can return to the source and course.
-22. Return to the dashboard.
-23. Confirm Continue Studying, review notes, practice quizzes, and weak areas are visible.
-24. Open the course Deadlines tab.
-25. Add an assignment or exam date.
-26. Return to the dashboard and confirm the upcoming schedule item appears globally.
+22. Return to the section and create section-level review notes or a section practice quiz.
+23. Return to the dashboard.
+24. Confirm Continue Studying, review notes, practice quizzes, and weak areas are visible.
+25. Open the course Deadlines tab.
+26. Add an assignment or exam date with a popup reminder.
+27. Return to the dashboard and confirm the upcoming schedule item appears globally.
 
 ## Expected Results
 
@@ -63,6 +64,7 @@ http://3.23.120.213:8000
 - Continue Studying should show the next useful action after materials, quizzes, weak areas, or deadline items exist.
 - Quiz misses should update weak areas.
 - Schedule items should appear both in the course and on the dashboard.
+- Popup reminders should be saved with the deadline. On mobile devices, the app schedules the local notification when permission is granted and the reminder time is still in the future.
 
 ## Troubleshooting
 
@@ -71,3 +73,4 @@ http://3.23.120.213:8000
 - If a PDF extracts little or no text, it may be scanned or image-only. Use the source screen's text-recognition action when the backend has OCR enabled.
 - If Expo Go shows stale UI, pull to refresh or navigate away and back; primary screens reload on focus.
 - If an EAS preview update does not appear, fully quit Expo Go and reopen StudyPilot from the project list.
+- If a popup reminder does not fire, confirm notification permission is allowed for Expo Go and that the reminder time was not already in the past.

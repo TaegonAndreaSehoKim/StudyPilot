@@ -101,12 +101,13 @@ npm run export:web
 - Dashboard: Continue Studying cards, counts, recent courses, recent sources, review notes, practice quizzes, and weak areas
 - Dashboard deadlines: upcoming assignments and exams across all courses
 - Courses: course list and course creation
-- Course detail: Study, Library, Practice, and Deadlines tabs with source upload, review notes, flashcards, quizzes, weak areas, and course actions
+- Course detail: Study, Library, Practice, and Deadlines tabs with source upload, collapsible section creation, review notes, flashcards, quizzes, weak areas, and course actions
 - Weak-area review quiz: generate focused practice from missed quiz topics on the course Practice tab
 - Deadlines: course deadlines, exams, readings, projects, countdowns, optional device popup alerts, completion, and delete actions
-- Source detail: read full source, open original file, text-recognition guidance, source preview, review-note options, practice options, saved study-tool counts, and saved-material sections
+- Section detail: source grouping, section editing, Generate Section Tools, section-level notes, additional explanations, and quizzes from combined readable sources
+- Source detail: read full source, open original file, text-recognition guidance, source preview, Generate Study Tools, saved study-tool counts, and saved-material sections
 - Full text: complete readable source text with Save / Share support
-- Review notes: full saved notes with overview, what to remember, key concepts, source evidence, and Save / Share PDF support
+- Review notes and additional explanations: full saved notes with overview, key ideas or expanded explanations, key concepts, source evidence, regenerate action, and Save / Share PDF support
 - Flashcards: course-level saved card review with Save / Share support
 - Practice quizzes: course-level saved quiz list with links back into quiz taking
 - Practice quiz: answer progress, submit practice, highlighted answers, source evidence, distractor explanations, weak-area review, practice again, and return links to the source/course

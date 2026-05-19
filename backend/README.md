@@ -1,6 +1,6 @@
 # StudyPilot Backend
 
-FastAPI backend for StudyPilot. It handles course data, document uploads, text extraction, AI generation, quizzes, weak topics, and dashboard APIs.
+FastAPI backend for StudyPilot. It handles course data, study sections, document uploads, text extraction, AI generation, quizzes, weak topics, deadlines, reminders, and dashboard APIs.
 
 ## Setup
 
@@ -35,7 +35,7 @@ With the backend running, execute the full API demo flow:
 python scripts/smoke_demo.py --base-url http://127.0.0.1:8000 --cleanup
 ```
 
-The smoke flow creates a course, uploads the sample notes from `docs/demo/`, generates a summary, flashcards, and quiz, submits intentionally wrong answers, verifies weak topics, and optionally deletes the smoke course.
+The smoke flow creates a course, uploads the sample notes from `docs/demo/`, generates review notes, flashcards, and a quiz, submits intentionally wrong answers, verifies weak topics, and optionally deletes the smoke course.
 
 ## Environment
 
@@ -92,6 +92,12 @@ The Compose setup stores SQLite data in the `studypilot_data` volume and uploade
 - `GET /courses/{course_id}`
 - `PATCH /courses/{course_id}`
 - `DELETE /courses/{course_id}`
+- `POST /courses/{course_id}/sections`
+- `GET /courses/{course_id}/sections`
+- `GET /sections/{section_id}`
+- `PATCH /sections/{section_id}`
+- `DELETE /sections/{section_id}`
+- `GET /sections/{section_id}/documents`
 - `POST /documents/upload`
 - `GET /documents/{document_id}`
 - `GET /documents/{document_id}/text`
@@ -101,17 +107,25 @@ The Compose setup stores SQLite data in the `studypilot_data` volume and uploade
 - `GET /courses/{course_id}/documents`
 - `DELETE /documents/{document_id}`
 - `POST /documents/{document_id}/summaries`
+- `POST /documents/{document_id}/explanations`
 - `GET /documents/{document_id}/summaries`
 - `GET /summaries/{summary_id}`
+- `DELETE /summaries/{summary_id}`
 - `GET /courses/{course_id}/summaries`
+- `POST /sections/{section_id}/summaries`
+- `POST /sections/{section_id}/explanations`
+- `GET /sections/{section_id}/summaries`
 - `POST /documents/{document_id}/flashcards`
 - `GET /documents/{document_id}/flashcards`
 - `GET /courses/{course_id}/flashcards`
 - `POST /documents/{document_id}/quizzes`
+- `POST /sections/{section_id}/quizzes`
 - `POST /courses/{course_id}/review-quiz`
 - `GET /documents/{document_id}/quizzes`
+- `GET /sections/{section_id}/quizzes`
 - `GET /courses/{course_id}/quizzes`
 - `GET /quizzes/{quiz_id}`
+- `DELETE /quizzes/{quiz_id}`
 - `GET /quizzes/{quiz_id}/attempts`
 - `GET /courses/{course_id}/attempts`
 - `POST /quizzes/{quiz_id}/attempts`
@@ -127,4 +141,4 @@ The Compose setup stores SQLite data in the `studypilot_data` volume and uploade
 
 ## Notes
 
-The generation pipeline prepares section-aware study context before calling the AI provider. The OpenAI provider is source-grounded, requests structured JSON, and validates required fields before accepting generated summaries, flashcards, or quizzes. If model output is invalid, malformed, or the provider fails, generation falls back to deterministic fake output instead of crashing the API.
+The generation pipeline prepares section-aware study context before calling the AI provider. Review notes, additional explanations, flashcards, and quizzes are generated from uploaded source text, with course and section title/description passed as context. The OpenAI provider is source-grounded, requests structured JSON, and validates required fields before accepting generated material. If model output is invalid, malformed, or the provider fails, generation falls back to deterministic fake output instead of crashing the API.

@@ -22,8 +22,8 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - section-aware document preparation before AI generation
 - backend-only AI provider abstraction
 - deterministic `FakeAIProvider` fallback when `OPENAI_API_KEY` is absent
-- document-level summary/flashcard/quiz generation endpoints
-- section-level summary and quiz generation endpoints over multiple uploaded documents
+- document-level summary/additional-explanation/flashcard/quiz generation endpoints
+- section-level summary/additional-explanation and quiz generation endpoints over multiple uploaded documents
 - quiz attempt scoring
 - weak-topic tracking from missed quiz questions
 - weak-topic review quiz generation
@@ -50,7 +50,7 @@ What is stable:
 - document upload and text extraction for supported files
 - text-based PDF extraction regression coverage
 - fake AI generation path
-- document-level and section-level summary/quiz, flashcard, attempt, weak-topic, and dashboard API flows
+- document-level and section-level summary/additional-explanation/quiz, flashcard, attempt, weak-topic, and dashboard API flows
 - lightweight AI quality eval tests
 - backend tests using temporary SQLite and temporary storage
 - mobile routing and API client structure

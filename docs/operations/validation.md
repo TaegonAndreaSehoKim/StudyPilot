@@ -34,6 +34,8 @@ This checks the basic product loop:
 course -> upload -> review notes -> flashcards -> quiz -> attempt -> weak areas -> dashboard
 ```
 
+The script is intentionally document-level. Section-level generation, additional explanations, and device-local reminder behavior are covered by backend tests plus the manual product smoke below.
+
 ## Mobile Checks
 
 TypeScript:
@@ -118,15 +120,17 @@ Expected response:
 2. Open StudyPilot in Expo Go.
 3. Open Settings and test the backend connection.
 4. Create a course.
-5. Add source material.
-6. Read the full source.
-7. Create review notes.
-8. Create flashcards.
-9. Create a practice quiz.
-10. Submit quiz answers with at least one miss.
-11. Confirm weak areas update.
-12. Add a deadline.
-13. Confirm the dashboard shows Continue Studying, weak areas, and deadlines.
+5. Create a section for a unit, chapter, midterm, or final.
+6. Add source material to that section.
+7. Open the source and read the full extracted text.
+8. Create Additional Explanation or Quick Review notes from Generate Study Tools.
+9. Create flashcards.
+10. Create a practice quiz.
+11. Submit quiz answers with at least one miss.
+12. Confirm weak areas update.
+13. Return to the section and create section-level notes or a section quiz from the combined source set.
+14. Add a deadline with a popup reminder.
+15. Confirm the dashboard shows Continue Studying, weak areas, and deadlines.
 
 Detailed checklist: `docs/demo/mobile_walkthrough.md`.
 
