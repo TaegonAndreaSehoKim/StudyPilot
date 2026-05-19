@@ -32,6 +32,7 @@ def create_schedule_item(course_id: int, payload: ScheduleItemCreate, db: Sessio
         event_type=payload.event_type,
         due_at=payload.due_at,
         notes=payload.notes,
+        reminder_minutes_before=payload.reminder_minutes_before,
     )
     db.add(item)
     db.commit()
@@ -83,6 +84,8 @@ def update_schedule_item(item_id: int, payload: ScheduleItemUpdate, db: Session 
         item.due_at = payload.due_at
     if "notes" in payload.model_fields_set:
         item.notes = payload.notes
+    if "reminder_minutes_before" in payload.model_fields_set:
+        item.reminder_minutes_before = payload.reminder_minutes_before
     if payload.is_completed is not None:
         item.is_completed = payload.is_completed
         item.completed_at = utc_now() if payload.is_completed else None

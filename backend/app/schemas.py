@@ -4,7 +4,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-SummaryType = Literal["concise", "detailed", "exam"]
+SummaryType = Literal["concise", "detailed", "exam", "explanation"]
+SummaryRequestType = Literal["concise", "detailed", "exam"]
 Difficulty = Literal["easy", "medium", "hard"]
 ScheduleEventType = Literal["assignment", "exam", "reading", "project", "other"]
 
@@ -19,11 +20,22 @@ class CourseUpdate(BaseModel):
     description: str | None = None
 
 
+class CourseSectionCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+
+
+class CourseSectionUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+
+
 class ScheduleItemCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     event_type: ScheduleEventType = "assignment"
     due_at: datetime
     notes: str | None = None
+    reminder_minutes_before: int | None = Field(default=None, ge=0, le=10080)
 
 
 class ScheduleItemUpdate(BaseModel):
@@ -31,6 +43,7 @@ class ScheduleItemUpdate(BaseModel):
     event_type: ScheduleEventType | None = None
     due_at: datetime | None = None
     notes: str | None = None
+    reminder_minutes_before: int | None = Field(default=None, ge=0, le=10080)
     is_completed: bool | None = None
 
 
@@ -41,6 +54,7 @@ class ScheduleItemOut(BaseModel):
     event_type: str
     due_at: datetime
     notes: str | None
+    reminder_minutes_before: int | None
     is_completed: bool
     completed_at: datetime | None
     created_at: datetime
@@ -63,9 +77,24 @@ class CourseOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CourseSectionOut(BaseModel):
+    id: int
+    course_id: int
+    title: str
+    description: str | None
+    document_count: int = 0
+    summary_count: int = 0
+    quiz_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class DocumentOut(BaseModel):
     id: int
     course_id: int
+    section_id: int | None
     filename: str
     file_type: str
     char_count: int
@@ -123,12 +152,17 @@ class SourceQuote(BaseModel):
 
 
 class SummaryCreate(BaseModel):
-    summary_type: SummaryType = "concise"
+    summary_type: SummaryRequestType = "concise"
+
+
+class ExplanationCreate(BaseModel):
+    focus: str | None = Field(default=None, max_length=500)
 
 
 class SummaryOut(BaseModel):
     id: int
-    document_id: int
+    document_id: int | None
+    section_id: int | None = None
     summary_type: str
     title: str
     overview: str
@@ -177,7 +211,8 @@ class QuizQuestionOut(BaseModel):
 
 class QuizOut(BaseModel):
     id: int
-    document_id: int
+    document_id: int | None
+    section_id: int | None = None
     title: str
     created_at: datetime
     questions: list[QuizQuestionOut]
@@ -216,7 +251,8 @@ class CourseQuizAttemptOut(BaseModel):
     id: int
     quiz_id: int
     quiz_title: str
-    document_id: int
+    document_id: int | None
+    section_id: int | None = None
     score: float
     total_questions: int
     correct_count: int
@@ -249,11 +285,13 @@ class DashboardOut(BaseModel):
 
 class CourseDashboardOut(BaseModel):
     course: CourseOut
+    section_count: int = 0
     document_count: int
     summary_count: int
     flashcard_count: int
     quiz_count: int
     recent_documents: list[DocumentOut]
+    recent_sections: list[CourseSectionOut] = []
     recent_quizzes: list[QuizOut]
     weak_topics: list[WeakTopicOut]
 

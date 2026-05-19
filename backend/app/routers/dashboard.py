@@ -3,8 +3,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Course, Document, Flashcard, Quiz, Summary, WeakTopic
+from app.models import Course, CourseSection, Document, Flashcard, Quiz, Summary, WeakTopic
 from app.routers.quizzes import _quiz_out
+from app.routers.sections import _section_out
 from app.routers.summaries import _summary_out
 from app.schemas import CourseDashboardOut, CourseOut, DashboardOut, DocumentOut, WeakTopicOut
 
@@ -62,6 +63,13 @@ def get_course_dashboard(course_id: int, db: Session = Depends(get_db)) -> Cours
         .limit(5)
         .all()
     )
+    recent_sections = (
+        db.query(CourseSection)
+        .filter(CourseSection.course_id == course_id)
+        .order_by(CourseSection.created_at.desc())
+        .limit(5)
+        .all()
+    )
     recent_quizzes = (
         db.query(Quiz)
         .join(Document, Quiz.document_id == Document.id)
@@ -81,11 +89,13 @@ def get_course_dashboard(course_id: int, db: Session = Depends(get_db)) -> Cours
 
     return CourseDashboardOut(
         course=CourseOut.model_validate(course),
+        section_count=db.query(func.count(CourseSection.id)).filter(CourseSection.course_id == course_id).scalar() or 0,
         document_count=db.query(func.count(Document.id)).filter(Document.course_id == course_id).scalar() or 0,
         summary_count=db.query(func.count(Summary.id)).filter(Summary.document_id.in_(document_ids)).scalar() or 0,
         flashcard_count=db.query(func.count(Flashcard.id)).filter(Flashcard.document_id.in_(document_ids)).scalar() or 0,
         quiz_count=db.query(func.count(Quiz.id)).filter(Quiz.document_id.in_(document_ids)).scalar() or 0,
         recent_documents=[DocumentOut.model_validate(document) for document in recent_documents],
+        recent_sections=[_section_out(db, section) for section in recent_sections],
         recent_quizzes=[_quiz_out(quiz) for quiz in recent_quizzes],
         weak_topics=[WeakTopicOut.model_validate(topic) for topic in weak_topics],
     )

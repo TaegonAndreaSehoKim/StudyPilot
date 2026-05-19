@@ -22,25 +22,34 @@ export function Button({ title, onPress, variant = 'primary', disabled = false }
         pressed && !disabled && styles.pressed,
       ]}
     >
-      <Text style={[styles.text, variant === 'secondary' && styles.secondaryText]}>{title}</Text>
+      <Text
+        numberOfLines={2}
+        style={[
+          styles.text,
+          variant === 'secondary' && styles.secondaryText,
+          disabled && styles.disabledText,
+        ]}
+      >
+        {title}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 44,
+    minHeight: 46,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
   },
   primary: {
     backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
   },
@@ -48,17 +57,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger,
   },
   pressed: {
-    opacity: 0.82,
+    opacity: 0.88,
+    transform: [{ translateY: 1 }],
   },
   disabled: {
-    opacity: 0.5,
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderWidth: 1,
   },
   text: {
     color: colors.surface,
     fontSize: 15,
     fontWeight: '700',
+    lineHeight: 19,
+    textAlign: 'center',
   },
   secondaryText: {
     color: colors.text,
+  },
+  disabledText: {
+    color: colors.textFaint,
   },
 });

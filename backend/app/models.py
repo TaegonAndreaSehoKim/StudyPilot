@@ -26,6 +26,10 @@ class Course(TimestampMixin, Base):
         back_populates="course",
         cascade="all, delete-orphan",
     )
+    sections: Mapped[list["CourseSection"]] = relationship(
+        back_populates="course",
+        cascade="all, delete-orphan",
+    )
     weak_topics: Mapped[list["WeakTopic"]] = relationship(
         back_populates="course",
         cascade="all, delete-orphan",
@@ -41,6 +45,7 @@ class Document(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    section_id: Mapped[int | None] = mapped_column(ForeignKey("course_sections.id"), nullable=True, index=True)
     filename: Mapped[str] = mapped_column(String(500), nullable=False)
     file_type: Mapped[str] = mapped_column(String(20), nullable=False)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
@@ -54,6 +59,7 @@ class Document(TimestampMixin, Base):
     ocr_status: Mapped[str] = mapped_column(String(40), nullable=False, default="not_required")
 
     course: Mapped["Course"] = relationship(back_populates="documents")
+    section: Mapped["CourseSection | None"] = relationship(back_populates="documents")
     summaries: Mapped[list["Summary"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     flashcards: Mapped[list["Flashcard"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     quizzes: Mapped[list["Quiz"]] = relationship(back_populates="document", cascade="all, delete-orphan")
@@ -89,11 +95,26 @@ class OcrJob(TimestampMixin, Base):
     document: Mapped["Document"] = relationship(back_populates="ocr_jobs")
 
 
+class CourseSection(TimestampMixin, Base):
+    __tablename__ = "course_sections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    course: Mapped["Course"] = relationship(back_populates="sections")
+    documents: Mapped[list["Document"]] = relationship(back_populates="section")
+    summaries: Mapped[list["Summary"]] = relationship(back_populates="section", cascade="all, delete-orphan")
+    quizzes: Mapped[list["Quiz"]] = relationship(back_populates="section", cascade="all, delete-orphan")
+
+
 class Summary(Base):
     __tablename__ = "summaries"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), nullable=False, index=True)
+    document_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id"), nullable=True, index=True)
+    section_id: Mapped[int | None] = mapped_column(ForeignKey("course_sections.id"), nullable=True, index=True)
     summary_type: Mapped[str] = mapped_column(String(40), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     overview: Mapped[str] = mapped_column(Text, nullable=False)
@@ -102,7 +123,8 @@ class Summary(Base):
     source_quotes_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
-    document: Mapped["Document"] = relationship(back_populates="summaries")
+    document: Mapped["Document | None"] = relationship(back_populates="summaries")
+    section: Mapped["CourseSection | None"] = relationship(back_populates="summaries")
 
 
 class Flashcard(Base):
@@ -124,11 +146,13 @@ class Quiz(Base):
     __tablename__ = "quizzes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), nullable=False, index=True)
+    document_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id"), nullable=True, index=True)
+    section_id: Mapped[int | None] = mapped_column(ForeignKey("course_sections.id"), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
-    document: Mapped["Document"] = relationship(back_populates="quizzes")
+    document: Mapped["Document | None"] = relationship(back_populates="quizzes")
+    section: Mapped["CourseSection | None"] = relationship(back_populates="quizzes")
     questions: Mapped[list["QuizQuestion"]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
     attempts: Mapped[list["QuizAttempt"]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
 
@@ -184,6 +208,7 @@ class ScheduleItem(TimestampMixin, Base):
     event_type: Mapped[str] = mapped_column(String(40), nullable=False, default="assignment")
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reminder_minutes_before: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

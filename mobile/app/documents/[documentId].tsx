@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { DocumentDetail, Flashcard, OcrJob, Quiz, Summary } from '@/api/types';
+import type { DocumentDetail, Flashcard, OcrJob, Quiz, StudyNoteType, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -16,7 +16,7 @@ import { StatusBanner } from '@/components/StatusBanner';
 import { SummaryView } from '@/components/SummaryView';
 import { colors } from '@/constants/colors';
 
-type SummaryType = 'concise' | 'detailed' | 'exam';
+type SummaryType = Exclude<StudyNoteType, 'explanation'>;
 type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 
 const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }[] = [
@@ -122,6 +122,25 @@ export default function DocumentDetailScreen() {
       router.push(`/summaries/${summary.id}` as Href);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create review notes');
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  async function generateExplanation() {
+    try {
+      setWorking('explanation');
+      setError(null);
+      setNotice(null);
+      const summary = await api.createExplanation(id);
+      setSummaries((current) => [summary, ...current]);
+      setNotice({
+        title: 'Additional explanation saved',
+        message: `${summary.title} is saved. Opening the full explanation now.`,
+      });
+      router.push(`/summaries/${summary.id}` as Href);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create additional explanation');
     } finally {
       setWorking(null);
     }
@@ -358,6 +377,17 @@ export default function DocumentDetailScreen() {
 
           <Section title="Create Review Notes">
             <ResponsiveGrid minItemWidth={280}>
+              <Card style={styles.explanationCard}>
+                <Text style={styles.optionTitle}>Additional Explanation</Text>
+                <Text style={styles.optionDescription}>
+                  Build a slower, richer teaching guide when the lecture is hard to understand.
+                </Text>
+                <Button
+                  title={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
+                  disabled={actionDisabled}
+                  onPress={generateExplanation}
+                />
+              </Card>
               {SUMMARY_OPTIONS.map((option) => (
                 <Card key={option.type}>
                   <Text style={styles.optionTitle}>{option.title}</Text>
@@ -513,6 +543,11 @@ function workingMessage(working: string, step: number): string {
       'Writing multiple-choice questions and distractors.',
       'Saving the practice quiz so you can review it later.',
     ],
+    explanation: [
+      'Reading the source for concepts that need more teaching context.',
+      'Expanding the lecture into slower explanations, intuition, and connections.',
+      'Saving the additional explanation to this source and course library.',
+    ],
     concise: [
       'Reading the source and identifying the main conceptual flow.',
       'Rewriting the key ideas as compact study notes.',
@@ -644,12 +679,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    gap: 4,
+    gap: 6,
   },
   title: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '900',
+    lineHeight: 32,
   },
   subtitle: {
     color: colors.textMuted,
@@ -681,9 +717,10 @@ const styles = StyleSheet.create({
   },
   tabletActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   startCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySurface,
     borderColor: colors.primary,
   },
   savedStrip: {
@@ -731,13 +768,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   qualityTrack: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     height: 10,
     overflow: 'hidden',
   },
   qualityFill: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: 8,
     height: '100%',
   },
@@ -749,6 +786,10 @@ const styles = StyleSheet.create({
   },
   qualityWarningCard: {
     backgroundColor: colors.warningSurface,
+  },
+  explanationCard: {
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primary,
   },
   ocrCard: {
     backgroundColor: colors.warningSurface,
@@ -766,7 +807,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   segmented: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
@@ -782,7 +823,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   activeSegment: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySurface,
   },
   segmentText: {
     color: colors.textMuted,
@@ -791,7 +832,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   activeSegmentText: {
-    color: colors.text,
+    color: colors.primary,
   },
   section: {
     gap: 10,

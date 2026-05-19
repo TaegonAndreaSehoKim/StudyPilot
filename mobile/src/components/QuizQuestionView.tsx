@@ -24,6 +24,7 @@ export function QuizQuestionView({
       <View style={styles.choices}>
         {question.choices.map((choice) => {
           const letter = choice.slice(0, 1);
+          const label = choice.replace(/^[A-Z][).:\-\s]+/, '').trim() || choice;
           const isSelected = selected === letter;
           const isCorrect = submitted && result.correct_answer === letter;
           const isMissedSelection = submitted && result.selected_answer === letter && !result.is_correct;
@@ -39,6 +40,25 @@ export function QuizQuestionView({
                 isMissedSelection && styles.incorrectChoice,
               ]}
             >
+              <View
+                style={[
+                  styles.choiceLetter,
+                  isSelected && styles.selectedLetter,
+                  isCorrect && styles.correctLetter,
+                  isMissedSelection && styles.incorrectLetter,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.choiceLetterText,
+                    isSelected && styles.selectedText,
+                    isCorrect && styles.correctChoiceText,
+                    isMissedSelection && styles.incorrectChoiceText,
+                  ]}
+                >
+                  {letter}
+                </Text>
+              </View>
               <Text
                 style={[
                   styles.choiceText,
@@ -47,7 +67,7 @@ export function QuizQuestionView({
                   isMissedSelection && styles.incorrectChoiceText,
                 ]}
               >
-                {choice}
+                {label}
               </Text>
             </Pressable>
           );
@@ -61,7 +81,8 @@ const styles = StyleSheet.create({
   topic: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+    textTransform: 'capitalize',
   },
   question: {
     color: colors.text,
@@ -73,13 +94,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   choice: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 52,
     padding: 12,
   },
   selected: {
-    backgroundColor: colors.infoSurface,
+    backgroundColor: colors.primarySurface,
     borderColor: colors.primary,
   },
   correctChoice: {
@@ -91,8 +117,31 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   choiceText: {
+    flex: 1,
     color: colors.text,
     lineHeight: 20,
+  },
+  choiceLetter: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 8,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  choiceLetterText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  selectedLetter: {
+    backgroundColor: colors.surface,
+  },
+  correctLetter: {
+    backgroundColor: colors.surface,
+  },
+  incorrectLetter: {
+    backgroundColor: colors.surface,
   },
   selectedText: {
     color: colors.primary,

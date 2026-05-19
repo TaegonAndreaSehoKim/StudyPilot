@@ -17,7 +17,34 @@ Fields:
 Relationships:
 
 - has many documents
+- has many sections
 - has many weak topics
+- has many schedule items
+
+## CourseSection
+
+Represents a unit, chapter, exam scope, or other study grouping inside a course.
+
+Fields:
+
+- `id`
+- `course_id`
+- `title`
+- `description`
+- `created_at`
+- `updated_at`
+
+Relationships:
+
+- belongs to one course
+- has many documents
+- has many summaries
+- has many quizzes
+
+Notes:
+
+- section-level summaries and quizzes are generated from all extracted documents assigned to that section
+- deleting a section detaches its documents back to the course library and removes section-level generated outputs
 
 ## Document
 
@@ -27,6 +54,7 @@ Fields:
 
 - `id`
 - `course_id`
+- `section_id`
 - `filename`
 - `file_type`
 - `storage_path`
@@ -89,12 +117,13 @@ Notes:
 
 ## Summary
 
-Represents generated study notes for one document.
+Represents generated study notes for one document or one section.
 
 Fields:
 
 - `id`
 - `document_id`
+- `section_id`
 - `summary_type`
 - `title`
 - `overview`
@@ -108,6 +137,7 @@ Summary types:
 - `concise`: core concepts and broad content flow
 - `detailed`: general conceptual explanation, principles, and relationships over examples
 - `exam`: likely test points, similar-concept comparisons, and memorization anchors
+- `explanation`: expanded additional explanation for learners who need slower teaching, intuition, examples, and source-consistent background
 
 API responses deserialize JSON fields into:
 
@@ -138,12 +168,13 @@ Difficulty values:
 
 ## Quiz
 
-Represents a generated quiz for one document.
+Represents a generated quiz for one document or one section.
 
 Fields:
 
 - `id`
 - `document_id`
+- `section_id`
 - `title`
 - `created_at`
 
@@ -212,11 +243,43 @@ Update behavior:
 - repeated missed topics accumulate
 - dashboard endpoints sort by miss count and most recent miss time
 
+## ScheduleItem
+
+Represents one course deadline or milestone.
+
+Fields:
+
+- `id`
+- `course_id`
+- `title`
+- `event_type`
+- `due_at`
+- `notes`
+- `reminder_minutes_before`
+- `is_completed`
+- `completed_at`
+- `created_at`
+- `updated_at`
+
+Event type values:
+
+- `assignment`
+- `exam`
+- `reading`
+- `project`
+- `other`
+
+Notes:
+
+- `reminder_minutes_before` is nullable. `null` means no reminder, `0` means at the due time, and positive values are minute offsets before the deadline.
+- The backend stores the reminder preference. The mobile app schedules and cancels device-local popup notifications because notification identifiers are device-specific.
+
 ## API Response Groups
 
 Course responses:
 
 - `CourseOut`
+- `CourseSectionOut`
 - `CourseDetailOut`
 
 Document responses:

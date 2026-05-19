@@ -35,6 +35,7 @@ def is_ai_cost_endpoint(method: str, path: str) -> bool:
         return False
     return (
         path.endswith("/summaries")
+        or path.endswith("/explanations")
         or path.endswith("/flashcards")
         or path.endswith("/quizzes")
         or path.endswith("/review-quiz")

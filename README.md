@@ -9,20 +9,21 @@ The project works without an OpenAI API key. When `OPENAI_API_KEY` is missing, t
 ## What It Does
 
 ```text
-course -> source material -> review notes -> flashcards -> practice quiz -> weak areas -> deadlines
+course -> section/exam scope -> source materials -> review notes -> practice quiz -> weak areas -> deadlines
 ```
 
 Core capabilities:
 
 - Create courses and organize source materials.
+- Create study sections for units, chapters, midterms, or finals and group multiple source materials inside each section.
 - Upload `.txt`, `.md`, text-based `.pdf`, and OCR-required scanned PDFs.
-- Create source-grounded review notes, flashcards, and quizzes.
+- Create source-grounded review notes, expanded additional explanations, flashcards, and quizzes from one source, or create section-level review notes, explanations, and quizzes from multiple sources.
 - Save and share review notes as PDFs from the mobile app.
 - Take quizzes and track missed topics as weak areas.
 - Create weak-area practice quizzes.
 - Run a course-level Study Session that combines deadlines, review notes, practice, weak areas, and source health.
 - See source reading quality before generation so partial PDFs and OCR needs are clear.
-- Track assignments, exams, readings, projects, and deadlines per course.
+- Track assignments, exams, readings, projects, and deadlines per course with optional device popup reminders.
 - See Continue Studying cards, recent work, deadlines, and weak areas on the dashboard.
 - Run locally with fake AI, or use OpenAI from the backend only.
 
@@ -91,16 +92,15 @@ Full setup guide: [Local setup](docs/setup/local_setup.md).
 
 1. Open StudyPilot.
 2. Create a course, for example `OMSCS AI`.
-3. Add source material such as `docs/demo/omscs_ai_sample_notes.md`.
-4. Read the full source text.
-5. Create Quick Review notes.
-6. Create flashcards.
-7. Create a practice quiz.
-8. Submit answers with at least one miss.
-9. Review weak areas.
-10. Start a course Study Session.
-11. Add an assignment or exam deadline.
-12. Return to the dashboard and continue studying from the next recommended action.
+3. Create a section such as `Midterm 1`.
+4. Add one or more source materials to that section.
+5. Create section-level review notes.
+6. Create a section-level practice quiz.
+7. Submit answers with at least one miss.
+8. Review weak areas.
+9. Start a course Study Session.
+10. Add an assignment or exam deadline with a popup reminder.
+11. Return to the dashboard and continue studying from the next recommended action.
 
 Demo docs:
 
@@ -137,12 +137,12 @@ The current deployment MVP runs the backend on one EC2 instance with Docker Comp
 
 Stable MVP foundation:
 
-- backend startup, course CRUD, upload, extraction, OCR jobs, generation, quiz attempts, weak areas, deadlines, dashboards
+- backend startup, course CRUD, section CRUD, upload, extraction, OCR jobs, generation, quiz attempts, weak areas, deadlines, dashboards
 - deterministic fake AI and fake OCR for local demos/tests
 - OpenAI provider path from backend only
 - EC2 backend deployment path tested
 - Expo Go preview workflow tested
-- learner-focused mobile UX for dashboard, course, source, Study Session, review-note, and practice screens
+- learner-focused mobile UX for dashboard, course, section, source, Study Session, review-note, and practice screens
 
 Still intentionally out of scope:
 
@@ -182,6 +182,6 @@ DEVELOPMENT_PLAN.md      original build plan and milestone notes
 
 StudyPilot - AI-Powered Mobile Study Assistant | React Native, Expo, FastAPI, Python, SQLite, LLM APIs
 
-- Built a mobile study assistant that imports course materials and generates structured review notes, flashcards, quizzes, and weak-area reviews through a FastAPI-based AI pipeline.
+- Built a mobile study assistant that imports course materials, groups sources by unit/exam section, and generates structured review notes, quizzes, flashcards, and weak-area reviews through a FastAPI-based AI pipeline.
 - Implemented document upload, PDF/text extraction, OCR handoff, chunking, prompt-based generation, quiz attempts, deadline tracking, and mobile dashboard views for personalized study workflows.
 - Added deterministic fake-AI mode, backend-only LLM access, EC2 deployment notes, EAS preview updates, and pytest/mobile smoke checks to support reliable local and device demos.

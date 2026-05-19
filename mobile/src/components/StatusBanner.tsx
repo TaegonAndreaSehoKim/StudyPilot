@@ -34,19 +34,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: 6,
-    padding: 14,
+    padding: 16,
   },
   info: {
     backgroundColor: colors.infoSurface,
-    borderColor: colors.border,
+    borderColor: colors.primarySurface,
   },
   success: {
     backgroundColor: colors.successSurface,
-    borderColor: colors.border,
+    borderColor: '#BDE7D2',
   },
   warning: {
     backgroundColor: colors.warningSurface,
-    borderColor: colors.accent,
+    borderColor: '#F4C15D',
   },
   title: {
     fontSize: 15,

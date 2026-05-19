@@ -37,11 +37,16 @@ class MalformedAIProvider(AIProvider):
 class CapturingFakeAIProvider(FakeAIProvider):
     def __init__(self) -> None:
         self.last_summary_input = ""
+        self.last_quiz_input = ""
         super().__init__()
 
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
         self.last_summary_input = document_text
         return super().generate_summary(document_text, summary_type)
+
+    def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
+        self.last_quiz_input = document_text
+        return super().generate_quiz(document_text, question_count, difficulty)
 
 
 def test_study_generator_normalizes_malformed_summary() -> None:
@@ -95,6 +100,60 @@ def test_summary_uses_direct_source_context_for_medium_length_documents() -> Non
     assert "convex feasible region" in provider.last_summary_input
     assert "unbounded" in provider.last_summary_input.lower()
     assert "convex" in " ".join(summary["key_points"]).lower()
+
+
+def test_summary_generation_includes_course_context_without_using_it_as_source_quote() -> None:
+    provider = CapturingFakeAIProvider()
+    generator = StudyGenerator(provider)
+
+    summary = generator.generate_summary(
+        _source_text(),
+        "detailed",
+        course_title="OMSCS Artificial Intelligence",
+        course_description="Graduate course covering search, planning, and game-playing agents.",
+    )
+
+    assert "Course title: OMSCS Artificial Intelligence" in provider.last_summary_input
+    assert "Course description: Graduate course covering search" in provider.last_summary_input
+    assert "Source Material:" in provider.last_summary_input
+    assert "Artificial Intelligence studies rational agents" in provider.last_summary_input
+    assert all("OMSCS" not in quote["quote"] for quote in summary["source_quotes"])
+
+
+def test_quiz_generation_includes_course_context() -> None:
+    provider = CapturingFakeAIProvider()
+    generator = StudyGenerator(provider)
+
+    quiz = generator.generate_quiz(
+        _source_text(),
+        2,
+        "mixed",
+        course_title="OMSCS Artificial Intelligence",
+        course_description="Graduate course covering search, planning, and game-playing agents.",
+    )
+
+    assert "Course title: OMSCS Artificial Intelligence" in provider.last_quiz_input
+    assert "Course description: Graduate course covering search" in provider.last_quiz_input
+    assert "Source Material:" in provider.last_quiz_input
+    assert len(quiz["questions"]) == 2
+
+
+def test_generation_includes_section_context() -> None:
+    provider = CapturingFakeAIProvider()
+    generator = StudyGenerator(provider)
+
+    generator.generate_summary(
+        _source_text(),
+        "exam",
+        course_title="OMSCS Artificial Intelligence",
+        section_title="Midterm 1",
+        section_description="Covers search, heuristics, and planning foundations.",
+    )
+
+    assert "Course title: OMSCS Artificial Intelligence" in provider.last_summary_input
+    assert "Section title: Midterm 1" in provider.last_summary_input
+    assert "Section description: Covers search" in provider.last_summary_input
+    assert "Source Material:" in provider.last_summary_input
 
 
 def _source_text() -> str:

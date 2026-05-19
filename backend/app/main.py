@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 
 from app.config import get_settings
 from app.database import create_db_and_tables
-from app.routers import courses, dashboard, documents, flashcards, health, quizzes, schedule, summaries
+from app.routers import courses, dashboard, documents, flashcards, health, quizzes, schedule, sections, summaries
 from app.services.rate_limiter import InMemoryRateLimiter, is_ai_cost_endpoint
 
 
@@ -79,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(flashcards.router)
     app.include_router(quizzes.router)
     app.include_router(schedule.router)
+    app.include_router(sections.router)
     app.include_router(dashboard.router)
     return app
 

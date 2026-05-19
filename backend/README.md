@@ -71,6 +71,8 @@ Rate limiting is enabled by default. `POST`, `PATCH`, and `DELETE` requests use 
 
 PDF extraction first uses embedded text through `pypdf`. If a PDF has no reliable embedded text or too few readable pages, it is saved with `status=needs_ocr` and `ocr_status=available`. API responses include `extraction_quality` and `extraction_coverage` so clients can explain partial extraction clearly. `POST /documents/{document_id}/ocr` starts a backend OCR job and returns a job record; use `GET /ocr-jobs/{job_id}` to poll completion. Use `OCR_PROVIDER=fake` for local demos/tests, `OCR_PROVIDER=textract` for Amazon Textract, or `OCR_PROVIDER=disabled` to turn OCR off.
 
+Schedule items support optional `reminder_minutes_before`. The backend stores the preference, while the mobile app schedules the actual device-local popup notification.
+
 ## Docker
 
 From the repository root:

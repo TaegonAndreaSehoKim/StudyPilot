@@ -14,6 +14,8 @@ export function summaryToHtml(summary: Summary): string {
     quote: cleanDisplayText(item.quote, 'No quote available.'),
     reason: cleanDisplayText(item.reason, 'Representative source excerpt.'),
   }));
+  const pointHeading = summary.summary_type === 'explanation' ? 'Additional Explanation' : 'What to Remember';
+  const conceptHeading = summary.summary_type === 'explanation' ? 'Concepts Explained' : 'Key Concepts';
 
   return `<!doctype html>
 <html>
@@ -34,10 +36,14 @@ export function summaryToHtml(summary: Summary): string {
       h2 {
         border-bottom: 1px solid #D9C3B0;
         color: #A64029;
-        font-size: 16px;
+        font-size: 17px;
         margin: 28px 0 10px;
         padding-bottom: 6px;
-        text-transform: uppercase;
+      }
+      h3 {
+        color: #261714;
+        font-size: 15px;
+        margin: 14px 0 4px;
       }
       .meta {
         color: #8C7161;
@@ -45,8 +51,11 @@ export function summaryToHtml(summary: Summary): string {
         font-weight: 700;
         margin-bottom: 22px;
       }
-      li {
-        margin: 7px 0;
+      p {
+        margin: 8px 0;
+      }
+      .point {
+        margin: 12px 0;
       }
       .quote {
         background: #F6EEE8;
@@ -63,13 +72,13 @@ export function summaryToHtml(summary: Summary): string {
   </head>
   <body>
     <h1>${escapeHtml(title)}</h1>
-    <div class="meta">StudyPilot - ${escapeHtml(type)} Review Notes</div>
+    <div class="meta">StudyPilot - ${escapeHtml(type)} Notes</div>
     <h2>Overview</h2>
     <p>${escapeHtml(overview)}</p>
-    <h2>What To Remember</h2>
-    ${htmlList(keyPoints)}
-    <h2>Key Concepts</h2>
-    ${htmlList(keyTerms.map((item) => `<strong>${escapeHtml(item.term)}</strong>: ${escapeHtml(item.definition)}`), false)}
+    <h2>${escapeHtml(pointHeading)}</h2>
+    ${keyPoints.length ? keyPoints.map((point, index) => `<div class="point"><h3>${index + 1}. Key idea</h3><p>${escapeHtml(point)}</p></div>`).join('') : '<p>None</p>'}
+    <h2>${escapeHtml(conceptHeading)}</h2>
+    ${keyTerms.length ? keyTerms.map((item) => `<div class="point"><h3>${escapeHtml(item.term)}</h3><p>${escapeHtml(item.definition)}</p></div>`).join('') : '<p>None</p>'}
     <h2>Source Evidence</h2>
     ${sourceQuotes.length ? sourceQuotes.map((item) => `
       <div class="quote">
@@ -82,18 +91,21 @@ export function summaryToHtml(summary: Summary): string {
 }
 
 export function summaryToMarkdown(summary: Summary): string {
+  const type = summaryTypeLabel(summary.summary_type);
+  const pointHeading = summary.summary_type === 'explanation' ? 'Additional Explanation' : 'Key Points';
+  const conceptHeading = summary.summary_type === 'explanation' ? 'Concepts Explained' : 'Key Terms';
   const lines = [
     `# ${cleanDisplayText(summary.title, 'Study Summary')}`,
     '',
-    `Type: ${cleanDisplayText(summary.summary_type, 'summary')}`,
+    `Type: ${type}`,
     '',
     '## Overview',
     cleanDisplayText(summary.overview, 'No overview available.'),
     '',
-    '## Key Points',
+    `## ${pointHeading}`,
     ...listLines(summary.key_points.map((point) => cleanDisplayText(point)).filter(Boolean)),
     '',
-    '## Key Terms',
+    `## ${conceptHeading}`,
     ...listLines(
       summary.key_terms.map((item) => {
         const term = cleanDisplayText(item.term, 'Term');
@@ -144,6 +156,9 @@ function summaryTypeLabel(value: string): string {
   }
   if (value === 'exam') {
     return 'Exam Prep';
+  }
+  if (value === 'explanation') {
+    return 'Additional Explanation';
   }
   return cleanDisplayText(value, 'Review');
 }

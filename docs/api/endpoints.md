@@ -32,6 +32,20 @@ The mobile app stores only the backend URL and optional backend access token. It
 - `DELETE /courses/{course_id}`
 - `GET /courses/{course_id}/dashboard`
 
+### Sections
+
+- `POST /courses/{course_id}/sections`
+- `GET /courses/{course_id}/sections`
+- `GET /sections/{section_id}`
+- `PATCH /sections/{section_id}`
+- `DELETE /sections/{section_id}`
+- `GET /sections/{section_id}/documents`
+- `POST /sections/{section_id}/summaries`
+- `POST /sections/{section_id}/explanations`
+- `GET /sections/{section_id}/summaries`
+- `POST /sections/{section_id}/quizzes`
+- `GET /sections/{section_id}/quizzes`
+
 ### Source Materials
 
 - `POST /documents/upload`
@@ -49,6 +63,7 @@ The mobile app stores only the backend URL and optional backend access token. It
 ### Review Notes
 
 - `POST /documents/{document_id}/summaries`
+- `POST /documents/{document_id}/explanations`
 - `GET /documents/{document_id}/summaries`
 - `GET /summaries/{summary_id}`
 - `DELETE /summaries/{summary_id}`
@@ -81,6 +96,8 @@ The mobile app stores only the backend URL and optional backend access token. It
 - `PATCH /schedule/{item_id}`
 - `DELETE /schedule/{item_id}`
 
+Schedule item create/update payloads can include `reminder_minutes_before`. Use `null` for no alert, `0` for due-time alert, or a positive minute offset such as `60` for one hour before. The backend stores the preference; the mobile app schedules the actual device-local popup notification.
+
 ### Weak Areas And Dashboard
 
 - `GET /courses/{course_id}/weak-topics`
@@ -105,6 +122,7 @@ Use multipart form data:
 ```text
 POST /documents/upload
 course_id=<course id>
+section_id=<optional section id>
 file=<notes.txt | notes.md | notes.pdf>
 ```
 
@@ -130,6 +148,39 @@ Supported summary types:
 - `detailed`: conceptual explanation and principles
 - `exam`: likely test points, similar-concept comparisons, memorization anchors
 
+### Create Additional Explanation
+
+```json
+POST /documents/1/explanations
+{
+  "focus": "optional concept or part that needs more explanation"
+}
+```
+
+Additional explanations are saved as review notes with `summary_type` set to `explanation`. They ask the AI to teach the source material more slowly and richly instead of compressing it into a short summary.
+
+### Create Section Review Notes
+
+```json
+POST /sections/1/summaries
+{
+  "summary_type": "exam"
+}
+```
+
+The backend combines extracted text from every readable document assigned to the section.
+
+### Create Section Additional Explanation
+
+```json
+POST /sections/1/explanations
+{
+  "focus": "optional section topic that needs more explanation"
+}
+```
+
+The backend combines extracted text from every readable document assigned to the section and saves the result as an additional explanation.
+
 ### Create Flashcards
 
 ```json
@@ -145,6 +196,16 @@ POST /documents/1/flashcards
 POST /documents/1/quizzes
 {
   "question_count": 5,
+  "difficulty": "mixed"
+}
+```
+
+### Create A Section Practice Quiz
+
+```json
+POST /sections/1/quizzes
+{
+  "question_count": 10,
   "difficulty": "mixed"
 }
 ```
@@ -176,3 +237,16 @@ POST /quizzes/1/attempts
 ```
 
 The backend scores the attempt, stores the result, and updates weak areas for missed questions.
+
+### Create A Deadline With A Reminder
+
+```json
+POST /courses/1/schedule
+{
+  "title": "Project 1 due",
+  "event_type": "assignment",
+  "due_at": "2026-05-31T23:59:00Z",
+  "notes": "Submit before midnight.",
+  "reminder_minutes_before": 60
+}
+```

@@ -13,10 +13,12 @@ export function EmptyState({ title, message }: { title: string; message: string 
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 8,
+    gap: 7,
     padding: 18,
-    gap: 6,
   },
   title: {
     color: colors.text,

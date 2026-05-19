@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_ai_provider
 from app.models import Course, Document, Summary
-from app.schemas import SummaryCreate, SummaryOut
+from app.schemas import ExplanationCreate, SummaryCreate, SummaryOut
 from app.services.study_generator import StudyGenerator
 
 router = APIRouter(tags=["summaries"])
@@ -16,6 +16,7 @@ def _summary_out(summary: Summary) -> SummaryOut:
     return SummaryOut(
         id=summary.id,
         document_id=summary.document_id,
+        section_id=summary.section_id,
         summary_type=summary.summary_type,
         title=summary.title,
         overview=summary.overview,
@@ -42,14 +43,17 @@ def _summary_or_404(db: Session, summary_id: int) -> Summary:
     return summary
 
 
-@router.post("/documents/{document_id}/summaries", response_model=SummaryOut, status_code=status.HTTP_201_CREATED)
-def create_summary(document_id: int, payload: SummaryCreate, db: Session = Depends(get_db)) -> SummaryOut:
-    document = _document_ready(db, document_id)
-    generator = StudyGenerator(get_ai_provider())
-    result = generator.generate_summary(document.extracted_text, payload.summary_type)
+def _save_summary(
+    db: Session,
+    document_id: int | None,
+    result: dict,
+    summary_type: str,
+    section_id: int | None = None,
+) -> SummaryOut:
     summary = Summary(
         document_id=document_id,
-        summary_type=payload.summary_type,
+        section_id=section_id,
+        summary_type=summary_type,
         title=str(result.get("title") or "Study Notes"),
         overview=str(result.get("overview") or ""),
         key_points_json=json.dumps(result.get("key_points") or []),
@@ -60,6 +64,40 @@ def create_summary(document_id: int, payload: SummaryCreate, db: Session = Depen
     db.commit()
     db.refresh(summary)
     return _summary_out(summary)
+
+
+@router.post("/documents/{document_id}/summaries", response_model=SummaryOut, status_code=status.HTTP_201_CREATED)
+def create_summary(document_id: int, payload: SummaryCreate, db: Session = Depends(get_db)) -> SummaryOut:
+    document = _document_ready(db, document_id)
+    generator = StudyGenerator(get_ai_provider())
+    result = generator.generate_summary(
+        document.extracted_text,
+        payload.summary_type,
+        course_title=document.course.title if document.course else None,
+        course_description=document.course.description if document.course else None,
+    )
+    return _save_summary(db, document_id, result, payload.summary_type)
+
+
+@router.post("/documents/{document_id}/explanations", response_model=SummaryOut, status_code=status.HTTP_201_CREATED)
+def create_explanation(document_id: int, payload: ExplanationCreate | None = None, db: Session = Depends(get_db)) -> SummaryOut:
+    document = _document_ready(db, document_id)
+    focus = payload.focus if payload else None
+    learner_request = (
+        "The learner is struggling to understand this lecture. Create an expanded additional explanation that teaches "
+        "the concepts more slowly and richly than a summary."
+    )
+    if focus:
+        learner_request += f" Pay special attention to: {focus}"
+    generator = StudyGenerator(get_ai_provider())
+    result = generator.generate_summary(
+        document.extracted_text,
+        "explanation",
+        course_title=document.course.title if document.course else None,
+        course_description=document.course.description if document.course else None,
+        learner_request=learner_request,
+    )
+    return _save_summary(db, document_id, result, "explanation")
 
 
 @router.get("/documents/{document_id}/summaries", response_model=list[SummaryOut])

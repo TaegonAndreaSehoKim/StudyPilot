@@ -39,6 +39,7 @@ def _quiz_out(quiz: Quiz) -> QuizOut:
     return QuizOut(
         id=quiz.id,
         document_id=quiz.document_id,
+        section_id=quiz.section_id,
         title=quiz.title,
         created_at=quiz.created_at,
         questions=questions,
@@ -64,6 +65,7 @@ def _course_attempt_out(attempt: QuizAttempt) -> CourseQuizAttemptOut:
         quiz_id=attempt.quiz_id,
         quiz_title=attempt.quiz.title,
         document_id=attempt.quiz.document_id,
+        section_id=attempt.quiz.section_id,
         score=attempt.score,
         total_questions=attempt.total_questions,
         correct_count=attempt.correct_count,
@@ -72,8 +74,8 @@ def _course_attempt_out(attempt: QuizAttempt) -> CourseQuizAttemptOut:
     )
 
 
-def _save_quiz(db: Session, document_id: int, result: dict) -> QuizOut:
-    quiz = Quiz(document_id=document_id, title=str(result.get("title") or "Study Quiz"))
+def _save_quiz(db: Session, document_id: int | None, result: dict, section_id: int | None = None) -> QuizOut:
+    quiz = Quiz(document_id=document_id, section_id=section_id, title=str(result.get("title") or "Study Quiz"))
     db.add(quiz)
     db.flush()
 
@@ -99,13 +101,20 @@ def _save_quiz(db: Session, document_id: int, result: dict) -> QuizOut:
 def create_quiz(document_id: int, payload: QuizCreate, db: Session = Depends(get_db)) -> QuizOut:
     document = _document_ready(db, document_id)
     generator = StudyGenerator(get_ai_provider())
-    result = generator.generate_quiz(document.extracted_text, payload.question_count, payload.difficulty)
+    result = generator.generate_quiz(
+        document.extracted_text,
+        payload.question_count,
+        payload.difficulty,
+        course_title=document.course.title if document.course else None,
+        course_description=document.course.description if document.course else None,
+    )
     return _save_quiz(db, document_id, result)
 
 
 @router.post("/courses/{course_id}/review-quiz", response_model=QuizOut, status_code=status.HTTP_201_CREATED)
 def create_weak_topic_review_quiz(course_id: int, payload: ReviewQuizCreate, db: Session = Depends(get_db)) -> QuizOut:
-    if db.get(Course, course_id) is None:
+    course = db.get(Course, course_id)
+    if course is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
 
     documents = (
@@ -132,7 +141,14 @@ def create_weak_topic_review_quiz(course_id: int, payload: ReviewQuizCreate, db:
 
     combined_text = "\n\n".join(f"# {document.filename}\n\n{document.extracted_text}" for document in documents)
     generator = StudyGenerator(get_ai_provider())
-    result = generator.generate_review_quiz(combined_text, topics[:5], payload.question_count, payload.difficulty)
+    result = generator.generate_review_quiz(
+        combined_text,
+        topics[:5],
+        payload.question_count,
+        payload.difficulty,
+        course_title=course.title,
+        course_description=course.description,
+    )
     return _save_quiz(db, documents[0].id, result)
 
 
@@ -239,9 +255,11 @@ def submit_attempt(quiz_id: int, payload: QuizAttemptCreate, db: Session = Depen
     )
     db.add(attempt)
 
-    document = db.get(Document, quiz.document_id)
+    document = db.get(Document, quiz.document_id) if quiz.document_id is not None else None
     if document is not None:
         update_weak_topics(db, document.course_id, missed_topics)
+    elif quiz.section is not None:
+        update_weak_topics(db, quiz.section.course_id, missed_topics)
 
     db.commit()
     db.refresh(attempt)

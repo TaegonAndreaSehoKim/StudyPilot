@@ -15,9 +15,12 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     gap: 10,
+    justifyContent: 'center',
+    minHeight: 180,
     padding: 24,
   },
   text: {
     color: colors.textMuted,
+    fontWeight: '700',
   },
 });

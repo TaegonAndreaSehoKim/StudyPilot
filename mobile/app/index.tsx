@@ -55,6 +55,12 @@ export default function DashboardScreen() {
         <Text style={styles.subtitle}>Pick up where your studying needs attention.</Text>
       </View>
 
+      {!dashboard ? (
+        <View style={[styles.actions, isTablet && styles.tabletActions]}>
+          <Button title="Settings" variant="secondary" onPress={() => router.push('/settings')} />
+        </View>
+      ) : null}
+
       {loading ? <LoadingState message="Loading your study dashboard" /> : null}
 
       {dashboard ? (
@@ -347,6 +353,9 @@ function summaryTypeLabel(value: string): string {
   if (value === 'exam') {
     return 'Exam';
   }
+  if (value === 'explanation') {
+    return 'Additional Explanation';
+  }
   return value;
 }
 
@@ -376,22 +385,26 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    gap: 4,
+    gap: 6,
+    paddingTop: 2,
   },
   title: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '900',
+    lineHeight: 36,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 15,
+    lineHeight: 21,
   },
   actions: {
     gap: 10,
   },
   tabletActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   grid: {
     flexDirection: 'row',
@@ -403,6 +416,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
+    flexGrow: 1,
     minWidth: '47%',
     padding: 14,
   },
@@ -424,7 +438,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   todayCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySurface,
     borderColor: colors.primary,
   },
   eyebrow: {
@@ -444,7 +458,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   focusCard: {
-    backgroundColor: colors.infoSurface,
+    backgroundColor: colors.surface,
+    borderColor: colors.primarySurface,
   },
   focusEyebrow: {
     color: colors.primary,
@@ -480,9 +495,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   itemBadge: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.accentSurface,
     borderRadius: 8,
-    color: colors.text,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '800',
     overflow: 'hidden',

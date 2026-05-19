@@ -19,22 +19,24 @@ FastAPI backend
 ## Product Flow
 
 1. A user creates a course.
-2. The user uploads course material such as `.txt`, `.md`, text-based `.pdf`, or scanned PDFs.
-3. The backend saves the file and extracts text.
-4. If a PDF has too little embedded text, the backend marks it `needs_ocr`; the user can run OCR before generation.
-5. The backend prepares section-aware study context from the extracted text.
-6. The user requests generated study material:
+2. The user can create study sections for units, chapters, midterms, or finals.
+3. The user uploads course material such as `.txt`, `.md`, text-based `.pdf`, or scanned PDFs, either into the course library or into a section.
+4. The backend saves the file and extracts text.
+5. If a PDF has too little embedded text, the backend marks it `needs_ocr`; the user can run OCR before generation.
+6. The backend prepares section-aware study context from extracted text and attaches course title/description plus section title/description as generation context when available.
+7. The user requests generated study material:
    - concise summary
+   - expanded additional explanation
    - exam-focused summary
    - flashcards
    - quiz
-7. The backend calls the configured AI provider.
-8. Generated materials are persisted in SQLite.
-9. The user takes a quiz.
-10. The backend scores the attempt and updates weak topics.
-11. The user can generate weak-topic review quizzes from missed topics.
-12. The mobile app can guide a course-level Study Session using deadlines, recent notes, practice, weak topics, and source health.
-13. Dashboard endpoints surface counts, recent activity, generated materials, schedules, and weak topics.
+8. The backend calls the configured AI provider.
+9. Generated materials are persisted in SQLite.
+10. The user takes a quiz.
+11. The backend scores the attempt and updates weak topics.
+12. The user can generate weak-topic review quizzes from missed topics.
+13. The mobile app can guide a course-level Study Session using deadlines, recent notes, practice, weak topics, and source health.
+14. Dashboard endpoints surface counts, recent activity, generated materials, schedules, and weak topics.
 
 ## Backend
 
@@ -48,7 +50,7 @@ Main responsibilities:
 - save uploaded files
 - extract embedded document text and identify OCR-required PDFs
 - run optional OCR through fake local OCR or Amazon Textract
-- prepare section-aware study context
+- prepare section-aware study context and course/section-level generation context
 - select fake or real AI provider
 - persist generated summaries, flashcards, quizzes, and attempts
 - update weak-topic counters
@@ -69,7 +71,7 @@ The mobile app lives under `mobile/`.
 
 Main responsibilities:
 
-- route between dashboard, courses, documents, quizzes, and settings
+- route between dashboard, courses, sections, documents, quizzes, and settings
 - store editable API base URL in AsyncStorage
 - call the FastAPI backend through `fetch`
 - pick local documents through `expo-document-picker`
@@ -81,7 +83,8 @@ Important files:
 
 - `app/_layout.tsx`: Expo Router stack
 - `app/index.tsx`: dashboard
-- `app/courses/`: course list, creation, detail, upload
+- `app/courses/`: course list, creation, detail, section creation, upload
+- `app/sections/[sectionId].tsx`: section scope, source grouping, and section-level generation
 - `app/documents/[documentId].tsx`: document preview and generated materials
 - `app/study/course/[courseId].tsx`: course-level Study Session
 - `app/quiz/[quizId].tsx`: quiz taking and result review
@@ -115,6 +118,8 @@ OPENAI_API_KEY present and USE_FAKE_AI=false
 
 `FakeAIProvider` is part of the product, not just a test stub. It keeps local demos free and deterministic. Quality eval tests assert that generated topics, explanations, source quotes, and insufficient-source behavior stay useful for demos.
 
+For summaries, additional explanations, document quizzes, section summaries, section explanations, section quizzes, and weak-topic review quizzes, the backend passes course title/description and, when relevant, section title/description as separate generation context. The AI can use that context for scope, terminology, and emphasis. Additional explanations may add source-consistent background, intuition, examples, and connections when needed to teach difficult material more clearly, but generated source quotes and correct quiz answers must still be grounded in uploaded source material.
+
 ## OCR Provider Boundary
 
 OCR is backend-only. The mobile app can request OCR through the backend but never receives AWS credentials.
@@ -143,6 +148,7 @@ SQLite is used for local MVP persistence.
 Stored records include:
 
 - courses
+- course sections
 - uploaded documents
 - summaries
 - flashcards

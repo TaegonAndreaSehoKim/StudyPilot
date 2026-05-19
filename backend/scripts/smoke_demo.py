@@ -22,7 +22,7 @@ def run_smoke(base_url: str, sample_file: Path, cleanup: bool) -> dict[str, Any]
     title_suffix = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     course_id: int | None = None
 
-    with httpx.Client(base_url=base_url, timeout=20.0) as client:
+    with httpx.Client(base_url=base_url, timeout=120.0) as client:
         health = _request(client, "GET", "/health").json()
 
         course = _request(

@@ -135,6 +135,7 @@ export default function SettingsScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="http://127.0.0.1:8000"
+          placeholderTextColor={colors.textFaint}
           style={styles.input}
         />
         <Text style={styles.helper}>Current target: {baseUrl.trim() || 'Not set'}</Text>
@@ -145,6 +146,7 @@ export default function SettingsScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="Required when backend BACKEND_ACCESS_TOKEN is set"
+          placeholderTextColor={colors.textFaint}
           secureTextEntry
           style={styles.input}
         />
@@ -219,11 +221,11 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   badge: {
-    backgroundColor: colors.infoSurface,
-    borderColor: colors.border,
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primarySurface,
     borderRadius: 8,
     borderWidth: 1,
-    color: colors.text,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '800',
     overflow: 'hidden',
@@ -266,6 +268,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 46,
     paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   status: {
     color: colors.success,

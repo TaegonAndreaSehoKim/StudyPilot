@@ -13,6 +13,8 @@ export function ScreenScrollView({ children, contentContainerStyle, ...props }: 
 
   return (
     <ScrollView
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
       {...props}
       contentContainerStyle={[styles.container, isTablet && styles.tabletContainer, contentContainerStyle]}
     >
@@ -50,13 +52,15 @@ export function useTabletLayout() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
+    gap: 18,
     padding: 16,
+    paddingBottom: 28,
   },
   tabletContainer: {
     alignSelf: 'center',
     maxWidth: 1120,
-    paddingHorizontal: 28,
+    paddingHorizontal: 32,
+    paddingTop: 24,
     width: '100%',
   },
   grid: {

@@ -96,14 +96,14 @@ npm run export:web
 
 ## Main Screens
 
-- Visual palette: warm study palette based on `#D9C3B0`, `#8C7161`, `#D9663D`, `#A64029`, and `#261714`
+- Visual palette: neutral study workspace palette with primary blue, teal accents, and clear success/warning/danger states
 - Responsive layout: phone-first screens use wider max-width containers and two-column card grids on tablet-sized displays
 - Dashboard: Continue Studying cards, counts, recent courses, recent sources, review notes, practice quizzes, and weak areas
 - Dashboard deadlines: upcoming assignments and exams across all courses
 - Courses: course list and course creation
 - Course detail: Study, Library, Practice, and Deadlines tabs with source upload, review notes, flashcards, quizzes, weak areas, and course actions
 - Weak-area review quiz: generate focused practice from missed quiz topics on the course Practice tab
-- Deadlines: course deadlines, exams, readings, projects, countdowns, completion, and delete actions
+- Deadlines: course deadlines, exams, readings, projects, countdowns, optional device popup alerts, completion, and delete actions
 - Source detail: read full source, open original file, text-recognition guidance, source preview, review-note options, practice options, saved study-tool counts, and saved-material sections
 - Full text: complete readable source text with Save / Share support
 - Review notes: full saved notes with overview, what to remember, key concepts, source evidence, and Save / Share PDF support
@@ -121,6 +121,7 @@ npm run export:web
 - Scanned PDFs are marked as requiring OCR. Use the document screen's Run OCR action when the backend has OCR enabled; the app starts an OCR job and polls until it completes or fails.
 - On tablets, rotate between portrait and landscape during manual testing because dashboard, course, document, schedule, quiz history, and saved-material screens use responsive grids.
 - Expo Go may not support manual in-app `expo-updates` checks. If the Settings screen reports that manual update checks are unavailable, publish a preview update and reopen the project from Expo Go.
+- Popup alerts use local notifications through `expo-notifications`. They are scheduled on the current device only; if notifications are denied or the selected alert time is already past, the deadline is still saved and the app shows a status message.
 
 More detail:
 

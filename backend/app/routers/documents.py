@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings, get_settings
 from app import database
 from app.database import get_db
-from app.models import Course, Document, OcrJob, utc_now
+from app.models import Course, CourseSection, Document, OcrJob, utc_now
 from app.schemas import DocumentDetailOut, DocumentOut, DocumentTextOut, OcrJobOut
 from app.services.document_extractor import extract_text_from_path, save_upload_file, validate_upload
 from app.services.ocr_provider import OCRProviderError, get_ocr_provider
@@ -28,6 +28,7 @@ def get_document_or_404(db: Session, document_id: int) -> Document:
 @router.post("/documents/upload", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     course_id: int = Form(...),
+    section_id: int | None = Form(default=None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
@@ -35,6 +36,10 @@ async def upload_document(
     course = db.get(Course, course_id)
     if course is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    if section_id is not None:
+        section = db.get(CourseSection, section_id)
+        if section is None or section.course_id != course_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Section not found")
 
     content = await file.read()
     extension = validate_upload(
@@ -49,6 +54,7 @@ async def upload_document(
 
     document = Document(
         course_id=course_id,
+        section_id=section_id,
         filename=file.filename or path.name,
         file_type=extension,
         storage_path=str(path),
@@ -195,6 +201,13 @@ def list_course_documents(course_id: int, db: Session = Depends(get_db)) -> list
     if db.get(Course, course_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     return db.query(Document).filter(Document.course_id == course_id).order_by(Document.created_at.desc()).all()
+
+
+@router.get("/sections/{section_id}/documents", response_model=list[DocumentOut])
+def list_section_documents(section_id: int, db: Session = Depends(get_db)) -> list[Document]:
+    if db.get(CourseSection, section_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Section not found")
+    return db.query(Document).filter(Document.section_id == section_id).order_by(Document.created_at.desc()).all()
 
 
 def _safe_stored_document_path(document: Document, storage_dir: Path) -> Path:

@@ -6,6 +6,7 @@ import { cleanDisplayText } from '@/utils/text';
 import { Card } from './Card';
 
 export function SummaryView({ summary }: { summary: Summary }) {
+  const isExplanation = summary.summary_type === 'explanation';
   const title = cleanDisplayText(summary.title, 'Review Notes');
   const overview = cleanDisplayText(summary.overview, 'No overview available.');
   const keyPoints = summary.key_points.map((point) => cleanDisplayText(point)).filter(Boolean);
@@ -16,12 +17,12 @@ export function SummaryView({ summary }: { summary: Summary }) {
       <Text style={styles.kicker}>Overview</Text>
       <Text style={styles.body}>{overview}</Text>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Key Ideas</Text>
+        <Text style={styles.sectionTitle}>{isExplanation ? 'Additional Explanation' : 'Key Ideas'}</Text>
         {keyPoints.length ? (
           keyPoints.map((point, index) => (
             <View key={`${point}-${index}`} style={styles.numberedRow}>
               <Text style={styles.number}>{index + 1}</Text>
-              <Text style={styles.body}>{point}</Text>
+              <Text style={[styles.body, styles.keyPointText]}>{point}</Text>
             </View>
           ))
         ) : (
@@ -29,7 +30,7 @@ export function SummaryView({ summary }: { summary: Summary }) {
         )}
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Key Concepts</Text>
+        <Text style={styles.sectionTitle}>{isExplanation ? 'Concepts Explained' : 'Key Concepts'}</Text>
         {summary.key_terms.length ? (
           summary.key_terms.map((item, index) => (
             <View key={`${item.term}-${index}`} style={styles.termBlock}>
@@ -68,41 +69,51 @@ const styles = StyleSheet.create({
   body: {
     color: colors.text,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   kicker: {
-    color: colors.textMuted,
+    color: colors.primary,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '900',
     textTransform: 'uppercase',
   },
   section: {
     gap: 8,
   },
   sectionTitle: {
-    color: colors.text,
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   numberedRow: {
-    flexDirection: 'row',
-    gap: 10,
+    alignItems: 'flex-start',
+    gap: 8,
   },
   number: {
-    backgroundColor: colors.surfaceMuted,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primarySurface,
     borderRadius: 8,
-    color: colors.text,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
-    minWidth: 26,
+    minWidth: 30,
     overflow: 'hidden',
     paddingHorizontal: 7,
     paddingVertical: 4,
     textAlign: 'center',
   },
+  keyPointText: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   termBlock: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
     gap: 4,
+    padding: 10,
   },
   term: {
     color: colors.text,
@@ -110,7 +121,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   quoteBlock: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.accentSurface,
+    borderLeftColor: colors.accent,
+    borderLeftWidth: 3,
     borderRadius: 8,
     gap: 5,
     padding: 10,

@@ -248,6 +248,9 @@ function summaryTypeLabel(value: string): string {
   if (value === 'exam') {
     return 'Exam prep';
   }
+  if (value === 'explanation') {
+    return 'Additional explanation';
+  }
   return value;
 }
 
@@ -261,18 +264,20 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
+    lineHeight: 34,
   },
   subtitle: {
     color: colors.textMuted,
     lineHeight: 20,
   },
   todayCard: {
-    backgroundColor: colors.infoSurface,
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primary,
   },
   eyebrow: {
-    color: colors.textMuted,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',

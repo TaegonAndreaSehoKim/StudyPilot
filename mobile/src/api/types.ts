@@ -6,9 +6,22 @@ export interface Course {
   updated_at: string;
 }
 
+export interface CourseSection {
+  id: number;
+  course_id: number;
+  title: string;
+  description: string | null;
+  document_count: number;
+  summary_count: number;
+  quiz_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Document {
   id: number;
   course_id: number;
+  section_id: number | null;
   filename: string;
   file_type: string;
   char_count: number;
@@ -55,9 +68,12 @@ export interface SourceQuote {
   reason: string;
 }
 
+export type StudyNoteType = 'concise' | 'detailed' | 'exam' | 'explanation';
+
 export interface Summary {
   id: number;
-  document_id: number;
+  document_id: number | null;
+  section_id: number | null;
   summary_type: string;
   title: string;
   overview: string;
@@ -91,7 +107,8 @@ export interface QuizQuestion {
 
 export interface Quiz {
   id: number;
-  document_id: number;
+  document_id: number | null;
+  section_id: number | null;
   title: string;
   created_at: string;
   questions: QuizQuestion[];
@@ -121,7 +138,8 @@ export interface CourseQuizAttempt {
   id: number;
   quiz_id: number;
   quiz_title: string;
-  document_id: number;
+  document_id: number | null;
+  section_id: number | null;
   score: number;
   total_questions: number;
   correct_count: number;
@@ -138,6 +156,7 @@ export interface ScheduleItem {
   event_type: ScheduleEventType;
   due_at: string;
   notes: string | null;
+  reminder_minutes_before: number | null;
   is_completed: boolean;
   completed_at: string | null;
   created_at: string;
@@ -171,11 +190,13 @@ export interface Dashboard {
 
 export interface CourseDashboard {
   course: Course;
+  section_count: number;
   document_count: number;
   summary_count: number;
   flashcard_count: number;
   quiz_count: number;
   recent_documents: Document[];
+  recent_sections: CourseSection[];
   recent_quizzes: Quiz[];
   weak_topics: WeakTopic[];
 }

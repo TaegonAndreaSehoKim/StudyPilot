@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { DocumentDetail, Summary } from '@/api/types';
+import type { CourseSection, DocumentDetail, StudyNoteType, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
@@ -20,6 +20,7 @@ export default function SummaryDetailScreen() {
   const { summaryId } = useLocalSearchParams<{ summaryId: string }>();
   const id = Number(summaryId);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [section, setSection] = useState<CourseSection | null>(null);
   const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,7 +34,8 @@ export default function SummaryDetailScreen() {
       setError(null);
       const loadedSummary = await api.summary(id);
       setSummary(loadedSummary);
-      setDocument(await api.document(loadedSummary.document_id));
+      setSection(loadedSummary.section_id ? await api.section(loadedSummary.section_id) : null);
+      setDocument(loadedSummary.document_id ? await api.document(loadedSummary.document_id) : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load review notes');
     } finally {
@@ -75,13 +77,20 @@ export default function SummaryDetailScreen() {
   }
 
   async function regenerateSummary() {
-    if (!summary || !document) {
+    if (!summary || (!document && !summary.section_id)) {
       return;
     }
     try {
       setRegenerating(true);
       setError(null);
-      const newSummary = await api.createSummary(document.id, summary.summary_type as 'concise' | 'detailed' | 'exam');
+      const summaryType = summary.summary_type as StudyNoteType;
+      const newSummary = summaryType === 'explanation'
+        ? summary.section_id
+          ? await api.createSectionExplanation(summary.section_id)
+          : await api.createExplanation(document!.id)
+        : summary.section_id
+          ? await api.createSectionSummary(summary.section_id, summaryType)
+          : await api.createSummary(document!.id, summaryType);
       router.replace(`/summaries/${newSummary.id}` as Href);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to regenerate review notes');
@@ -109,7 +118,9 @@ export default function SummaryDetailScreen() {
       setDeleting(true);
       setError(null);
       await api.deleteSummary(summary.id);
-      if (document) {
+      if (summary.section_id) {
+        router.replace(`/sections/${summary.section_id}` as Href);
+      } else if (document) {
         router.replace(`/documents/${document.id}` as Href);
       } else {
         router.back();
@@ -148,6 +159,16 @@ export default function SummaryDetailScreen() {
             </Link>
           ) : null}
 
+          {section ? (
+            <Link href={`/sections/${section.id}` as Href} asChild>
+              <Card>
+                <Text style={styles.itemTitle}>Study Section</Text>
+                <Text style={styles.itemMeta}>{section.title}</Text>
+                <Text style={styles.itemHint}>Open the section to review the full source set or create more practice.</Text>
+              </Card>
+            </Link>
+          ) : null}
+
           <View style={styles.actions}>
             <Button
               title={sharing ? 'Creating PDF...' : 'Save / Share PDF'}
@@ -156,7 +177,7 @@ export default function SummaryDetailScreen() {
             />
             <Button
               title={regenerating ? 'Regenerating...' : 'Regenerate Notes'}
-              disabled={!document || sharing || regenerating || deleting}
+              disabled={(!document && !summary.section_id) || sharing || regenerating || deleting}
               variant="secondary"
               onPress={regenerateSummary}
             />
@@ -189,6 +210,9 @@ function summaryTypeLabel(value: string): string {
   }
   if (value === 'exam') {
     return 'Exam Prep';
+  }
+  if (value === 'explanation') {
+    return 'Additional Explanation';
   }
   return value;
 }

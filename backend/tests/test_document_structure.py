@@ -17,6 +17,26 @@ def test_prepare_study_text_removes_repeated_headers_and_page_numbers() -> None:
     assert "Search explores state spaces" in prepared
 
 
+def test_prepare_study_text_cleans_pdf_slide_artifacts() -> None:
+    text = """
+Page 3 of 37
+Ty p e o f M o v e m e n t
+A We mi g h t h a v e a g a me w i t h discrete movement.
+A Specific locations are connected according to adjacency.
+Relaxed de.nition uses .xed size variables and .oats.
+""".strip()
+
+    prepared = prepare_study_text(text)
+
+    assert "Page 3 of 37" not in prepared
+    assert "Type of Movement" in prepared
+    assert "A We" not in prepared
+    assert "might have a game" in prepared
+    assert "definition" in prepared
+    assert "fixed" in prepared
+    assert "floats" in prepared
+
+
 def test_extract_study_sections_detects_markdown_and_numbered_headings() -> None:
     text = "# Search Algorithms\nSearch explores state spaces.\n\n2. Planning\nPlanning uses actions and goals."
 

@@ -40,6 +40,7 @@ export default function NewCourseScreen() {
           value={title}
           onChangeText={setTitle}
           placeholder="OMSCS AI"
+          placeholderTextColor={colors.textFaint}
           style={styles.input}
           autoCapitalize="words"
         />
@@ -48,6 +49,7 @@ export default function NewCourseScreen() {
           value={description}
           onChangeText={setDescription}
           placeholder="Lecture notes, readings, and review materials"
+          placeholderTextColor={colors.textFaint}
           style={[styles.input, styles.multiline]}
           multiline
         />
@@ -62,7 +64,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    gap: 10,
+    gap: 12,
     maxWidth: 720,
   },
   label: {

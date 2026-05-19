@@ -9,7 +9,10 @@ export function FlashcardList({ flashcards }: { flashcards: Flashcard[] }) {
     <View style={styles.list}>
       {flashcards.map((card) => (
         <Card key={card.id}>
-          <Text style={styles.topic}>{card.topic} - {card.difficulty}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.topic}>{card.topic}</Text>
+            <Text style={styles.difficulty}>{card.difficulty}</Text>
+          </View>
           <Text style={styles.front}>{card.front}</Text>
           <Text style={styles.back}>{card.back}</Text>
         </Card>
@@ -22,10 +25,28 @@ const styles = StyleSheet.create({
   list: {
     gap: 10,
   },
+  metaRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
   topic: {
     color: colors.textMuted,
+    flex: 1,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  difficulty: {
+    backgroundColor: colors.primarySurface,
+    borderRadius: 8,
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    overflow: 'hidden',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    textTransform: 'capitalize',
   },
   front: {
     color: colors.text,

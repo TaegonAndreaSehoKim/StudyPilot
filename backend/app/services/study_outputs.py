@@ -7,6 +7,15 @@ from app.services.text_normalization import normalize_extracted_text, normalize_
 
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
 VALID_ANSWERS = {"A", "B", "C", "D"}
+SUMMARY_META_PATTERNS = (
+    "source part",
+    "source material",
+    "source notes",
+    "concrete study points",
+    "concept definitions",
+    "source evidence",
+    "chunk overview",
+)
 
 
 def _clean_text(value: Any, fallback: str) -> str:
@@ -37,6 +46,11 @@ def _excerpt(document_text: str, max_len: int = 180) -> str:
     return clean[:max_len].rstrip() or "The uploaded source text is limited."
 
 
+def _looks_like_internal_summary_label(value: str) -> bool:
+    clean = normalize_inline_text(value).lower()
+    return any(pattern in clean for pattern in SUMMARY_META_PATTERNS)
+
+
 def _keywords(document_text: str, limit: int) -> list[str]:
     words = re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", document_text)
     stop = {"that", "this", "with", "from", "have", "will", "into", "about", "their", "there"}
@@ -60,7 +74,7 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
     fallback_overview = " ".join(sentences[:2]) or _excerpt(document_text)
     key_points = source.get("key_points") if isinstance(source.get("key_points"), list) else []
     normalized_points = [_clean_text(point, "") for point in key_points]
-    normalized_points = [point for point in normalized_points if point]
+    normalized_points = [point for point in normalized_points if point and not _looks_like_internal_summary_label(point)]
     if not normalized_points:
         normalized_points = sentences[:5] or [_excerpt(document_text)]
 
@@ -90,7 +104,7 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
         if not isinstance(item, dict):
             continue
         quote = _clean_text(item.get("quote"), "")
-        if not quote:
+        if not quote or _looks_like_internal_summary_label(quote):
             continue
         source_quotes.append(
             {
@@ -102,8 +116,12 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
         source_quotes = [{"quote": _excerpt(document_text), "reason": "Representative source excerpt."}]
 
     return {
-        "title": _clean_text(source.get("title"), f"Study Notes ({summary_type.title()} Summary)"),
-        "overview": _clean_text(source.get("overview"), fallback_overview),
+        "title": _clean_text(source.get("title"), f"Study Notes ({summary_type.title()} Summary)")
+        if not _looks_like_internal_summary_label(_clean_text(source.get("title"), ""))
+        else f"Study Notes ({summary_type.title()} Summary)",
+        "overview": _clean_text(source.get("overview"), fallback_overview)
+        if not _looks_like_internal_summary_label(_clean_text(source.get("overview"), ""))
+        else fallback_overview,
         "key_points": normalized_points[:8],
         "key_terms": key_terms[:8],
         "source_quotes": source_quotes[:5],

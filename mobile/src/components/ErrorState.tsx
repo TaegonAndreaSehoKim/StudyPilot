@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: 10,
-    padding: 14,
+    padding: 16,
   },
   title: {
     color: colors.danger,

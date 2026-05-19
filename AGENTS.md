@@ -14,6 +14,7 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - SQLite-backed local persistence
 - local uploaded-document storage
 - course creation and listing
+- section creation for units, chapters, midterms, finals, or other study scopes
 - document upload for `.txt`, `.md`, text-based `.pdf`, OCR-required scanned PDFs, and low-coverage partial PDFs
 - text-based PDF upload regression coverage
 - fake OCR provider for local tests and optional Textract provider for deployment
@@ -21,7 +22,8 @@ StudyPilot is currently a local, demoable AI study assistant MVP with:
 - section-aware document preparation before AI generation
 - backend-only AI provider abstraction
 - deterministic `FakeAIProvider` fallback when `OPENAI_API_KEY` is absent
-- summary, flashcard, and quiz generation endpoints
+- document-level summary/flashcard/quiz generation endpoints
+- section-level summary and quiz generation endpoints over multiple uploaded documents
 - quiz attempt scoring
 - weak-topic tracking from missed quiz questions
 - weak-topic review quiz generation
@@ -44,14 +46,15 @@ What is stable:
 - backend app startup
 - health endpoint
 - course CRUD
+- section CRUD
 - document upload and text extraction for supported files
 - text-based PDF extraction regression coverage
 - fake AI generation path
-- summary, flashcard, quiz, attempt, weak-topic, and dashboard API flows
+- document-level and section-level summary/quiz, flashcard, attempt, weak-topic, and dashboard API flows
 - lightweight AI quality eval tests
 - backend tests using temporary SQLite and temporary storage
 - mobile routing and API client structure
-- mobile dashboard, course, document, quiz, and settings screens
+- mobile dashboard, course, section, document, quiz, and settings screens
 - tablet-aware mobile layout containers and responsive card grids
 - EAS preview update setup for Expo Go device checks
 - mobile smoke checks through `npm run smoke`
@@ -121,7 +124,7 @@ For current quality expectations, read:
    Local demos and tests depend on deterministic generation when no API key is configured.
 
 3. Keep generation source-grounded.
-   Summaries, flashcards, and quizzes should come from uploaded document text. Do not introduce behavior that invents unsupported facts.
+   Summaries, flashcards, and quizzes should come from uploaded document text. Section-level summaries and quizzes should come from the uploaded documents assigned to that section. Do not introduce behavior that invents unsupported facts.
 
 4. Prefer small, test-backed changes.
    Backend behavior should usually be covered with pytest before the task is considered complete.
@@ -259,10 +262,10 @@ Manual product smoke:
 2. Start Expo.
 3. Test Settings connection.
 4. Create a course.
-5. Upload a `.txt` or `.md` document.
-6. Generate a summary.
-7. Generate flashcards.
-8. Generate a quiz.
+5. Create a section such as `Midterm 1`.
+6. Upload one or more `.txt` or `.md` documents into the section.
+7. Generate a section summary.
+8. Generate a section quiz.
 9. Submit quiz answers.
 10. Confirm weak topics update.
 

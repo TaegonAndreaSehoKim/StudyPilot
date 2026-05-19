@@ -2,10 +2,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { CourseDashboard, CourseQuizAttempt, Document, Flashcard, Quiz, ScheduleItem, Summary } from '@/api/types';
+import type { CourseDashboard, CourseQuizAttempt, CourseSection, Document, Flashcard, Quiz, ScheduleItem, Summary } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -30,6 +30,7 @@ export default function CourseDetailScreen() {
   const id = Number(courseId);
   const [dashboard, setDashboard] = useState<CourseDashboard | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [sections, setSections] = useState<CourseSection[]>([]);
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -41,22 +42,32 @@ export default function CourseDetailScreen() {
   const [uploading, setUploading] = useState(false);
   const [generatingReviewQuiz, setGeneratingReviewQuiz] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(false);
+  const [savingCourse, setSavingCourse] = useState(false);
+  const [creatingSection, setCreatingSection] = useState(false);
+  const [sectionTitle, setSectionTitle] = useState('');
+  const [sectionDescription, setSectionDescription] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [materialsLoading, setMaterialsLoading] = useState(false);
   const [practiceLoading, setPracticeLoading] = useState(false);
   const [materialsLoaded, setMaterialsLoaded] = useState(false);
   const [practiceLoaded, setPracticeLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [courseDashboard, docs, scheduleList] = await Promise.all([
+      const [courseDashboard, sectionList, docs, scheduleList] = await Promise.all([
         api.courseDashboard(id),
+        api.courseSections(id),
         api.courseDocuments(id),
         api.courseSchedule(id, false),
       ]);
       setDashboard(courseDashboard);
+      setSections(sectionList);
       setDocuments(docs);
       setSchedule(scheduleList);
     } catch (err) {
@@ -137,6 +148,43 @@ export default function CourseDetailScreen() {
     setActiveTab(tab);
   }
 
+  function startEditingCourse() {
+    if (!dashboard) {
+      return;
+    }
+    setEditTitle(dashboard.course.title);
+    setEditDescription(dashboard.course.description || '');
+    setEditingCourse(true);
+    setNotice(null);
+    setError(null);
+  }
+
+  async function saveCourseDetails() {
+    if (!dashboard) {
+      return;
+    }
+    if (!editTitle.trim()) {
+      setError('Course name is required.');
+      return;
+    }
+    try {
+      setSavingCourse(true);
+      setError(null);
+      setNotice(null);
+      const updatedCourse = await api.updateCourse(id, {
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+      });
+      setDashboard((current) => current ? { ...current, course: updatedCourse } : current);
+      setEditingCourse(false);
+      setNotice('Course name and description updated.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update course details');
+    } finally {
+      setSavingCourse(false);
+    }
+  }
+
   async function upload() {
     try {
       setUploading(true);
@@ -162,6 +210,31 @@ export default function CourseDetailScreen() {
       setError(err instanceof Error ? err.message : 'Unable to add this source material');
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function createSection() {
+    if (!sectionTitle.trim()) {
+      setError('Section name is required.');
+      return;
+    }
+    try {
+      setCreatingSection(true);
+      setError(null);
+      setNotice(null);
+      const section = await api.createSection(id, {
+        title: sectionTitle.trim(),
+        description: sectionDescription.trim() || null,
+      });
+      setSections((current) => [section, ...current.filter((item) => item.id !== section.id)]);
+      setSectionTitle('');
+      setSectionDescription('');
+      setNotice('Study section created. Add the relevant source materials inside it.');
+      router.push(`/sections/${section.id}` as Href);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create study section');
+    } finally {
+      setCreatingSection(false);
     }
   }
 
@@ -227,14 +300,51 @@ export default function CourseDetailScreen() {
           message="StudyPilot is using your missed topics and course materials to create focused practice."
         />
       ) : null}
+      {notice ? <StatusBanner title="Course updated" message={notice} variant="success" /> : null}
       {dashboard ? (
         <>
           <View style={styles.header}>
-            <Text style={styles.title}>{dashboard.course.title}</Text>
-            {dashboard.course.description ? <Text style={styles.subtitle}>{dashboard.course.description}</Text> : null}
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerTextBlock}>
+                <Text style={styles.title}>{dashboard.course.title}</Text>
+                {dashboard.course.description ? <Text style={styles.subtitle}>{dashboard.course.description}</Text> : null}
+              </View>
+              <Pressable accessibilityRole="button" onPress={startEditingCourse} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </Pressable>
+            </View>
           </View>
 
+          {editingCourse ? (
+            <Card style={styles.editCourseCard}>
+              <Text style={styles.sectionTitle}>Edit Course Details</Text>
+              <Text style={styles.inputLabel}>Name</Text>
+              <TextInput
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Course name"
+                placeholderTextColor={colors.textFaint}
+                autoCapitalize="words"
+                style={styles.input}
+              />
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                value={editDescription}
+                onChangeText={setEditDescription}
+                placeholder="What this course covers"
+                placeholderTextColor={colors.textFaint}
+                multiline
+                style={[styles.input, styles.descriptionInput]}
+              />
+              <View style={[styles.actions, isTablet && styles.tabletActions]}>
+                <Button title={savingCourse ? 'Saving...' : 'Save Changes'} disabled={savingCourse} onPress={saveCourseDetails} />
+                <Button title="Cancel" variant="secondary" disabled={savingCourse} onPress={() => setEditingCourse(false)} />
+              </View>
+            </Card>
+          ) : null}
+
           <View style={styles.metrics}>
+            <MetricButton label="sections" value={dashboard.section_count} onPress={() => openTab('overview')} />
             <MetricButton label="sources" value={dashboard.document_count} onPress={() => openTab('materials')} />
             <MetricButton label="review notes" value={dashboard.summary_count} onPress={() => openTab('materials')} />
             <MetricButton label="practice sets" value={dashboard.quiz_count} onPress={() => openTab('practice')} />
@@ -269,6 +379,46 @@ export default function CourseDetailScreen() {
               </Card>
 
               <ResponsiveGrid minItemWidth={340}>
+                <Section title="Study Sections">
+                  <Card style={styles.createSectionCard}>
+                    <Text style={styles.itemTitle}>Create Section</Text>
+                    <Text style={styles.itemMeta}>Use a unit, chapter, midterm, or final exam scope, then add all matching source materials inside it.</Text>
+                    <Text style={styles.inputLabel}>Name</Text>
+                    <TextInput
+                      value={sectionTitle}
+                      onChangeText={setSectionTitle}
+                      placeholder="Midterm 1, Unit 3, Final Exam"
+                      placeholderTextColor={colors.textFaint}
+                      style={styles.input}
+                    />
+                    <Text style={styles.inputLabel}>Description</Text>
+                    <TextInput
+                      value={sectionDescription}
+                      onChangeText={setSectionDescription}
+                      placeholder="Scope, topics, or exam coverage"
+                      placeholderTextColor={colors.textFaint}
+                      multiline
+                      style={[styles.input, styles.descriptionInput]}
+                    />
+                    <Button title={creatingSection ? 'Creating...' : 'Create Section'} disabled={creatingSection} onPress={createSection} />
+                  </Card>
+                  {sections.length ? (
+                    sections.map((section) => (
+                      <Link key={section.id} href={`/sections/${section.id}` as Href} asChild>
+                        <Card>
+                          <Text style={styles.itemTitle}>{section.title}</Text>
+                          {section.description ? <Text style={styles.itemMeta}>{section.description}</Text> : null}
+                          <Text style={styles.itemMeta}>
+                            {section.document_count} sources - {section.summary_count} notes - {section.quiz_count} quizzes
+                          </Text>
+                        </Card>
+                      </Link>
+                    ))
+                  ) : (
+                    <EmptyState title="No study sections" message="Create sections for units, exam scopes, or chapters before grouping source materials." />
+                  )}
+                </Section>
+
                 <Section title="Next Deadlines">
                   <ScheduleCards courseId={id} schedule={schedule.slice(0, 3)} />
                 </Section>
@@ -327,6 +477,23 @@ export default function CourseDetailScreen() {
                     ))
                   ) : (
                     <EmptyState title="No source materials" message="Add lecture notes, markdown files, text files, or PDFs to start studying." />
+                  )}
+                </Section>
+
+                <Section title="Study Sections">
+                  {sections.length ? (
+                    sections.map((section) => (
+                      <Link key={section.id} href={`/sections/${section.id}` as Href} asChild>
+                        <Card>
+                          <Text style={styles.itemTitle}>{section.title}</Text>
+                          <Text style={styles.itemMeta}>
+                            {section.document_count} sources - {section.summary_count} notes - {section.quiz_count} quizzes
+                          </Text>
+                        </Card>
+                      </Link>
+                    ))
+                  ) : (
+                    <EmptyState title="No sections yet" message="Create sections from the Study tab to generate from multiple source materials." />
                   )}
                 </Section>
 
@@ -558,6 +725,9 @@ function summaryTypeLabel(value: string): string {
   if (value === 'exam') {
     return 'Exam prep';
   }
+  if (value === 'explanation') {
+    return 'Additional explanation';
+  }
   return value;
 }
 
@@ -567,16 +737,69 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    gap: 5,
+    gap: 6,
+  },
+  headerTopRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  headerTextBlock: {
+    flex: 1,
+    minWidth: 0,
   },
   title: {
     color: colors.text,
-    fontSize: 25,
+    fontSize: 27,
     fontWeight: '900',
+    lineHeight: 33,
   },
   subtitle: {
     color: colors.textMuted,
     lineHeight: 20,
+  },
+  editButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  editButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  editCourseCard: {
+    backgroundColor: colors.surfaceSubtle,
+  },
+  createSectionCard: {
+    backgroundColor: colors.surfaceSubtle,
+  },
+  inputLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: 15,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  descriptionInput: {
+    minHeight: 82,
+    textAlignVertical: 'top',
   },
   metrics: {
     flexDirection: 'row',
@@ -588,10 +811,13 @@ const styles = StyleSheet.create({
   },
   tabletActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   metric: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 8,
+    borderWidth: 1,
     minHeight: 36,
     justifyContent: 'center',
     paddingHorizontal: 10,
@@ -602,7 +828,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   tabs: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
@@ -618,7 +844,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   activeTab: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySurface,
   },
   tabText: {
     color: colors.textMuted,
@@ -626,7 +852,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   activeTabText: {
-    color: colors.text,
+    color: colors.primary,
   },
   section: {
     gap: 10,
@@ -646,7 +872,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   todayCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primarySurface,
     borderColor: colors.primary,
   },
   todayEyebrow: {
@@ -663,9 +889,9 @@ const styles = StyleSheet.create({
   },
   qualityPill: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.accentSurface,
     borderRadius: 8,
-    color: colors.text,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '900',
     paddingHorizontal: 8,

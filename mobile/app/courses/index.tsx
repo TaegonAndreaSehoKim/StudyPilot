@@ -55,6 +55,7 @@ export default function CoursesScreen() {
               <Card>
                 <Text style={styles.title}>{course.title}</Text>
                 {course.description ? <Text style={styles.description}>{course.description}</Text> : null}
+                <Text style={styles.openLabel}>Open course</Text>
               </Card>
             </Link>
           ))}
@@ -78,11 +79,18 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 24,
   },
   description: {
     color: colors.textMuted,
     lineHeight: 20,
+  },
+  openLabel: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 2,
   },
 });

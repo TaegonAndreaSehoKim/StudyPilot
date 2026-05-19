@@ -31,6 +31,26 @@ def test_list_course_summaries(client: TestClient, course_id: int, document_id: 
     assert [summary["id"] for summary in body] == [second.json()["id"], first.json()["id"]]
 
 
+def test_generate_additional_explanation(client: TestClient, document_id: int) -> None:
+    response = client.post(
+        f"/documents/{document_id}/explanations",
+        json={"focus": "Explain why update loops matter for movement."},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["document_id"] == document_id
+    assert body["summary_type"] == "explanation"
+    assert body["key_points"]
+    assert body["key_terms"]
+
+
+def test_explanation_uses_dedicated_endpoint(client: TestClient, document_id: int) -> None:
+    response = client.post(f"/documents/{document_id}/summaries", json={"summary_type": "explanation"})
+
+    assert response.status_code == 422
+
+
 def test_get_missing_summary_returns_404(client: TestClient) -> None:
     response = client.get("/summaries/999999")
 

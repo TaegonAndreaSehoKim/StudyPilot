@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
-import type { DocumentDetail, Quiz, QuizAttemptResult } from '@/api/types';
+import type { CourseSection, DocumentDetail, Quiz, QuizAttemptResult } from '@/api/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorState } from '@/components/ErrorState';
@@ -19,6 +19,7 @@ export default function QuizScreen() {
   const { quizId } = useLocalSearchParams<{ quizId: string }>();
   const id = Number(quizId);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [section, setSection] = useState<CourseSection | null>(null);
   const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
@@ -33,7 +34,8 @@ export default function QuizScreen() {
       setError(null);
       const loadedQuiz = await api.quiz(id);
       setQuiz(loadedQuiz);
-      setDocument(await api.document(loadedQuiz.document_id));
+      setSection(loadedQuiz.section_id ? await api.section(loadedQuiz.section_id) : null);
+      setDocument(loadedQuiz.document_id ? await api.document(loadedQuiz.document_id) : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load this practice quiz');
     } finally {
@@ -70,13 +72,15 @@ export default function QuizScreen() {
   }
 
   async function createSimilarQuiz() {
-    if (!quiz || !document) {
+    if (!quiz || (!document && !quiz.section_id)) {
       return;
     }
     try {
       setRegenerating(true);
       setError(null);
-      const newQuiz = await api.createQuiz(document.id, quiz.questions.length || 5, 'mixed');
+      const newQuiz = quiz.section_id
+        ? await api.createSectionQuiz(quiz.section_id, quiz.questions.length || 5, 'mixed')
+        : await api.createQuiz(document!.id, quiz.questions.length || 5, 'mixed');
       router.replace(`/quiz/${newQuiz.id}` as Href);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create another practice quiz');
@@ -104,7 +108,9 @@ export default function QuizScreen() {
       setDeleting(true);
       setError(null);
       await api.deleteQuiz(quiz.id);
-      if (document) {
+      if (quiz.section_id) {
+        router.replace(`/sections/${quiz.section_id}` as Href);
+      } else if (document) {
         router.replace(`/documents/${document.id}` as Href);
       } else {
         router.back();
@@ -131,12 +137,12 @@ export default function QuizScreen() {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>{quiz.title}</Text>
-            {document ? <Text style={styles.subtitle}>From {document.filename}</Text> : null}
+            {section ? <Text style={styles.subtitle}>From section: {section.title}</Text> : document ? <Text style={styles.subtitle}>From {document.filename}</Text> : null}
           </View>
           <View style={styles.managementActions}>
             <Button
               title={regenerating ? 'Creating...' : 'Create Similar Quiz'}
-              disabled={!document || submitting || regenerating || deleting}
+              disabled={(!document && !quiz.section_id) || submitting || regenerating || deleting}
               variant="secondary"
               onPress={createSimilarQuiz}
             />
@@ -211,6 +217,9 @@ export default function QuizScreen() {
                     <Button title="Back to Course" variant="secondary" onPress={() => router.push(`/courses/${document.course_id}`)} />
                   </>
                 ) : null}
+                {section ? (
+                  <Button title="Back to Section" variant="secondary" onPress={() => router.push(`/sections/${section.id}` as Href)} />
+                ) : null}
                 <Button
                   title="Practice Again"
                   variant="secondary"
@@ -274,7 +283,7 @@ function ExplanationBlock({ answer }: { answer: QuizAttemptResult['answers'][num
 
 const styles = StyleSheet.create({
   container: {
-    gap: 14,
+    gap: 16,
     maxWidth: 920,
   },
   header: {
@@ -282,8 +291,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '900',
+    lineHeight: 32,
   },
   subtitle: {
     color: colors.textMuted,
@@ -314,7 +324,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressFill: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: 8,
     height: '100%',
   },
@@ -387,7 +397,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   quoteBox: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.accentSurface,
+    borderLeftColor: colors.accent,
+    borderLeftWidth: 3,
     borderRadius: 8,
     gap: 4,
     padding: 10,

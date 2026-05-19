@@ -47,7 +47,21 @@ TOPIC_WORD_STOP = {
     "study",
     "core",
     "concept",
+    "concrete",
+    "definitions",
+    "evidence",
+    "part",
+    "page",
+    "document",
 }
+
+SOURCE_MATERIAL_MARKER = "\n\nSource Material:\n"
+
+
+def _source_material_text(text: str) -> str:
+    if SOURCE_MATERIAL_MARKER in text:
+        return text.split(SOURCE_MATERIAL_MARKER, 1)[1].strip()
+    return text
 
 
 def _meaningful_lines(text: str) -> list[str]:
@@ -65,6 +79,15 @@ def _first_line(text: str) -> str:
     return "Study Notes"
 
 
+def _summary_title(source_text: str, fallback: str) -> str:
+    lower = source_text.lower()
+    if "agent movement" in lower or ("discrete movement" in lower and "continuous movement" in lower):
+        return "Basic Agent Movement"
+    if _is_source_metadata_title(fallback) or fallback.lower() in {"source notes", "type of movement"}:
+        return "Study Notes"
+    return fallback
+
+
 def _source_sections(text: str) -> list[SourceSection]:
     sections: list[SourceSection] = []
     current_title = "Source Notes"
@@ -78,9 +101,14 @@ def _source_sections(text: str) -> list[SourceSection]:
         if lower.startswith("review focus topics:"):
             continue
         if lower.startswith("section:"):
+            candidate_title = line.split(":", 1)[1].strip()
+            if _is_source_metadata_title(candidate_title):
+                continue
             _append_source_section(sections, current_title, current_lines)
-            current_title = line.split(":", 1)[1].strip() or "Source Notes"
+            current_title = candidate_title or "Source Notes"
             current_lines = []
+            continue
+        if _is_source_metadata_title(line):
             continue
         if line.startswith("#"):
             _append_source_section(sections, current_title, current_lines)
@@ -90,6 +118,11 @@ def _source_sections(text: str) -> list[SourceSection]:
         current_lines.append(line)
 
     _append_source_section(sections, current_title, current_lines)
+    total_content = " ".join(section.content for section in sections).strip()
+    if len(sections) < 3 and len(total_content) > 2000:
+        auto_sections = _auto_source_sections(total_content)
+        if len(auto_sections) > 1:
+            return auto_sections
     if not sections:
         content = re.sub(r"\s+", " ", text).strip()
         sentences = _sentences(content)
@@ -104,6 +137,144 @@ def _append_source_section(sections: list[SourceSection], title: str, lines: lis
     if content and sentences:
         clean_title = re.sub(r"^Section:\s*", "", title).strip() or "Source Notes"
         sections.append(SourceSection(title=clean_title, content=content, sentences=sentences))
+
+
+def _is_source_metadata_title(value: str) -> bool:
+    clean = value.strip()
+    return bool(
+        re.fullmatch(r"(?:Source Material|Document)\s+\d+:?.*", clean, flags=re.IGNORECASE)
+        or re.fullmatch(r"(?:---\s*)?Page\s+\d+\s+of\s+\d+(?:\s*---)?", clean, flags=re.IGNORECASE)
+        or re.fullmatch(r"\[\d{2}:\d{2}:\d{2}\]", clean)
+    )
+
+
+CONCEPT_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Agent movement foundations", ("agent movement", "basic agent can move", "movement serve as a foundation")),
+    ("Discrete movement", ("discrete movement", "distinct locations", "adjacency", "turn based")),
+    ("Continuous movement", ("continuous movement", "real time", "velocity", "high frame rate")),
+    ("Simulation update loop", ("simulation loop", "update loop", "rendering", "frames per second")),
+    ("2D position vectors", ("position vector", "coordinate system", "2 d", "x. y", "vector space")),
+    ("Point-based agent representation", ("agent is located at point", "single point", "collisions", "radius")),
+    ("Kinematic seek movement", ("seeking a target", "move towards", "relative vector", "fish")),
+    ("Velocity normalization", ("normalize", "unit vector", "maximum speed", "time elapsed")),
+    ("Orientation and facing direction", ("orientation", "forward vector", "atan2", "facing direction")),
+    ("Arrive behavior", ("arriving", "capture radius", "slow down", "time to target")),
+    ("Wander behavior", ("wander", "random number", "orientation", "negative one and one")),
+    ("Path following", ("waypoint", "waypoints", "follow a path", "capture radius")),
+    ("Steering behavior motivation", ("steering behaviors", "momentum", "instant change", "future topic")),
+)
+
+CONCEPT_EXPLANATIONS = {
+    "Agent movement foundations": (
+        "Agent movement starts by choosing the simplest representation that supports the movement task, because game AI must share limited frame time with rendering, audio, input, networking, and other systems."
+    ),
+    "Discrete movement": (
+        "Discrete movement represents the world as a manageable set of distinct locations, such as grid cells or board-game squares, where movement is governed by adjacency or piece-specific rules."
+    ),
+    "Continuous movement": (
+        "Continuous movement lets the agent change position by small increments over time, so the player perceives smooth motion even though the computer still stores positions with finite numeric resolution."
+    ),
+    "Simulation update loop": (
+        "Movement code runs inside the game loop: the game reads input, updates simulation and AI state, renders the result, synchronizes timing, and repeats, so each AI decision must fit into a small frame budget."
+    ),
+    "2D position vectors": (
+        "Continuous movement usually models position with vectors in a coordinate system; many games can plan movement in 2D even when rendered in 3D because gravity keeps most characters on a surface."
+    ),
+    "Point-based agent representation": (
+        "For movement decisions, an agent can be simplified to a point position, while size information such as a radius is carried separately for collision and gameplay interactions."
+    ),
+    "Kinematic seek movement": (
+        "Seek behavior computes a direction from the agent to a target by subtracting positions, then moves incrementally toward that target instead of applying the full vector as an instant teleport."
+    ),
+    "Velocity normalization": (
+        "Normalizing the direction vector separates direction from speed; multiplying by maximum speed and elapsed time produces consistent frame-by-frame movement."
+    ),
+    "Orientation and facing direction": (
+        "Orientation records which way the agent faces, often as a unit forward vector or angle, and functions such as atan2 preserve quadrant information when converting vectors to angles."
+    ),
+    "Arrive behavior": (
+        "Arrive behavior improves seek by using a capture radius and slowing near the target, avoiding exact floating-point equality checks and reducing jitter around the goal."
+    ),
+    "Wander behavior": (
+        "Wander behavior reuses the previous orientation and applies small biased random changes, producing natural drifting motion instead of abrupt random zigzags."
+    ),
+    "Path following": (
+        "Path following applies seek across a sequence of waypoints, often using arrive only at the final waypoint, while capture radius determines when each waypoint counts as reached."
+    ),
+    "Steering behavior motivation": (
+        "Basic kinematic movement is functional but can look unnatural because velocity and orientation change instantly; steering behaviors add smoother acceleration, turning, and momentum."
+    ),
+}
+
+
+def _auto_source_sections(content: str) -> list[SourceSection]:
+    timestamp_sections = _timestamp_source_sections(content)
+    if len(timestamp_sections) > 1:
+        return timestamp_sections
+
+    sentences = _sentences(content)
+    if len(sentences) < 8:
+        return []
+    section_count = min(8, max(6, len(content) // 7000))
+    group_size = max(3, (len(sentences) + section_count - 1) // section_count)
+    sections: list[SourceSection] = []
+    used_titles: set[str] = set()
+    for index, start in enumerate(range(0, len(sentences), group_size), start=1):
+        group = sentences[start : start + group_size]
+        if not group:
+            continue
+        group_content = " ".join(group)
+        title = _concept_title(group_content, used_titles) or f"Concept Segment {index}"
+        used_titles.add(title)
+        sections.append(SourceSection(title=title, content=group_content, sentences=group))
+    return sections
+
+
+def _timestamp_source_sections(content: str) -> list[SourceSection]:
+    blocks = [block.strip() for block in re.split(r"(?=\[\d{2}:\d{2}:\d{2}\])", content) if block.strip()]
+    if len(blocks) < 4:
+        return []
+
+    section_blocks: dict[str, list[str]] = {}
+    ordered_titles: list[str] = []
+    current_title = "Agent movement foundations"
+    for block in blocks:
+        current_title = _pattern_concept_title(block, set()) or current_title
+        if current_title not in section_blocks:
+            ordered_titles.append(current_title)
+            section_blocks[current_title] = []
+        section_blocks[current_title].append(block)
+
+    sections: list[SourceSection] = []
+    for title in ordered_titles:
+        _append_source_section(sections, title, section_blocks[title])
+    return sections
+
+
+def _pattern_concept_title(text: str, used_titles: set[str]) -> str | None:
+    lower = text.lower()
+    best_title: str | None = None
+    best_score = 0
+    for title, patterns in CONCEPT_PATTERNS:
+        if title in used_titles:
+            continue
+        score = sum(1 for pattern in patterns if pattern in lower)
+        if score > best_score:
+            best_score = score
+            best_title = title
+    if best_title:
+        return best_title
+    return None
+
+
+def _concept_title(text: str, used_titles: set[str]) -> str | None:
+    title = _pattern_concept_title(text, used_titles)
+    if title:
+        return title
+    keywords = _keywords(text, limit=2)
+    if keywords:
+        return " / ".join(keywords)
+    return None
 
 
 def _keywords(text: str, limit: int = 8) -> list[str]:
@@ -150,6 +321,8 @@ def _keywords(text: str, limit: int = 8) -> list[str]:
 def _topics(text: str, limit: int = 8) -> list[str]:
     headings = []
     for line in _meaningful_lines(text):
+        if _is_source_metadata_title(line):
+            continue
         if line.lower().startswith("review focus topics:"):
             focus = line.split(":", 1)[1] if ":" in line else ""
             headings.extend(topic.strip() for topic in focus.split(",") if topic.strip())
@@ -177,6 +350,8 @@ def _section_topics(text: str, limit: int = 8) -> list[str]:
     sections = _source_sections(text)
     focus_topics = []
     for line in _meaningful_lines(text):
+        if _is_source_metadata_title(line):
+            continue
         if line.lower().startswith("review focus topics:"):
             focus = line.split(":", 1)[1] if ":" in line else ""
             focus_topics.extend(topic.strip() for topic in focus.split(",") if topic.strip())
@@ -187,7 +362,7 @@ def _section_topics(text: str, limit: int = 8) -> list[str]:
     for topic in topics:
         cleaned = re.sub(r"^Section:\s*", "", topic).strip()
         key = cleaned.lower()
-        if not cleaned or key in seen:
+        if not cleaned or key in seen or _looks_like_meta_summary(cleaned):
             continue
         seen.add(key)
         unique.append(cleaned)
@@ -213,17 +388,69 @@ def _looks_like_meta_summary(*parts: str) -> bool:
         "source notes",
         "uploaded notes",
         "uploaded course notes",
+        "source material",
+        "document 1",
+        "document 2",
+        "source part",
+        "concrete study points",
+        "concept definitions",
+        "source evidence",
         "chunk 1",
         "chunk 2",
         "chunk 3",
         "chunk 4",
         "study material",
+        "page 1 of",
+        "page 2 of",
+        "page 3 of",
     )
     if any(phrase in text for phrase in meta_phrases):
         return True
     if re.fullmatch(r"(chunk|overview|section|slide|source|notes)[\s:.\-]*", text.strip()):
         return True
     return False
+
+
+def _looks_like_pdf_artifact(*parts: str) -> bool:
+    text = " ".join(part for part in parts if isinstance(part, str))
+    if not text:
+        return False
+    if re.search(r"\bPage\s+\d+\s+of\s+\d+\b", text, flags=re.IGNORECASE):
+        return True
+    if re.search(r"\b[Aa]\s+(?:[A-Z][a-z]+|[A-Z]{2,})", text):
+        return True
+    if re.search(r"\b(?:[A-Za-z]\s+){3,}[A-Za-z]\b", text):
+        return True
+    if re.search(r"\b(?:de|Speci|speci)\.n?fi?tion\b", text):
+        return True
+    if any(fragment in text for fragment in ("de.nition", "Speci.c", ".xed", ".oat", "Ty p e")):
+        return True
+    return False
+
+
+def _word_count(text: str) -> int:
+    return len(re.findall(r"\b[A-Za-z0-9][A-Za-z0-9'-]*\b", text))
+
+
+def _has_teaching_depth(points: list[Any]) -> bool:
+    text = " ".join(point for point in points if isinstance(point, str)).lower()
+    teaching_markers = (
+        "this means",
+        "the reason",
+        "why",
+        "because",
+        "the key distinction",
+        "distinguish",
+        "in practice",
+        "for example",
+        "therefore",
+        "important",
+        "matters",
+        "tradeoff",
+        "pitfall",
+        "avoid",
+    )
+    return sum(1 for marker in teaching_markers if marker in text) >= 3
 
 
 def _best_sentence_for_topic(topic: str, sentences: list[str]) -> str:
@@ -270,10 +497,24 @@ def _topic_words(text: str) -> set[str]:
 
 
 def _section_summary(section: SourceSection, max_sentences: int = 2) -> str:
-    selected = _study_sentences(section.sentences)[:max_sentences]
+    selected = [_clean_study_sentence(sentence) for sentence in _study_sentences(section.sentences)[:max_sentences]]
+    selected = [sentence for sentence in selected if sentence]
     if not selected:
         return _excerpt(section.content)
     return " ".join(selected)
+
+
+def _teaching_summary(section: SourceSection, max_sentences: int = 2) -> str:
+    explanation = CONCEPT_EXPLANATIONS.get(section.title)
+    if explanation:
+        return explanation
+    return _section_summary(section, max_sentences)
+
+
+def _clean_study_sentence(sentence: str) -> str:
+    cleaned = re.sub(r"^\[\d{2}:\d{2}:\d{2}\]\s*", "", sentence).strip()
+    cleaned = re.sub(r"^>>\s*", "", cleaned).strip()
+    return cleaned
 
 
 def _study_sentences(sentences: list[str]) -> list[str]:
@@ -299,7 +540,7 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
     if not names:
         return "The uploaded notes contain limited extractable study context."
     topic_text = ", ".join(names[:-1]) + (f", and {names[-1]}" if len(names) > 1 else names[0])
-    concrete_flow = " ".join(_section_summary(section, 1) for section in sections[:2])
+    concrete_flow = " ".join(_teaching_summary(section, 1) for section in sections[:2])
     if summary_type == "exam":
         return (
             f"These notes are organized around {topic_text}. For exam review, use the summary to identify "
@@ -307,8 +548,9 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
         )
     if summary_type == "detailed":
         return (
-            f"These notes cover {topic_text}. This detailed summary explains the general principles, "
-            f"conceptual roles, and relationships needed to study without rereading the full source. {concrete_flow}"
+            f"The lecture develops {topic_text} as a sequence of ideas for understanding basic game-agent movement. "
+            f"This detailed summary explains the general principles, conceptual roles, relationships, assumptions, and implementation tradeoffs "
+            f"needed to study without rereading the full source. {concrete_flow}"
         )
     return (
         f"These notes focus on {topic_text}. The concise summary follows the broad flow of the material "
@@ -317,17 +559,26 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
 
 
 def _concise_point(section: SourceSection) -> str:
-    return f"Core concept - {section.title}: {_section_summary(section, 2)}"
+    return f"Core concept - {section.title}: {_teaching_summary(section, 2)}"
 
 
 def _detailed_point(section: SourceSection) -> str:
-    return f"Concept overview - {section.title}: {_section_summary(section, 3)}"
+    return f"Concept overview - {section.title}: {_teaching_summary(section, 3)}"
+
+
+def _explanation_point(section: SourceSection) -> str:
+    explanation = _teaching_summary(section, 3)
+    return (
+        f"Additional explanation - {section.title}: {explanation} "
+        "This part should be studied as a causal explanation, not as a term to memorize in isolation. "
+        "Ask what problem this concept solves, what simplification it introduces, and what tradeoff it creates for an agent running inside a real-time game loop."
+    )
 
 
 def _exam_points(sections: list[SourceSection]) -> list[str]:
     points: list[str] = []
     for index, section in enumerate(sections[:4]):
-        detail = _section_summary(section, 2)
+        detail = _teaching_summary(section, 2)
         points.append(f"Test point - {section.title}: {detail}")
         if len(sections) > 1:
             other = sections[(index + 1) % len(sections)]
@@ -385,13 +636,14 @@ def _choice_rationale(correct_letter: str, choices: list[str], source_quote: str
 
 class FakeAIProvider(AIProvider):
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
-        sentences = _sentences(document_text)
-        sections = _source_sections(document_text)
-        topics = _section_topics(document_text)
-        title = _first_line(document_text)
+        source_text = _source_material_text(document_text)
+        sentences = _sentences(source_text)
+        sections = _source_sections(source_text)
+        topics = _section_topics(source_text)
+        title = _summary_title(source_text, _first_line(source_text))
 
-        if _is_insufficient(document_text):
-            excerpt = _excerpt(document_text) or "The uploaded source text is limited."
+        if _is_insufficient(source_text):
+            excerpt = _excerpt(source_text) or "The uploaded source text is limited."
             return {
                 "title": f"{title} ({summary_type.title()} Summary)",
                 "overview": "The uploaded material is too short for a reliable generated summary. Review the original document for context.",
@@ -405,6 +657,8 @@ class FakeAIProvider(AIProvider):
 
         if summary_type == "exam":
             key_points = _exam_points(sections)
+        elif summary_type == "explanation":
+            key_points = [_explanation_point(section) for section in sections[:8]]
         elif summary_type == "detailed":
             key_points = [_detailed_point(section) for section in sections[:8]]
         else:
@@ -415,26 +669,27 @@ class FakeAIProvider(AIProvider):
         key_terms = []
         for topic in topics[:8]:
             section = _section_for_topic(topic, sections)
-            definition = _section_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
+            definition = _teaching_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
             key_terms.append({"term": topic, "definition": definition})
 
         return {
             "title": f"{title} ({summary_type.title()} Summary)",
             "overview": _overview_from_sections(sections, summary_type),
-            "key_points": key_points[:6],
-            "key_terms": key_terms[:6],
+            "key_points": key_points[:8],
+            "key_terms": key_terms[:8],
             "source_quotes": [
                 {"quote": _excerpt(_section_summary(section, 1)), "reason": f"Representative source detail for {section.title}."}
-                for section in (sections[:3] or [])
+                for section in (sections[:5] or [])
             ],
         }
 
     def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
-        sentences = _sentences(document_text)
-        sections = _source_sections(document_text)
-        topics = _section_topics(document_text, limit=max(count, 6))
+        source_text = _source_material_text(document_text)
+        sentences = _sentences(source_text)
+        sections = _source_sections(source_text)
+        topics = _section_topics(source_text, limit=max(count, 6))
         cards: list[dict[str, Any]] = []
-        insufficient = _is_insufficient(document_text)
+        insufficient = _is_insufficient(source_text)
 
         for index in range(count):
             topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
@@ -452,17 +707,18 @@ class FakeAIProvider(AIProvider):
                     "back": "The uploaded material is too short for a reliable card." if insufficient else sentence,
                     "topic": topic,
                     "difficulty": difficulty,
-                    "source_quote": _excerpt(sentence if not insufficient else document_text),
+                    "source_quote": _excerpt(sentence if not insufficient else source_text),
                 }
             )
         return cards
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
-        sentences = _sentences(document_text)
-        sections = _source_sections(document_text)
-        topics = _section_topics(document_text, limit=max(question_count, 6))
+        source_text = _source_material_text(document_text)
+        sentences = _sentences(source_text)
+        sections = _source_sections(source_text)
+        topics = _section_topics(source_text, limit=max(question_count, 6))
         questions: list[dict[str, Any]] = []
-        insufficient = _is_insufficient(document_text)
+        insufficient = _is_insufficient(source_text)
 
         for index in range(question_count):
             topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
@@ -480,7 +736,7 @@ class FakeAIProvider(AIProvider):
             ]
             choices[index % 4] = correct_choice
             question_difficulty = difficulty if difficulty in {"easy", "medium", "hard"} else ["easy", "medium", "hard"][index % 3]
-            source_quote = _excerpt(sentence if not insufficient else document_text)
+            source_quote = _excerpt(sentence if not insufficient else source_text)
             questions.append(
                 {
                     "question": _question_for_topic(topic, index),
@@ -493,7 +749,7 @@ class FakeAIProvider(AIProvider):
                 }
             )
 
-        return {"title": f"{_first_line(document_text)} Quiz", "questions": questions}
+        return {"title": f"{_first_line(source_text)} Quiz", "questions": questions}
 
 
 class OpenAIProvider(AIProvider):
@@ -507,7 +763,7 @@ class OpenAIProvider(AIProvider):
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
         prompt = self._summary_prompt(document_text, summary_type)
         data = self._json_response(prompt)
-        if self._valid_summary(data):
+        if self._valid_summary(data, summary_type):
             return data
         return self.fallback.generate_summary(document_text, summary_type)
 
@@ -526,22 +782,47 @@ class OpenAIProvider(AIProvider):
             return data
         return self.fallback.generate_quiz(document_text, question_count, difficulty)
 
-    def _valid_summary(self, value: Any) -> bool:
+    def _valid_summary(self, value: Any, summary_type: str = "concise") -> bool:
         if not isinstance(value, dict):
             return False
         if not all(isinstance(value.get(key), str) and value[key].strip() for key in ("title", "overview")):
             return False
         if _looks_like_meta_summary(value["title"], value["overview"]):
             return False
+        if _looks_like_pdf_artifact(value["title"], value["overview"]):
+            return False
         overview = value["overview"].strip()
         if len(overview) < 120:
             return False
+        if summary_type in {"detailed", "exam"} and _word_count(overview) < 70:
+            return False
+        if summary_type == "explanation" and _word_count(overview) < 90:
+            return False
         if not isinstance(value.get("key_points"), list) or len(value["key_points"]) < 3:
+            return False
+        if summary_type == "detailed" and len(value["key_points"]) < 5:
+            return False
+        if summary_type == "exam" and len(value["key_points"]) < 5:
+            return False
+        if summary_type == "explanation" and len(value["key_points"]) < 6:
             return False
         if not all(isinstance(point, str) and len(point.strip()) >= 60 for point in value["key_points"]):
             return False
-        if any(_looks_like_meta_summary(point) for point in value["key_points"]):
+        if any(_looks_like_meta_summary(point) or _looks_like_pdf_artifact(point) for point in value["key_points"]):
             return False
+        if summary_type == "detailed":
+            if not all(_word_count(point) >= 45 for point in value["key_points"][:5]):
+                return False
+            if not _has_teaching_depth(value["key_points"]):
+                return False
+        if summary_type == "exam":
+            if not all(_word_count(point) >= 30 for point in value["key_points"][:5]):
+                return False
+        if summary_type == "explanation":
+            if not all(_word_count(point) >= 65 for point in value["key_points"][:6]):
+                return False
+            if not _has_teaching_depth(value["key_points"]):
+                return False
         key_terms = value.get("key_terms")
         if not isinstance(key_terms, list) or len(key_terms) < 3:
             return False
@@ -550,7 +831,11 @@ class OpenAIProvider(AIProvider):
                 return False
             if not all(isinstance(item.get(key), str) and item[key].strip() for key in ("term", "definition")):
                 return False
-            if _looks_like_meta_summary(item["term"]):
+            if _looks_like_meta_summary(item["term"]) or _looks_like_pdf_artifact(item["term"], item["definition"]):
+                return False
+            if summary_type in {"detailed", "exam"} and _word_count(item["definition"]) < 18:
+                return False
+            if summary_type == "explanation" and _word_count(item["definition"]) < 25:
                 return False
         source_quotes = value.get("source_quotes")
         if not isinstance(source_quotes, list) or len(source_quotes) < 2:
@@ -694,43 +979,56 @@ class OpenAIProvider(AIProvider):
     def _summary_prompt(self, document_text: str, summary_type: str) -> str:
         guidance = {
             "concise": (
-                "Rewrite the source into a compact teaching explanation. Focus on the core concepts, the broad "
-                "flow of the argument, and the minimum details needed to understand the material without rereading it."
+                "Create a compact but teachable review. The output should still explain the core concepts and the "
+                "source's learning sequence, not just list topics."
             ),
             "detailed": (
-                "Rewrite the source as a conceptual study guide. Explain the principles, definitions, mechanisms, "
-                "relationships, assumptions, and consequences in your own words. Use examples only after explaining "
-                "the underlying idea."
+                "Create a full conceptual study guide. Each key point should be a mini-lesson that explains what the "
+                "concept means, why it matters, how it connects to surrounding concepts, and what assumption, limit, "
+                "or implementation consequence the source attaches to it."
             ),
             "exam": (
-                "Rewrite the source for exam preparation. Emphasize likely test points, definitions that must be "
-                "memorized, comparisons with similar concepts, exceptions, failure cases, and common confusions."
+                "Create exam-prep notes. Emphasize testable definitions, likely comparisons, common confusions, "
+                "exceptions, failure cases, and memorization anchors, while still teaching the ideas."
+            ),
+            "explanation": (
+                "Create an expanded explanatory guide for a learner who found the lecture hard to understand. "
+                "Do not compress. Rebuild the lecture concepts from the ground up, add source-consistent background "
+                "explanations, plain-language bridges, causal reasoning, and practical intuition beyond the terse source wording."
             ),
         }.get(summary_type, "Write a source-grounded study summary.")
         return (
-            "You are StudyPilot's study-note writer.\n"
-            "Your job is not to make a thin abstract. Your job is to read the source and re-explain the content and concepts in your own words.\n"
-            "The result must be self-contained enough that a student can study from the generated notes without opening the original source for first-pass review.\n"
+            "You are StudyPilot's senior course-note writer.\n"
+            "Your output is a study guide, not a transcript summary, slide recap, topic index, or table of contents.\n"
+            "A learner should be able to use only the generated notes for first-pass learning, then return to the original source only for verification and examples.\n"
+            "Before writing, infer the actual lecture/topic scope from Course Context, Section Context, and Source Material. Ignore file names, page numbers, timestamps, extraction markers, slide wrappers, and bullet artifacts.\n"
+            "Use the source's own teaching path as the backbone: preserve how the source introduces prerequisites, motivates distinctions, sequences algorithms, compares alternatives, and states caveats.\n"
+            "Base every claim on the uploaded source. You may add source-consistent teaching explanation and source-consistent explanatory scaffolding for concepts that appear in the source, but do not introduce unrelated facts, new algorithms, or unsupported examples.\n"
             "Return only a valid JSON object with keys: title, overview, key_points, key_terms, source_quotes.\n"
-            "Rules:\n"
+            "Required output contract:\n"
+            "- title: name the actual lecture topic or section scope. Do not use the first slide heading, page label, file name, or source wrapper.\n"
+            "- overview: 4-6 sentences. It must teach the main topic, explain the source's conceptual progression, and name the most important distinctions or tradeoffs.\n"
+            "- key_points: return 6-9 items for detailed/exam/explanation outputs and 4-6 items for concise summaries.\n"
+            "- For detailed summaries, each key_points item must be 3-5 sentences and at least 45 words. Treat each item as a mini-lesson, not a bullet label.\n"
+            "- For explanation outputs, each key_points item must be 4-7 sentences and at least 65 words. It should slow down, define prerequisites, explain intuition, and connect the idea to why the learner should care.\n"
+            "- Each key_points item should include: the concept, what it means, why it matters, how it connects to the previous/next idea, and any condition, caveat, tradeoff, or failure mode from the source.\n"
+            "- key_terms: return 8-12 concrete course terms when the source supports them. Each definition should be 1-3 teaching sentences, not a dictionary fragment.\n"
+            "- source_quotes: return 3-5 short verbatim snippets copied from the source. Quotes should support major claims; do not put long copied source text in key_points.\n"
+            "Quality rules:\n"
             "- Use only facts supported by the notes.\n"
-            "- Reorganize the explanation when it helps learning, but do not invent facts beyond the source.\n"
-            "- Preserve section structure when useful, but explain the concepts instead of merely listing section titles or transcript order.\n"
+            "- If Course Context or Section Context is provided, use it to understand scope, terminology, and emphasis. Do not treat context as source evidence or quote it in source_quotes.\n"
+            "- Follow the source's explanation order by default. Reorganize only when it clearly improves learning, and never hide prerequisites, definitions, or caveats that the source gives earlier.\n"
             "- If notes are insufficient, say that explicitly.\n"
-            "- Do not write vague meta summaries such as 'these notes discuss...' without explaining the actual ideas.\n"
-            "- Do not use Chunk, Source Notes, uploaded notes, section, or slide as key concepts unless those are actual source concepts.\n"
-            "- overview must be 3-5 sentences that teach the main topic, the conceptual flow, and the major conclusions.\n"
-            "- key_points must contain 5-8 study-ready teaching notes. Each point must explain a concept in your own words, include the source's important conditions or exceptions, and state why the idea matters.\n"
-            "- key_terms must contain 5-10 concrete terms with source-grounded definitions written as if teaching a student, not as dictionary fragments.\n"
-            "- source_quotes must contain 3-5 short snippets copied from the notes with a reason for each quote.\n"
+            "- Do not write vague meta summaries such as 'these notes discuss...' or 'this section covers...' without explaining the actual ideas.\n"
+            "- Do not use Chunk, Source Part, Source Material, Source Notes, Concrete study points, Concept definitions, Source evidence, uploaded notes, section, slide, or page as key concepts unless those are actual course concepts.\n"
+            "- Do not use page labels, file labels, bullet artifacts, or OCR/PDF text artifacts as concepts. Ignore strings like 'Page 3 of 37', 'A ...', or spaced heading text such as 'Ty p e o f M o v e m e n t'. Infer the intended phrase and teach the actual course concept.\n"
+            "- Clean obvious extraction artifacts before writing. For example, read 'de.nition' as 'definition', '.xed' as 'fixed', and '.oats' as 'floats'.\n"
+            "- Reject slide-copy style. A bad key point is 'Concept overview - Page 3: Type of Movement'. A good key point explains the distinction between discrete and continuous movement, how representation affects algorithms, and why the game loop changes how movement code is written.\n"
             "- Include constraints, exceptions, comparisons, or failure cases when the source contains them.\n"
             "- Prefer explanatory phrases like 'This means...', 'The reason this matters is...', and 'The key distinction is...' when they make the concept clearer.\n"
-            "- Avoid copying long source sentences into key_points. Quotes belong only in source_quotes.\n"
-            "- For concise summaries, create a compact conceptual rewrite with the big-picture flow and enough detail to study from.\n"
-            "- For detailed summaries, create a deeper teaching explanation of concepts, principles, relationships, and assumptions.\n"
-            "- For exam summaries, label or phrase key_points as test points, similar-concept comparisons, exception/failure cases, and memorization anchors.\n"
+            "- For explanation outputs, it is acceptable to add general background explanations, analogies, or intuition that help the learner understand a source concept, as long as they do not contradict the source or introduce unrelated course material.\n"
             f"- Summary mode: {summary_type}. {guidance}\n\n"
-            f"Notes:\n{document_text[:30000]}"
+            f"Notes:\n{document_text[:80000]}"
         )
 
     def _flashcard_prompt(self, document_text: str, count: int) -> str:
@@ -744,7 +1042,7 @@ class OpenAIProvider(AIProvider):
             "- source_quote must be a short snippet from the notes.\n"
             "- If notes are insufficient, make the card say the source is insufficient.\n"
             f"- Create exactly {count} cards when enough source material exists.\n\n"
-            f"Notes:\n{document_text[:30000]}"
+            f"Notes:\n{document_text[:80000]}"
         )
 
     def _quiz_prompt(self, document_text: str, question_count: int, difficulty: str) -> str:
@@ -755,6 +1053,7 @@ class OpenAIProvider(AIProvider):
             "Each question must include: question, choices, correct_answer, explanation, topic, difficulty, source_quote.\n"
             "Rules:\n"
             "- Ask concept-understanding questions that require applying, distinguishing, or explaining a source concept.\n"
+            "- If Course Context is provided, use it to tune emphasis and terminology. Do not make questions answerable only from Course Context; the correct answer must still be grounded in Source Material.\n"
             "- Avoid trivia, exact phrase recall, and questions answerable only by matching a word from the notes.\n"
             "- The correct answer must be directly supported by the notes.\n"
             "- Distractors must be plausible misunderstandings: overgeneralizations, reversed relationships, confused similar concepts, or unsupported extensions.\n"
@@ -765,5 +1064,5 @@ class OpenAIProvider(AIProvider):
             "- If the source includes exceptions, constraints, or failure cases, include at least one question about them when possible.\n"
             "- If Review Focus Topics are listed, prioritize those topics.\n"
             f"- Question count: {question_count}. Difficulty: {difficulty}.\n\n"
-            f"Notes:\n{document_text[:30000]}"
+            f"Notes:\n{document_text[:80000]}"
         )

@@ -29,6 +29,8 @@ def prepare_study_text(text: str) -> str:
             continue
         if re.fullmatch(r"\d{1,4}", stripped):
             continue
+        if re.fullmatch(r"(?:---\s*)?Page\s+\d+\s+of\s+\d+(?:\s*---)?", stripped, flags=re.IGNORECASE):
+            continue
         if stripped.lower().startswith("extraction note:"):
             continue
 

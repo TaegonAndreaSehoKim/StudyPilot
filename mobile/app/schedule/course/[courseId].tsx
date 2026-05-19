@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { ScheduleEventType, ScheduleItem } from '@/api/types';
@@ -10,7 +10,14 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ResponsiveGrid, ScreenScrollView, useTabletLayout } from '@/components/Screen';
+import { StatusBanner } from '@/components/StatusBanner';
 import { colors } from '@/constants/colors';
+import {
+  cancelReminderForItem,
+  reminderLabel,
+  scheduleReminderForItem,
+  type ReminderScheduleStatus,
+} from '@/services/scheduleNotifications';
 import { formatDateTime, formatTimeRemaining } from '@/utils/format';
 
 const EVENT_TYPES: ScheduleEventType[] = ['assignment', 'exam', 'reading', 'project', 'other'];
@@ -25,10 +32,17 @@ export default function CourseScheduleScreen() {
   const [dueDate, setDueDate] = useState(toDateInput(today));
   const [dueTime, setDueTime] = useState('23:59');
   const [notes, setNotes] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(startOfMonth(today));
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [reminderDays, setReminderDays] = useState('0');
+  const [reminderHours, setReminderHours] = useState('1');
+  const [reminderMinutes, setReminderMinutes] = useState('0');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const isTablet = useTabletLayout();
 
   const load = useCallback(async () => {
@@ -57,18 +71,31 @@ export default function CourseScheduleScreen() {
       setError('Use date format YYYY-MM-DD and time format HH:mm.');
       return;
     }
+    const reminderMinutesBefore = reminderEnabled ? calculateReminderMinutes(reminderDays, reminderHours, reminderMinutes) : null;
+    if (reminderMinutesBefore === undefined) {
+      setError('Use whole numbers for popup alert days, hours, and minutes.');
+      return;
+    }
+    if (reminderMinutesBefore !== null && reminderMinutesBefore > 10080) {
+      setError('Popup alerts can be scheduled up to 7 days before the deadline.');
+      return;
+    }
 
     try {
       setSaving(true);
       setError(null);
-      await api.createScheduleItem(id, {
+      setNotice(null);
+      const createdItem = await api.createScheduleItem(id, {
         title: title.trim(),
         event_type: eventType,
         due_at: dueAt.toISOString(),
         notes: notes.trim() || undefined,
+        reminder_minutes_before: reminderMinutesBefore,
       });
+      const reminderStatus = await scheduleReminderForItem(createdItem);
       setTitle('');
       setNotes('');
+      setNotice(reminderStatusMessage(reminderStatus, createdItem));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create schedule item');
@@ -80,7 +107,15 @@ export default function CourseScheduleScreen() {
   async function toggleItem(item: ScheduleItem) {
     try {
       setError(null);
-      await api.updateScheduleItem(item.id, { is_completed: !item.is_completed });
+      setNotice(null);
+      const updatedItem = await api.updateScheduleItem(item.id, { is_completed: !item.is_completed });
+      let reminderStatus: ReminderScheduleStatus = 'disabled';
+      if (updatedItem.is_completed) {
+        await cancelReminderForItem(updatedItem.id);
+      } else {
+        reminderStatus = await scheduleReminderForItem(updatedItem);
+      }
+      setNotice(updatedItem.is_completed ? 'Schedule item marked done. Its popup alert was canceled.' : reminderStatusMessage(reminderStatus, updatedItem));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update schedule item');
@@ -97,7 +132,10 @@ export default function CourseScheduleScreen() {
   async function deleteItem(itemId: number) {
     try {
       setError(null);
+      setNotice(null);
+      await cancelReminderForItem(itemId);
       await api.deleteScheduleItem(itemId);
+      setNotice('Schedule item deleted. Its popup alert was canceled.');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to delete schedule item');
@@ -114,6 +152,7 @@ export default function CourseScheduleScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
     >
       {error ? <ErrorState message={error} onRetry={load} /> : null}
+      {notice ? <StatusBanner title="Schedule alert" message={notice} variant="success" /> : null}
 
       <View style={styles.header}>
         <Text style={styles.title}>Course Schedule</Text>
@@ -142,21 +181,38 @@ export default function CourseScheduleScreen() {
               ))}
             </View>
             <View style={styles.dateRow}>
-              <TextInput
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                style={[styles.input, styles.dateInput]}
-                value={dueDate}
-                onChangeText={setDueDate}
-              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setCalendarOpen((current) => !current)}
+                style={[styles.input, styles.dateInput, styles.datePickerButton]}
+              >
+                <Text style={dueDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                  {dueDate || 'YYYY-MM-DD'}
+                </Text>
+              </Pressable>
               <TextInput
                 placeholder="HH:mm"
                 placeholderTextColor={colors.textMuted}
+                keyboardType="number-pad"
                 style={[styles.input, styles.timeInput]}
                 value={dueTime}
-                onChangeText={setDueTime}
+                onChangeText={(value) => setDueTime(formatTimeInput(value))}
+                onBlur={() => setDueTime(normalizeTimeInput(dueTime))}
               />
             </View>
+            {calendarOpen ? (
+              <MiniCalendar
+                month={calendarMonth}
+                selectedDate={dueDate}
+                onPreviousMonth={() => setCalendarMonth(addMonths(calendarMonth, -1))}
+                onNextMonth={() => setCalendarMonth(addMonths(calendarMonth, 1))}
+                onSelect={(dateValue) => {
+                  setDueDate(dateValue);
+                  setCalendarMonth(startOfMonth(parseDateInput(dateValue) || calendarMonth));
+                  setCalendarOpen(false);
+                }}
+              />
+            ) : null}
             <TextInput
               multiline
               placeholder="Notes"
@@ -165,6 +221,46 @@ export default function CourseScheduleScreen() {
               value={notes}
               onChangeText={setNotes}
             />
+            <View style={styles.reminderGroup}>
+              <Text style={styles.inputLabel}>Popup alert</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setReminderEnabled((current) => !current)}
+                style={[styles.noAlertButton, !reminderEnabled && styles.activeNoAlertButton]}
+              >
+                <Text style={[styles.noAlertButtonText, !reminderEnabled && styles.activeNoAlertButtonText]}>
+                  No alert
+                </Text>
+              </Pressable>
+              <View style={[styles.customReminderRow, !reminderEnabled && styles.disabledReminderFields]}>
+                <ReminderNumberInput
+                  label="Days"
+                  value={reminderDays}
+                  disabled={!reminderEnabled}
+                  onFocus={() => setReminderEnabled(true)}
+                  onChange={setReminderDays}
+                />
+                <ReminderNumberInput
+                  label="Hours"
+                  value={reminderHours}
+                  disabled={!reminderEnabled}
+                  onFocus={() => setReminderEnabled(true)}
+                  onChange={setReminderHours}
+                />
+                <ReminderNumberInput
+                  label="Minutes"
+                  value={reminderMinutes}
+                  disabled={!reminderEnabled}
+                  onFocus={() => setReminderEnabled(true)}
+                  onChange={setReminderMinutes}
+                />
+              </View>
+              {reminderEnabled ? (
+                <Text style={styles.reminderHint}>
+                  {customReminderSentence(reminderDays, reminderHours, reminderMinutes)}
+                </Text>
+              ) : null}
+            </View>
             <Button title={saving ? 'Saving...' : 'Add Schedule Item'} disabled={saving} onPress={createItem} />
           </Card>
         </View>
@@ -183,6 +279,9 @@ export default function CourseScheduleScreen() {
                   </View>
                   <Text style={styles.itemMeta}>{formatTimeRemaining(item.due_at, item.is_completed)}</Text>
                   <Text style={styles.itemMeta}>{formatDateTime(item.due_at)}</Text>
+                  <Text style={styles.reminderMeta}>
+                    Popup alert: {item.reminder_minutes_before == null ? 'Off' : reminderLabel(item.reminder_minutes_before)}
+                  </Text>
                   {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
                   <View style={styles.itemActions}>
                     <Button
@@ -204,11 +303,186 @@ export default function CourseScheduleScreen() {
   );
 }
 
+function reminderStatusMessage(status: ReminderScheduleStatus, item: ScheduleItem): string {
+  if (status === 'scheduled') {
+    return `${reminderLabel(item.reminder_minutes_before)} popup alert scheduled for ${item.title}.`;
+  }
+  if (status === 'permission-denied') {
+    return 'The schedule item was saved, but notifications are blocked on this device.';
+  }
+  if (status === 'skipped') {
+    return 'The schedule item was saved, but the selected popup alert time is already past.';
+  }
+  if (status === 'unsupported') {
+    return 'The schedule item was saved. Popup alerts are available on iOS and Android devices.';
+  }
+  if (status === 'failed') {
+    return 'The schedule item was saved, but this device could not schedule the popup alert.';
+  }
+  return 'The schedule item was saved without a popup alert.';
+}
+
+function ReminderNumberInput({
+  label,
+  value,
+  disabled,
+  onFocus,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  disabled: boolean;
+  onFocus: () => void;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <View style={styles.reminderNumberField}>
+      <Text style={styles.reminderNumberLabel}>{label}</Text>
+      <TextInput
+        keyboardType="number-pad"
+        editable={!disabled}
+        value={value}
+        onFocus={onFocus}
+        onChangeText={(text) => onChange(text.replace(/\D/g, '').slice(0, 4))}
+        placeholder="0"
+        placeholderTextColor={colors.textFaint}
+        style={styles.reminderNumberInput}
+      />
+    </View>
+  );
+}
+
+function MiniCalendar({
+  month,
+  selectedDate,
+  onPreviousMonth,
+  onNextMonth,
+  onSelect,
+}: {
+  month: Date;
+  selectedDate: string;
+  onPreviousMonth: () => void;
+  onNextMonth: () => void;
+  onSelect: (dateValue: string) => void;
+}) {
+  const cells = buildCalendarCells(month);
+  return (
+    <View style={styles.calendar}>
+      <View style={styles.calendarHeader}>
+        <Pressable accessibilityRole="button" onPress={onPreviousMonth} style={styles.calendarNavButton}>
+          <Text style={styles.calendarNavText}>{'<'}</Text>
+        </Pressable>
+        <Text style={styles.calendarTitle}>{month.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</Text>
+        <Pressable accessibilityRole="button" onPress={onNextMonth} style={styles.calendarNavButton}>
+          <Text style={styles.calendarNavText}>{'>'}</Text>
+        </Pressable>
+      </View>
+      <View style={styles.weekdayRow}>
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+          <Text key={`${day}-${index}`} style={styles.weekdayText}>{day}</Text>
+        ))}
+      </View>
+      <View style={styles.calendarGrid}>
+        {cells.map((cell, index) => {
+          const dateValue = cell ? toDateInput(cell) : '';
+          const selected = !!dateValue && dateValue === selectedDate;
+          const today = !!cell && dateValue === toDateInput(new Date());
+          return (
+            <Pressable
+              key={`${dateValue || 'blank'}-${index}`}
+              accessibilityRole={cell ? 'button' : undefined}
+              disabled={!cell}
+              onPress={() => cell && onSelect(dateValue)}
+              style={[
+                styles.calendarDay,
+                !cell && styles.emptyCalendarDay,
+                today && styles.todayCalendarDay,
+                selected && styles.selectedCalendarDay,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.calendarDayText,
+                  today && styles.todayCalendarDayText,
+                  selected && styles.selectedCalendarDayText,
+                ]}
+              >
+                {cell ? cell.getDate() : ''}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function toDateInput(value: Date): string {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, '0');
   const day = String(value.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function parseDateInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date;
+}
+
+function startOfMonth(value: Date): Date {
+  return new Date(value.getFullYear(), value.getMonth(), 1);
+}
+
+function addMonths(value: Date, amount: number): Date {
+  return new Date(value.getFullYear(), value.getMonth() + amount, 1);
+}
+
+function buildCalendarCells(month: Date): Array<Date | null> {
+  const firstDay = startOfMonth(month);
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells: Array<Date | null> = Array.from({ length: firstDay.getDay() }, () => null);
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push(new Date(month.getFullYear(), month.getMonth(), day));
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push(null);
+  }
+  return cells;
+}
+
+function formatDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 4) {
+    return digits;
+  }
+  if (digits.length <= 6) {
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  }
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
+}
+
+function formatTimeInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+function normalizeTimeInput(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 3) {
+    return formatTimeInput(digits.padStart(4, '0'));
+  }
+  return formatTimeInput(digits);
 }
 
 function parseLocalDateTime(dateValue: string, timeValue: string): Date | null {
@@ -225,6 +499,34 @@ function parseLocalDateTime(dateValue: string, timeValue: string): Date | null {
     return null;
   }
   return date;
+}
+
+function calculateReminderMinutes(daysValue: string, hoursValue: string, minutesValue: string): number | null | undefined {
+  const days = parseWholeNumber(daysValue || '0');
+  const hours = parseWholeNumber(hoursValue || '0');
+  const minutes = parseWholeNumber(minutesValue || '0');
+  if (days === undefined || hours === undefined || minutes === undefined) {
+    return undefined;
+  }
+  return days * 1440 + hours * 60 + minutes;
+}
+
+function parseWholeNumber(value: string): number | undefined {
+  if (!/^\d+$/.test(value)) {
+    return undefined;
+  }
+  return Number(value);
+}
+
+function customReminderSentence(daysValue: string, hoursValue: string, minutesValue: string): string {
+  const total = calculateReminderMinutes(daysValue, hoursValue, minutesValue);
+  if (total === undefined) {
+    return 'Enter whole numbers for the popup alert time.';
+  }
+  if (total === 0) {
+    return 'Alert at the due time.';
+  }
+  return `Alert ${reminderLabel(total)}.`;
 }
 
 const styles = StyleSheet.create({
@@ -247,9 +549,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 30,
+    fontSize: 26,
+    fontWeight: '900',
+    lineHeight: 32,
   },
   subtitle: {
     color: colors.textMuted,
@@ -280,6 +582,71 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  inputLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  reminderGroup: {
+    gap: 8,
+  },
+  noAlertButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  activeNoAlertButton: {
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primary,
+  },
+  noAlertButtonText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  activeNoAlertButtonText: {
+    color: colors.primary,
+  },
+  customReminderRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  disabledReminderFields: {
+    opacity: 0.48,
+  },
+  reminderNumberField: {
+    flex: 1,
+    gap: 5,
+  },
+  reminderNumberLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  reminderNumberInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    minHeight: 42,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    textAlign: 'center',
+  },
+  reminderHint: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
   typeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -292,8 +659,94 @@ const styles = StyleSheet.create({
   dateInput: {
     flex: 1,
   },
+  datePickerButton: {
+    justifyContent: 'center',
+  },
+  datePickerText: {
+    color: colors.text,
+    fontSize: 15,
+  },
+  datePickerPlaceholder: {
+    color: colors.textMuted,
+    fontSize: 15,
+  },
   timeInput: {
     width: 96,
+  },
+  calendar: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 10,
+    padding: 10,
+  },
+  calendarHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  calendarTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  calendarNavButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 38,
+  },
+  calendarNavText: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  weekdayRow: {
+    flexDirection: 'row',
+  },
+  weekdayText: {
+    color: colors.textMuted,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 6,
+  },
+  calendarDay: {
+    alignItems: 'center',
+    aspectRatio: 1,
+    borderRadius: 8,
+    justifyContent: 'center',
+    width: '14.2857%',
+  },
+  emptyCalendarDay: {
+    opacity: 0,
+  },
+  todayCalendarDay: {
+    backgroundColor: colors.accentSurface,
+  },
+  selectedCalendarDay: {
+    backgroundColor: colors.primary,
+  },
+  calendarDayText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  todayCalendarDayText: {
+    color: colors.accent,
+  },
+  selectedCalendarDayText: {
+    color: colors.surface,
   },
   itemHeader: {
     alignItems: 'flex-start',
@@ -322,15 +775,21 @@ const styles = StyleSheet.create({
   },
   openBadge: {
     backgroundColor: colors.warningSurface,
-    color: colors.text,
+    color: colors.warning,
   },
   doneBadge: {
     backgroundColor: colors.successSurface,
-    color: colors.text,
+    color: colors.success,
   },
   itemMeta: {
     color: colors.textMuted,
     fontSize: 13,
+    lineHeight: 18,
+  },
+  reminderMeta: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800',
     lineHeight: 18,
   },
   notes: {

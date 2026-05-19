@@ -12,22 +12,25 @@ def test_course_schedule_crud(client: TestClient, course_id: int) -> None:
             "event_type": "assignment",
             "due_at": due_at,
             "notes": "Submit before midnight.",
+            "reminder_minutes_before": 60,
         },
     )
     assert create_response.status_code == 201
     item = create_response.json()
     assert item["title"] == "Project 1 due"
     assert item["is_completed"] is False
+    assert item["reminder_minutes_before"] == 60
 
     list_response = client.get(f"/courses/{course_id}/schedule")
     assert list_response.status_code == 200
     assert len(list_response.json()) == 1
 
-    update_response = client.patch(f"/schedule/{item['id']}", json={"is_completed": True})
+    update_response = client.patch(f"/schedule/{item['id']}", json={"is_completed": True, "reminder_minutes_before": None})
     assert update_response.status_code == 200
     updated = update_response.json()
     assert updated["is_completed"] is True
     assert updated["completed_at"] is not None
+    assert updated["reminder_minutes_before"] is None
 
     active_response = client.get(f"/courses/{course_id}/schedule", params={"include_completed": "false"})
     assert active_response.status_code == 200

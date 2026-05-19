@@ -80,6 +80,58 @@ def test_openai_provider_rejects_shallow_meta_summary() -> None:
     assert "Source Notes" not in [term["term"] for term in result["key_terms"]]
 
 
+def test_openai_provider_rejects_pdf_artifact_summary() -> None:
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"Study Notes","overview":"Section: Source Material 1: transcript_en.txt Page 3 of 37",'
+            '"key_points":["Concept overview - Page 3 of 37: Ty p e o f M o v e m e n t explains movement.",'
+            '"Concept overview - A Specific locations are connected according to adjacency.",'
+            '"Concept overview - Relaxed de.nition uses .xed size variables and .oats."],'
+            '"key_terms":[{"term":"Page 3 of 37","definition":"Ty p e o f M o v e m e n t"},'
+            '{"term":"A Specific locations","definition":"connected according to adjacency"},'
+            '{"term":"Relaxed de.nition","definition":"uses .xed variables"}],'
+            '"source_quotes":[{"quote":"Ty p e o f M o v e m e n t","reason":"Artifact"},'
+            '{"quote":"A Specific locations are connected","reason":"Artifact"}]}'
+        )
+    )
+
+    result = provider.generate_summary(
+        "Discrete movement uses adjacent grid locations. Continuous movement uses small position changes.",
+        "detailed",
+    )
+
+    combined = " ".join([result["overview"], *result["key_points"], *(term["term"] for term in result["key_terms"])])
+    assert "Page 3 of 37" not in combined
+    assert "Ty p e" not in combined
+    assert "de.nition" not in combined
+
+
+def test_openai_provider_rejects_thin_detailed_summary() -> None:
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"Agent Movement","overview":"Agent movement covers discrete and continuous movement. It also mentions update loops and vectors.",'
+            '"key_points":["Discrete movement uses distinct locations.",'
+            '"Continuous movement uses small position changes.",'
+            '"The update loop runs movement code.",'
+            '"Vectors represent positions.",'
+            '"Orientation stores facing direction."],'
+            '"key_terms":[{"term":"Discrete movement","definition":"Distinct locations."},'
+            '{"term":"Continuous movement","definition":"Small changes."},'
+            '{"term":"Update loop","definition":"Repeated updates."}],'
+            '"source_quotes":[{"quote":"discrete movement","reason":"Term"},'
+            '{"quote":"continuous movement","reason":"Term"}]}'
+        )
+    )
+
+    result = provider.generate_summary(
+        "Agent movement distinguishes discrete movement, continuous movement, update loops, vectors, orientation, and arrive behavior.",
+        "detailed",
+    )
+
+    assert result["title"] != "Agent Movement"
+    assert "Detailed Summary" in result["title"]
+
+
 def test_openai_provider_accepts_wrapped_flashcards() -> None:
     provider = provider_with_response(
         DummyResponse(
@@ -131,6 +183,32 @@ def test_quiz_prompt_requires_conceptual_explanations() -> None:
     assert "plausible misunderstandings" in prompt
     assert "Why other choices are wrong" in prompt
     assert "exceptions, constraints, or failure cases" in prompt
+    assert "If Course Context is provided" in prompt
+    assert "correct answer must still be grounded in Source Material" in prompt
+
+
+def test_summary_prompt_teaches_from_source_order_with_scaffolding() -> None:
+    provider = provider_with_response(DummyResponse("{}"))
+
+    prompt = provider._summary_prompt("Linear programming introduces constraints before rounding.", "detailed")
+
+    assert "source's own teaching path as the backbone" in prompt
+    assert "study guide, not a transcript summary" in prompt
+    assert "mini-lesson" in prompt
+    assert "source-consistent teaching explanation" in prompt
+    assert "at least 45 words" in prompt
+    assert "Do not treat context as source evidence" in prompt
+
+
+def test_explanation_prompt_expands_beyond_compression() -> None:
+    provider = provider_with_response(DummyResponse("{}"))
+
+    prompt = provider._summary_prompt("Discrete movement uses adjacency while continuous movement uses vectors.", "explanation")
+
+    assert "expanded explanatory guide" in prompt
+    assert "Do not compress" in prompt
+    assert "4-7 sentences and at least 65 words" in prompt
+    assert "background explanations, analogies, or intuition" in prompt
 
 
 def test_openai_provider_falls_back_for_malformed_summary_shape() -> None:
