@@ -876,7 +876,10 @@ class OpenAIProvider(AIProvider):
             return False
         if not all(isinstance(point, str) and len(point.strip()) >= 60 for point in value["key_points"]):
             return False
-        if any(_looks_like_meta_summary(point) or _looks_like_pdf_artifact(point) for point in value["key_points"]):
+        artifact_point_count = sum(
+            1 for point in value["key_points"] if _looks_like_meta_summary(point) or _looks_like_pdf_artifact(point)
+        )
+        if artifact_point_count >= max(2, len(value["key_points"]) // 2):
             return False
         if summary_type == "detailed":
             if not all(_word_count(point) >= 60 for point in value["key_points"][:5]):

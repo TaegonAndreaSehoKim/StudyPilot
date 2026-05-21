@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from app.services.ai_provider import FakeAIProvider, OpenAIProvider
@@ -130,6 +131,32 @@ def test_openai_provider_rejects_pdf_artifact_summary() -> None:
     assert "Page 3 of 37" not in combined
     assert "Ty p e" not in combined
     assert "de.nition" not in combined
+
+
+def test_openai_provider_accepts_isolated_artifact_false_positive() -> None:
+    points = [
+        "Game AI is framed as a practical design problem because the agent should support gameplay, challenge, and believability rather than simply maximize an abstract intelligence score. The source connects this to how a designer decides what behavior belongs in the agent and what behavior belongs in the world. This means the learner should study the concept as a design tradeoff, not as a single algorithm.",
+        "A Specific genre constraint can change what kind of behavior is useful, but this sentence is still a normal explanatory point rather than a PDF artifact. The source's broader idea is that different games need different levels of autonomy, planning, and reaction. The key distinction is that useful AI depends on the player's experience, not only on technical sophistication, because the same technique can feel appropriate in one genre and distracting in another.",
+        "Rules, search, and planning are presented as different tools that can help an agent select actions under different constraints. Rules encode designer knowledge, search evaluates possibilities, and planning reasons about sequences of actions. The reason this matters is that each method solves a different kind of game behavior problem, so the learner should connect methods to the design pressure that motivates them.",
+        "Tactics and strategy operate at different scales of decision making, so they should not be treated as interchangeable labels. Tactical behavior handles immediate local choices, while strategic behavior concerns broader plans or opponent direction. This distinction matters because games often need both short-term reactions and long-term coherence, and because confusing those scales can make an agent look either aimless or unfair.",
+        "Projectile and aiming examples show that game AI often reasons under spatial or physical constraints. The source uses these examples to move beyond abstract definitions and into concrete gameplay problems. This means the learner should connect AI techniques to the constraints created by genre, controls, timing, and player expectations, then ask whether the result should be optimal, believable, or deliberately imperfect.",
+    ]
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"Game AI Design Explanation",'
+            '"overview":"Game AI is explained as a practical design area where agents, rules, search, planning, tactics, strategy, and genre constraints all shape behavior. The source emphasizes that useful AI should support gameplay and player experience rather than simply solve everything optimally. This makes the material a detailed explanation of design tradeoffs, not just a list of techniques. The learner should therefore preserve the lecture examples and comparisons because they show how each method becomes useful in a particular game context.",'
+            f'"key_points":{json.dumps(points)},'
+            '"key_terms":[{"term":"Game AI","definition":"Game AI is a practical design area for creating behavior that supports gameplay, challenge, believability, and player experience rather than abstract optimal intelligence."},'
+            '{"term":"Rules","definition":"Rules encode designer knowledge so an agent can choose behavior from recognizable conditions in the current game state without solving every situation from scratch."},'
+            '{"term":"Planning","definition":"Planning reasons about action sequences and goals when the behavior problem requires more than a single immediate rule or local reaction."}],'
+            '"source_quotes":[{"quote":"artificial intelligence for video games","reason":"Names the scope."},'
+            '{"quote":"conventional algorithms","reason":"Supports the AI definition."}]}'
+        )
+    )
+
+    result = provider.generate_summary("Artificial intelligence for video games uses rules, search, planning, tactics, and strategy.", "detailed")
+
+    assert result["title"] == "Game AI Design Explanation"
 
 
 def test_openai_provider_rejects_thin_detailed_summary() -> None:
