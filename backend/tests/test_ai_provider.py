@@ -64,6 +64,32 @@ def test_openai_provider_parses_json_code_fence() -> None:
     assert len(result["key_points"]) == 3
 
 
+def test_openai_provider_accepts_string_source_quotes() -> None:
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"Game AI Foundations",'
+            '"overview":"Artificial intelligence in video games is introduced as a practical way to create agent behavior when conventional algorithms are not enough. The source connects game AI to decision making, rules, search, planning, tactics, and strategy, so the learner should treat it as a design space rather than a single algorithm. It also distinguishes ordinary predefined logic from AI-style approaches that help with behavior and choice.",'
+            '"key_points":["Game AI is framed as a practical toolkit for producing behavior in video games, so the learner should connect each technique to the gameplay problem it helps solve rather than memorizing a disconnected list of names.",'
+            '"The source defines AI around problems that cannot realistically be solved with conventional algorithms, which means the important distinction is whether ordinary fixed procedures are enough for the behavior the designer wants.",'
+            '"Decision making and rules appear as basic ways to structure agent behavior, while search and planning suggest methods for reasoning through options or action sequences when the immediate choice is less obvious.",'
+            '"Tactics and strategy extend the discussion from local action choice to broader behavior, showing that game AI can operate at different time scales depending on the gameplay role of the agent."],'
+            '"key_terms":[{"term":"Game AI","definition":"Game AI is the use of AI techniques to create behavior for video games, especially when simple conventional algorithms are not enough for the desired agent behavior."},'
+            '{"term":"Conventional algorithms","definition":"Conventional algorithms are fixed procedures that may be insufficient when the game problem requires flexible behavior, choice, or adaptation."},'
+            '{"term":"Decision making","definition":"Decision making is the process by which a game agent selects actions from the state of the game."}],'
+            '"source_quotes":["artificial intelligence for video games","conventional algorithms","decision making, rules, search, planning"]}'
+        )
+    )
+
+    result = provider.generate_summary("Artificial intelligence for video games uses decision making, rules, search, planning, tactics, and strategy.", "concise")
+
+    assert result["title"] == "Game AI Foundations"
+    assert result["source_quotes"] == [
+        "artificial intelligence for video games",
+        "conventional algorithms",
+        "decision making, rules, search, planning",
+    ]
+
+
 def test_openai_provider_rejects_shallow_meta_summary() -> None:
     provider = provider_with_response(
         DummyResponse(

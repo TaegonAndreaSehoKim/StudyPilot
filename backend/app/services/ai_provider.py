@@ -903,10 +903,13 @@ class OpenAIProvider(AIProvider):
         if not isinstance(source_quotes, list) or len(source_quotes) < 2:
             return False
         for item in source_quotes:
-            if not isinstance(item, dict):
-                return False
-            if not all(isinstance(item.get(key), str) and item[key].strip() for key in ("quote", "reason")):
-                return False
+            if isinstance(item, str):
+                if not item.strip():
+                    return False
+                continue
+            if isinstance(item, dict) and all(isinstance(item.get(key), str) and item[key].strip() for key in ("quote", "reason")):
+                continue
+            return False
         return True
 
     def _valid_flashcards(self, value: Any) -> bool:
@@ -1075,7 +1078,7 @@ class OpenAIProvider(AIProvider):
             "- For explanation outputs, each key_points item must be 4-7 sentences and at least 65 words. It should slow down, define prerequisites, explain intuition, and connect the idea to why the learner should care.\n"
             "- Each key_points item should include: the concept, what it means, why it matters, how it connects to the previous/next idea, and any condition, caveat, tradeoff, or failure mode from the source.\n"
             "- key_terms: return 8-12 concrete course terms when the source supports them. Each definition should be 1-3 teaching sentences, not a dictionary fragment.\n"
-            "- source_quotes: return 3-5 short verbatim snippets copied from the source. Quotes should support major claims; do not put long copied source text in key_points.\n"
+            "- source_quotes: return 3-5 objects, each with quote and reason. quote must be a short verbatim snippet copied from the source. Quotes should support major claims; do not put long copied source text in key_points.\n"
             "Quality rules:\n"
             "- Use only facts supported by the notes.\n"
             "- If Course Context or Section Context is provided, use it to understand scope, terminology, and emphasis. Do not treat context as source evidence or quote it in source_quotes.\n"

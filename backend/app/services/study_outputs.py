@@ -118,6 +118,16 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
     source_quotes = []
     raw_quotes = source.get("source_quotes") if isinstance(source.get("source_quotes"), list) else []
     for item in raw_quotes:
+        if isinstance(item, str):
+            quote = _clean_text(item, "")
+            if quote and not _looks_like_internal_summary_label(quote):
+                source_quotes.append(
+                    {
+                        "quote": quote[:240],
+                        "reason": "Representative source excerpt.",
+                    }
+                )
+            continue
         if not isinstance(item, dict):
             continue
         quote = _clean_text(item.get("quote"), "")
