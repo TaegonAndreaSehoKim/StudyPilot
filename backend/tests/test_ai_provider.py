@@ -4,6 +4,7 @@ import json
 from typing import Any
 
 from app.services.ai_provider import FakeAIProvider, OpenAIProvider
+from app.services.study_outputs import normalize_summary_result
 
 
 class DummyResponse:
@@ -157,6 +158,37 @@ def test_openai_provider_accepts_isolated_artifact_false_positive() -> None:
     result = provider.generate_summary("Artificial intelligence for video games uses rules, search, planning, tactics, and strategy.", "detailed")
 
     assert result["title"] == "Game AI Design Explanation"
+
+
+def test_openai_provider_keeps_strong_summary_with_missing_terms_and_quotes() -> None:
+    points = [
+        "Game AI movement should use the simplest representation that supports the movement task because AI shares limited frame time with rendering, audio, input, and other systems. This means the representation is a practical tradeoff, not just a mathematical preference. The source teaches that movement logic should preserve the behavior the game needs while avoiding unnecessary computation. The reason this matters is that a more complicated model can waste time without improving the player-visible result. It also prepares the learner to judge later algorithms by whether their extra realism is worth the cost in a running game.",
+        "Discrete movement and continuous movement are introduced as different ways to represent where an agent can be. Discrete movement uses recognizable locations and adjacency rules, while continuous movement appears smooth to the player even though the computer still stores finite numeric values. The distinction matters because it changes the algorithms and assumptions used to update the agent. This also explains why the same game world can require different movement models for different gameplay situations. For study purposes, the important ordering is to understand the representation first, then understand which update rule that representation makes possible.",
+        "The simulation loop explains why movement code must be incremental. The game repeatedly reads input, updates state, renders the world, and synchronizes timing, so the agent cannot spend unlimited time deciding how to move. This connects movement algorithms to real-time constraints and explains why simple kinematic formulas are useful. The key point is that movement behavior must fit inside repeated small updates rather than one large offline calculation. That framing helps explain why elapsed time is part of the movement formula instead of an incidental programming detail.",
+        "Seek behavior demonstrates how vectors turn a target location into movement. The agent computes the relative vector to the target, normalizes it to separate direction from speed, and multiplies by maximum speed and elapsed time. This avoids teleportation and keeps motion consistent across different frame rates. The reason this matters is that direction, speed, and time are separate concerns, and mixing them together makes movement harder to control. It also gives the learner a concrete example of how a mathematical vector operation becomes a visible behavior in the game world.",
+        "Arrive, wander, flee, and path following extend the same kinematic idea by changing the desired velocity or target sequence. The source also notes the limitation: these methods can change velocity or orientation too abruptly, which motivates later steering behaviors. This caveat is important because it shows where the simple model stops being visually natural. The learner should preserve that caveat because it explains why a working algorithm can still produce unconvincing game animation. This is also where the lecture shifts from merely reaching positions to making motion look intentional and believable.",
+        "Orientation is treated as related to movement but not identical to position. Some agents can move without changing facing direction, while others need orientation represented as a vector or angle so the rendered character looks believable. This distinction matters because a movement update can be numerically correct while still looking wrong to the player. It also shows why movement systems often track both where the agent is and what direction it appears to face. The concept helps learners separate the physics-like state update from the presentation problem of showing an agent facing the correct way.",
+    ]
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"Basic Kinematic Agent Movement",'
+            '"overview":"The lecture explains game-agent movement as a sequence of representation and update choices. It starts from the need to keep movement simple enough for the game loop, then compares discrete and continuous movement, introduces vector positions, and builds seek-style behavior from direction, speed, and elapsed time. The source also preserves caveats about abrupt motion, capture radius, and why later steering behavior is needed. A useful detailed explanation should therefore keep the lecture order and expand each movement idea as a practical game programming decision: what state is stored, how that state changes during each update, what behavior the player sees, and where the simple kinematic model begins to look unnatural.",'
+            f'"key_points":{json.dumps(points + ["key_terms:"]) }'
+            '}'
+        )
+    )
+
+    source_text = (
+        "Agent movement distinguishes discrete movement, continuous movement, the simulation loop, seek, arrive, wander, "
+        "and path following."
+    )
+    result = provider.generate_summary(source_text, "explanation")
+    normalized = normalize_summary_result(result, source_text, "explanation")
+
+    assert result["title"] == "Basic Kinematic Agent Movement"
+    assert "key_terms" not in normalized["key_points"]
+    assert normalized["key_terms"]
+    assert normalized["source_quotes"]
 
 
 def test_openai_provider_rejects_thin_detailed_summary() -> None:

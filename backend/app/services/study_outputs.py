@@ -68,6 +68,10 @@ def _clean_summary_point(value: Any) -> str:
     return cleaned
 
 
+def _word_count(text: str) -> int:
+    return len(re.findall(r"\b[A-Za-z0-9][A-Za-z0-9'-]*\b", text))
+
+
 def _keywords(document_text: str, limit: int) -> list[str]:
     words = re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", document_text)
     stop = {"that", "this", "with", "from", "have", "will", "into", "about", "their", "there"}
@@ -92,7 +96,10 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
     fallback_title = "Study Notes (Detailed Explanation)" if summary_type in {"detailed", "explanation"} else f"Study Notes ({summary_type.title()} Summary)"
     key_points = source.get("key_points") if isinstance(source.get("key_points"), list) else []
     normalized_points = [_clean_summary_point(point) for point in key_points]
-    normalized_points = [point for point in normalized_points if point and not _looks_like_internal_summary_label(point)]
+    normalized_points = [
+        point for point in normalized_points
+        if point and _word_count(point) >= 8 and not _looks_like_internal_summary_label(point)
+    ]
     if not normalized_points:
         normalized_points = sentences[:5] or [_excerpt(document_text)]
 

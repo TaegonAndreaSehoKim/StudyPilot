@@ -478,6 +478,11 @@ def _word_count(text: str) -> int:
     return len(re.findall(r"\b[A-Za-z0-9][A-Za-z0-9'-]*\b", text))
 
 
+def _looks_like_summary_structure_label(value: str) -> bool:
+    cleaned = re.sub(r"[^a-z_:\s-]", "", value.lower()).strip()
+    return bool(re.fullmatch(r"(?:key[_\s-]*terms?|source[_\s-]*quotes?|quotes?)\s*:?", cleaned))
+
+
 def _has_teaching_depth(points: list[Any]) -> bool:
     text = " ".join(point for point in points if isinstance(point, str)).lower()
     teaching_markers = (
@@ -866,59 +871,65 @@ class OpenAIProvider(AIProvider):
             return False
         if summary_type == "explanation" and _word_count(overview) < 90:
             return False
-        if not isinstance(value.get("key_points"), list) or len(value["key_points"]) < 3:
+        if not isinstance(value.get("key_points"), list):
             return False
-        if summary_type == "detailed" and len(value["key_points"]) < 5:
+        key_points = [point.strip() for point in value["key_points"] if isinstance(point, str) and point.strip()]
+        if any(len(point) < 60 and not _looks_like_summary_structure_label(point) for point in key_points):
             return False
-        if summary_type == "exam" and len(value["key_points"]) < 5:
+        key_points = [point for point in key_points if not _looks_like_summary_structure_label(point)]
+        if len(key_points) < 3:
             return False
-        if summary_type == "explanation" and len(value["key_points"]) < 6:
+        if summary_type == "detailed" and len(key_points) < 5:
             return False
-        if not all(isinstance(point, str) and len(point.strip()) >= 60 for point in value["key_points"]):
+        if summary_type == "exam" and len(key_points) < 5:
+            return False
+        if summary_type == "explanation" and len(key_points) < 6:
             return False
         artifact_point_count = sum(
-            1 for point in value["key_points"] if _looks_like_meta_summary(point) or _looks_like_pdf_artifact(point)
+            1 for point in key_points if _looks_like_meta_summary(point) or _looks_like_pdf_artifact(point)
         )
-        if artifact_point_count >= max(2, len(value["key_points"]) // 2):
+        if artifact_point_count >= max(2, len(key_points) // 2):
             return False
         if summary_type == "detailed":
-            if not all(_word_count(point) >= 60 for point in value["key_points"][:5]):
+            if not all(_word_count(point) >= 60 for point in key_points[:5]):
                 return False
-            if not _has_teaching_depth(value["key_points"]):
+            if not _has_teaching_depth(key_points):
                 return False
         if summary_type == "exam":
-            if not all(_word_count(point) >= 30 for point in value["key_points"][:5]):
+            if not all(_word_count(point) >= 30 for point in key_points[:5]):
                 return False
         if summary_type == "explanation":
-            if not all(_word_count(point) >= 65 for point in value["key_points"][:6]):
+            if not all(_word_count(point) >= 65 for point in key_points[:6]):
                 return False
-            if not _has_teaching_depth(value["key_points"]):
+            if not _has_teaching_depth(key_points):
                 return False
         key_terms = value.get("key_terms")
-        if not isinstance(key_terms, list) or len(key_terms) < 3:
-            return False
-        for item in key_terms:
-            if not isinstance(item, dict):
+        if key_terms is not None:
+            if not isinstance(key_terms, list):
                 return False
-            if not all(isinstance(item.get(key), str) and item[key].strip() for key in ("term", "definition")):
-                return False
-            if _looks_like_meta_summary(item["term"]) or _looks_like_pdf_artifact(item["term"], item["definition"]):
-                return False
-            if summary_type in {"detailed", "exam"} and _word_count(item["definition"]) < 18:
-                return False
-            if summary_type == "explanation" and _word_count(item["definition"]) < 25:
-                return False
-        source_quotes = value.get("source_quotes")
-        if not isinstance(source_quotes, list) or len(source_quotes) < 2:
-            return False
-        for item in source_quotes:
-            if isinstance(item, str):
-                if not item.strip():
+            for item in key_terms:
+                if not isinstance(item, dict):
                     return False
-                continue
-            if isinstance(item, dict) and all(isinstance(item.get(key), str) and item[key].strip() for key in ("quote", "reason")):
-                continue
-            return False
+                if not all(isinstance(item.get(key), str) and item[key].strip() for key in ("term", "definition")):
+                    return False
+                if _looks_like_meta_summary(item["term"]) or _looks_like_pdf_artifact(item["term"], item["definition"]):
+                    return False
+                if summary_type in {"detailed", "exam"} and _word_count(item["definition"]) < 18:
+                    return False
+                if summary_type == "explanation" and _word_count(item["definition"]) < 25:
+                    return False
+        source_quotes = value.get("source_quotes")
+        if source_quotes is not None:
+            if not isinstance(source_quotes, list):
+                return False
+            for item in source_quotes:
+                if isinstance(item, str):
+                    if not item.strip():
+                        return False
+                    continue
+                if isinstance(item, dict) and all(isinstance(item.get(key), str) and item[key].strip() for key in ("quote", "reason")):
+                    continue
+                return False
         return True
 
     def _valid_flashcards(self, value: Any) -> bool:
