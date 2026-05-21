@@ -68,6 +68,25 @@ def test_transcript_style_detailed_summary_uses_real_concepts_not_pipeline_label
     assert any("Simulation update loop" in point or "Simulation update loop" in term["term"] for point in summary["key_points"] for term in summary["key_terms"])
 
 
+def test_game_ai_intro_transcript_does_not_collapse_into_agent_movement() -> None:
+    generator = StudyGenerator(FakeAIProvider())
+    transcript = _game_ai_intro_transcript_excerpt()
+
+    summary = generator.generate_summary(transcript, "explanation")
+    combined = " ".join(
+        [summary["title"], summary["overview"], *summary["key_points"], *(term["term"] for term in summary["key_terms"])]
+    )
+
+    assert summary["title"].startswith("Introduction to Game AI")
+    assert "AI definition and scope" in combined
+    assert "Game AI design space" in combined
+    assert "Rules, search, and planning" in combined
+    assert "Discrete movement" not in combined
+    assert "Continuous movement" not in combined
+    assert "Arrive behavior" not in combined
+    assert "concise summary" not in summary["overview"].lower()
+
+
 def test_eval_quiz_has_specific_topics_and_distractor_rationales() -> None:
     generator = StudyGenerator(FakeAIProvider())
 
@@ -117,4 +136,16 @@ def _agent_movement_transcript_excerpt() -> str:
 [01:00:04] Arrive behavior adds a capture radius and slows down near the target. This avoids exact floating-point equality checks and prevents the agent from wiggling around the target.
 [01:07:06] Wander behavior uses the previous orientation and adds a small biased random change so the agent drifts naturally instead of zigzagging randomly.
 [01:10:34] Path following uses seek for a sequence of waypoints and may use arrive for the final waypoint. Steering behaviors are introduced later because basic kinematic movement can turn too sharply and lacks momentum.
+""".strip()
+
+
+def _game_ai_intro_transcript_excerpt() -> str:
+    return """
+[00:00:05] Hello. In this video I'm going to present an introduction to artificial intelligence for video games. I want to start by asking what AI is outside of games. One earlier view is that AI is any task performed by a machine that had previously been considered to require a human, but that definition has evolved.
+[00:01:01] A more modern view is that AI provides solutions for problems that can't be realistically solved using conventional algorithms. In games, the practical question is how AI can support gameplay and create useful behavior.
+[00:03:15] We can think about autonomy and behavior for non-player characters. The designer decides what the agent can observe, what it controls, and how its actions should appear to the player.
+[00:06:20] Some game AI can be rule based. In other cases you might use decision trees, state machines, or behavior trees to select actions from the current state of the game.
+[00:09:40] Limited search and path planning can help when an agent needs to reason about possible options or move through the world. These methods are tools within a larger game AI design space, not the whole definition of AI.
+[00:13:25] Tactics and strategy appear in war game scenarios where the opponent needs immediate local choices and broader strategic behavior. Projectile games also raise aiming problems where the AI needs to reason about spatial constraints.
+[00:16:42] Later lectures will talk more about movement and path planning, but this lecture is setting up the range of problems and techniques that count as game AI.
 """.strip()

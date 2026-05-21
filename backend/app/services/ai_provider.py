@@ -81,11 +81,27 @@ def _first_line(text: str) -> str:
 
 def _summary_title(source_text: str, fallback: str) -> str:
     lower = source_text.lower()
-    if "agent movement" in lower or ("discrete movement" in lower and "continuous movement" in lower):
+    if _looks_like_game_ai_intro(lower):
+        return "Introduction to Game AI"
+    if ("discrete movement" in lower and "continuous movement" in lower) or (
+        "seeking a target" in lower and "arrive" in lower
+    ):
         return "Basic Agent Movement"
     if _is_source_metadata_title(fallback) or fallback.lower() in {"source notes", "type of movement"}:
         return "Study Notes"
     return fallback
+
+
+def _looks_like_game_ai_intro(lower_text: str) -> bool:
+    ai_definition = (
+        "what is ai" in lower_text
+        or "artificial intelligence" in lower_text
+        or "conventional algorithms" in lower_text
+        or "rational agents" in lower_text
+    )
+    game_context = "video games" in lower_text or "game ai" in lower_text or "games" in lower_text
+    movement_specific = "discrete movement" in lower_text and "continuous movement" in lower_text
+    return ai_definition and game_context and not movement_specific
 
 
 def _source_sections(text: str) -> list[SourceSection]:
@@ -119,7 +135,7 @@ def _source_sections(text: str) -> list[SourceSection]:
 
     _append_source_section(sections, current_title, current_lines)
     total_content = " ".join(section.content for section in sections).strip()
-    if len(sections) < 3 and len(total_content) > 2000:
+    if len(sections) < 3:
         auto_sections = _auto_source_sections(total_content)
         if len(auto_sections) > 1:
             return auto_sections
@@ -149,7 +165,14 @@ def _is_source_metadata_title(value: str) -> bool:
 
 
 CONCEPT_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("AI definition and scope", ("what is ai", "artificial intelligence", "conventional algorithms", "modern view")),
     ("Agent movement foundations", ("agent movement", "basic agent can move", "movement serve as a foundation")),
+    ("Game AI design space", ("video games", "game ai", "game environments", "gameplay", "support gameplay", "practical question", "useful behavior")),
+    ("Autonomy and agent behavior", ("autonomy", "non-player", "player control", "can observe")),
+    ("Decision making systems", ("decision making", "decision tree", "state machine", "behavior tree")),
+    ("Rules, search, and planning", ("rule based", "limited search", "path planning", "planning")),
+    ("Tactics and strategy", ("tactics", "strategy", "strategist", "war game")),
+    ("Projectile and aiming problems", ("projectile", "aiming", "aimed", "trajectory")),
     ("Discrete movement", ("discrete movement", "distinct locations", "adjacency", "turn based")),
     ("Continuous movement", ("continuous movement", "real time", "velocity", "high frame rate")),
     ("Simulation update loop", ("simulation loop", "update loop", "rendering", "frames per second")),
@@ -165,6 +188,27 @@ CONCEPT_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 CONCEPT_EXPLANATIONS = {
+    "AI definition and scope": (
+        "The introduction frames AI as a shifting category: earlier definitions treated AI as machine performance of tasks once thought to require humans, while a more useful modern view focuses on problems that cannot be solved realistically with straightforward conventional algorithms."
+    ),
+    "Game AI design space": (
+        "Game AI is presented as a practical design space inside video games, where the goal is not just theoretical intelligence but behavior that supports gameplay, challenge, believability, and the player's experience."
+    ),
+    "Autonomy and agent behavior": (
+        "Autonomy matters because game characters and systems often need to select actions without direct player control, so the designer must decide what the agent can observe, how it chooses, and what kind of behavior will feel appropriate in context."
+    ),
+    "Decision making systems": (
+        "Decision making systems provide structured ways for a game agent to choose actions, often by mapping current game conditions to behavior choices rather than trying to solve every possible situation from scratch."
+    ),
+    "Rules, search, and planning": (
+        "Rules, search, and planning are introduced as different families of tools for game AI problems: rules can encode designer knowledge, search can evaluate possible options, and planning can reason about sequences of actions toward a goal."
+    ),
+    "Tactics and strategy": (
+        "Tactics and strategy connect AI decisions to different time scales: tactical choices handle local or immediate gameplay situations, while strategic behavior concerns broader plans, opponent behavior, and longer-term direction."
+    ),
+    "Projectile and aiming problems": (
+        "Projectile and aiming problems show that game AI often has to make decisions under physical or spatial constraints, such as predicting where a target will be or selecting an action that works within the game world's rules."
+    ),
     "Agent movement foundations": (
         "Agent movement starts by choosing the simplest representation that supports the movement task, because game AI must share limited frame time with rendering, audio, input, networking, and other systems."
     ),
@@ -237,7 +281,7 @@ def _timestamp_source_sections(content: str) -> list[SourceSection]:
 
     section_blocks: dict[str, list[str]] = {}
     ordered_titles: list[str] = []
-    current_title = "Agent movement foundations"
+    current_title = _concept_title(blocks[0], set()) or "Source Notes"
     for block in blocks:
         current_title = _pattern_concept_title(block, set()) or current_title
         if current_title not in section_blocks:
@@ -355,8 +399,10 @@ def _section_topics(text: str, limit: int = 8) -> list[str]:
         if line.lower().startswith("review focus topics:"):
             focus = line.split(":", 1)[1] if ":" in line else ""
             focus_topics.extend(topic.strip() for topic in focus.split(",") if topic.strip())
-    topics = focus_topics + [section.title for section in sections if section.title and section.title != "Source Notes"]
-    topics.extend(_topics(text, limit=limit * 2))
+    section_topics = [section.title for section in sections if section.title and section.title != "Source Notes"]
+    topics = focus_topics + section_topics
+    if len(section_topics) < 5:
+        topics.extend(_topics(text, limit=limit * 2))
     seen: set[str] = set()
     unique = []
     for topic in topics:
@@ -541,6 +587,7 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
         return "The uploaded notes contain limited extractable study context."
     topic_text = ", ".join(names[:-1]) + (f", and {names[-1]}" if len(names) > 1 else names[0])
     concrete_flow = " ".join(_teaching_summary(section, 1) for section in sections[:2])
+    scope = _scope_from_sections(sections)
     if summary_type == "exam":
         return (
             f"These notes are organized around {topic_text}. For exam review, use the summary to identify "
@@ -548,14 +595,29 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
         )
     if summary_type == "detailed":
         return (
-            f"The lecture develops {topic_text} as a sequence of ideas for understanding basic game-agent movement. "
+            f"The lecture develops {topic_text} as a sequence of ideas for understanding {scope}. "
             f"This detailed summary explains the general principles, conceptual roles, relationships, assumptions, and implementation tradeoffs "
             f"needed to study without rereading the full source. {concrete_flow}"
+        )
+    if summary_type == "explanation":
+        return (
+            f"These notes explain {topic_text} as a learning path for understanding {scope}. "
+            f"The explanation slows down the source's progression, defines the important ideas, and connects each concept to the surrounding game AI problem. "
+            f"{concrete_flow}"
         )
     return (
         f"These notes focus on {topic_text}. The concise summary follows the broad flow of the material "
         f"while still explaining the central concepts in study-ready form. {concrete_flow}"
     )
+
+
+def _scope_from_sections(sections: list[SourceSection]) -> str:
+    titles = {section.title for section in sections}
+    if {"Discrete movement", "Continuous movement"} & titles:
+        return "basic game-agent movement"
+    if {"AI definition and scope", "Game AI design space"} & titles:
+        return "the foundations and design space of game AI"
+    return "the course topic"
 
 
 def _concise_point(section: SourceSection) -> str:
@@ -568,10 +630,11 @@ def _detailed_point(section: SourceSection) -> str:
 
 def _explanation_point(section: SourceSection) -> str:
     explanation = _teaching_summary(section, 3)
+    reflection_context = "real-time game loop" if section.title in CONCEPT_EXPLANATIONS and "movement" in section.title.lower() else "game AI design problem"
     return (
         f"{explanation} "
         "This part should be studied as a causal explanation, not as a term to memorize in isolation. "
-        "Ask what problem this concept solves, what simplification it introduces, and what tradeoff it creates for an agent running inside a real-time game loop."
+        f"Ask what problem this concept solves, what simplification it introduces, and what tradeoff it creates inside the {reflection_context}."
     )
 
 
