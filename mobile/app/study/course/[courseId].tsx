@@ -243,13 +243,13 @@ function summaryTypeLabel(value: string): string {
     return 'Quick review';
   }
   if (value === 'detailed') {
-    return 'Deep review';
+    return 'Detailed explanation';
   }
   if (value === 'exam') {
     return 'Exam prep';
   }
   if (value === 'explanation') {
-    return 'Additional explanation';
+    return 'Detailed explanation';
   }
   return value;
 }

@@ -26,11 +26,6 @@ const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }
     description: 'Core concepts and the broad flow of the material.',
   },
   {
-    type: 'detailed',
-    title: 'Deep Review',
-    description: 'Concepts, principles, and relationships with less focus on examples.',
-  },
-  {
     type: 'exam',
     title: 'Exam Prep',
     description: 'Likely test points, similar-concept comparisons, and memorization anchors.',
@@ -135,12 +130,12 @@ export default function DocumentDetailScreen() {
       const summary = await api.createExplanation(id);
       setSummaries((current) => [summary, ...current]);
       setNotice({
-        title: 'Additional explanation saved',
+        title: 'Detailed explanation saved',
         message: `${summary.title} is saved. Opening the full explanation now.`,
       });
       router.push(`/summaries/${summary.id}` as Href);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create additional explanation');
+      setError(err instanceof Error ? err.message : 'Unable to create detailed explanation');
     } finally {
       setWorking(null);
     }
@@ -385,9 +380,9 @@ export default function DocumentDetailScreen() {
               </View>
               <View style={[styles.toolGrid, isTablet && styles.tabletToolGrid]}>
                 <ToolAction
-                  title="Additional Explanation"
-                  description="Use this when the lecture is hard to understand and needs slower teaching."
-                  buttonTitle={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
+                  title="Detailed Explanation"
+                  description="Remove lecture chatter while preserving the useful explanations, examples, comparisons, and caveats."
+                  buttonTitle={working === 'explanation' ? 'Explaining...' : 'Create Detailed Explanation'}
                   disabled={actionDisabled}
                   highlight
                   onPress={generateExplanation}
@@ -549,8 +544,8 @@ function workingMessage(working: string, step: number): string {
     ],
     explanation: [
       'Reading the source for concepts that need more teaching context.',
-      'Expanding the lecture into slower explanations, intuition, and connections.',
-      'Saving the additional explanation to this source and course library.',
+      'Filtering out filler while preserving useful lecture explanations and examples.',
+      'Saving the detailed explanation to this source and course library.',
     ],
     concise: [
       'Reading the source and identifying the main conceptual flow.',
@@ -560,7 +555,7 @@ function workingMessage(working: string, step: number): string {
     detailed: [
       'Reading the source and grouping related concepts.',
       'Re-explaining definitions, mechanisms, and relationships.',
-      'Saving the deeper review notes to this course library.',
+      'Saving detailed explanation notes to this course library.',
     ],
     exam: [
       'Reading the source for likely test points.',
@@ -619,7 +614,7 @@ function qualityDetail(document: DocumentDetail): string {
     return document.extraction_notes;
   }
   if (document.extraction_quality === 'good' || document.extraction_quality === 'ocr') {
-    return 'StudyPilot can use this extracted text for summaries, flashcards, and quizzes.';
+    return 'StudyPilot can use this extracted text for explanations, flashcards, and quizzes.';
   }
   return 'If the generated material feels incomplete, run text recognition or check the full source text.';
 }

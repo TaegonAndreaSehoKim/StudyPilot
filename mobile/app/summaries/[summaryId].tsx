@@ -146,7 +146,7 @@ export default function SummaryDetailScreen() {
         <>
           <View style={styles.header}>
             <Text style={styles.title}>{summary.title}</Text>
-            <Text style={styles.subtitle}>{summaryTypeLabel(summary.summary_type)} review notes</Text>
+            <Text style={styles.subtitle}>{summaryTypeLabel(summary.summary_type)}</Text>
           </View>
 
           {document ? (
@@ -206,13 +206,13 @@ function summaryTypeLabel(value: string): string {
     return 'Quick Review';
   }
   if (value === 'detailed') {
-    return 'Deep Review';
+    return 'Detailed Explanation';
   }
   if (value === 'exam') {
     return 'Exam Prep';
   }
   if (value === 'explanation') {
-    return 'Additional Explanation';
+    return 'Detailed Explanation';
   }
   return value;
 }

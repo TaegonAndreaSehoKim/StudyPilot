@@ -120,7 +120,7 @@ export default function DashboardScreen() {
                 <FocusCard
                   eyebrow="Review"
                   title={dashboard.recent_summaries[0].title}
-                  detail={`${summaryTypeLabel(dashboard.recent_summaries[0].summary_type)} review notes`}
+                  detail={summaryTypeLabel(dashboard.recent_summaries[0].summary_type)}
                   actionLabel="Read notes"
                   href={`/summaries/${dashboard.recent_summaries[0].id}` as Href}
                 />
@@ -187,7 +187,7 @@ export default function DashboardScreen() {
                   <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
                     <Card>
                       <Text style={styles.itemTitle}>{summary.title}</Text>
-                      <Text style={styles.itemMeta}>{summaryTypeLabel(summary.summary_type)} notes</Text>
+                      <Text style={styles.itemMeta}>{summaryTypeLabel(summary.summary_type)}</Text>
                     </Card>
                   </Link>
                 ))
@@ -367,13 +367,13 @@ function summaryTypeLabel(value: string): string {
     return 'Concise';
   }
   if (value === 'detailed') {
-    return 'Detailed';
+    return 'Detailed Explanation';
   }
   if (value === 'exam') {
     return 'Exam';
   }
   if (value === 'explanation') {
-    return 'Additional Explanation';
+    return 'Detailed Explanation';
   }
   return value;
 }

@@ -17,7 +17,7 @@ export function SummaryView({ summary }: { summary: Summary }) {
       <Text style={styles.kicker}>Overview</Text>
       <Text style={styles.body}>{overview}</Text>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{isExplanation ? 'Additional Explanation' : 'Key Ideas'}</Text>
+        <Text style={styles.sectionTitle}>{isExplanation ? 'Detailed Explanation' : 'Key Ideas'}</Text>
         {keyPoints.length ? (
           keyPoints.map((point, index) => (
             <View key={`${point}-${index}`} style={styles.numberedRow}>

@@ -521,7 +521,7 @@ export default function CourseDetailScreen() {
                         <Card>
                           <Text style={styles.itemTitle}>{summary.title}</Text>
                           <Text style={styles.itemMeta}>
-                            {summaryTypeLabel(summary.summary_type)} notes
+                            {summaryTypeLabel(summary.summary_type)}
                           </Text>
                         </Card>
                       </Link>
@@ -711,13 +711,13 @@ function summaryTypeLabel(value: string): string {
     return 'Quick review';
   }
   if (value === 'detailed') {
-    return 'Deep review';
+    return 'Detailed explanation';
   }
   if (value === 'exam') {
     return 'Exam prep';
   }
   if (value === 'explanation') {
-    return 'Additional explanation';
+    return 'Detailed explanation';
   }
   return value;
 }

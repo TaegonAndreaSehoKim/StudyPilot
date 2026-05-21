@@ -134,8 +134,9 @@ def create_section_explanation(section_id: int, payload: ExplanationCreate | Non
     documents = _section_documents_for_generation(db, section_id)
     focus = payload.focus if payload else None
     learner_request = (
-        "The learner is struggling to understand this section. Create an expanded additional explanation across all "
-        "section source materials, teaching the concepts more slowly and richly than a summary."
+        "The learner is struggling to understand this section. Create a detailed explanation across all section source materials, "
+        "not a compressed summary. Remove casual filler, greetings, agenda chatter, and repeated transition phrases, but preserve "
+        "as much concept-bearing explanation, examples, comparisons, caveats, and source teaching order as possible."
     )
     if focus:
         learner_request += f" Pay special attention to: {focus}"

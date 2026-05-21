@@ -20,7 +20,6 @@ type QuizDifficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 
 const SUMMARY_OPTIONS: { type: SummaryType; title: string; description: string }[] = [
   { type: 'concise', title: 'Quick Review', description: 'Core concepts and broad flow across the section.' },
-  { type: 'detailed', title: 'Deep Review', description: 'Concepts, principles, and relationships across all readable sources.' },
   { type: 'exam', title: 'Exam Prep', description: 'Likely test points, comparisons, and memorization anchors.' },
 ];
 
@@ -302,9 +301,9 @@ export default function SectionDetailScreen() {
               </View>
               <View style={[styles.toolGrid, isTablet && styles.tabletToolGrid]}>
                 <ToolAction
-                  title="Additional Explanation"
-                  description="Create a slower, richer teaching guide from the full section source set."
-                  buttonTitle={working === 'explanation' ? 'Explaining...' : 'Create Explanation'}
+                  title="Detailed Explanation"
+                  description="Remove filler while preserving useful explanations, examples, comparisons, and caveats across the section."
+                  buttonTitle={working === 'explanation' ? 'Explaining...' : 'Create Detailed Explanation'}
                   disabled={actionDisabled}
                   highlight
                   onPress={generateExplanation}
@@ -356,7 +355,7 @@ export default function SectionDetailScreen() {
                   <Link key={summary.id} href={`/summaries/${summary.id}` as Href} asChild>
                     <Card>
                       <Text style={styles.itemTitle}>{summary.title}</Text>
-                      <Text style={styles.itemMeta}>{summaryTypeLabel(summary.summary_type)} notes</Text>
+                      <Text style={styles.itemMeta}>{summaryTypeLabel(summary.summary_type)}</Text>
                     </Card>
                   </Link>
                 ))
@@ -415,7 +414,7 @@ function workingMessage(working: string): string {
     return 'Combining section sources and writing practice questions.';
   }
   if (working === 'explanation') {
-    return 'Expanding section sources into a slower teaching guide.';
+    return 'Filtering section sources into a detailed teaching guide without lecture filler.';
   }
   return 'Combining section sources into review notes.';
 }
@@ -435,13 +434,13 @@ function summaryTypeLabel(value: string): string {
     return 'Quick Review';
   }
   if (value === 'detailed') {
-    return 'Deep Review';
+    return 'Detailed Explanation';
   }
   if (value === 'exam') {
     return 'Exam Prep';
   }
   if (value === 'explanation') {
-    return 'Additional Explanation';
+    return 'Detailed Explanation';
   }
   return value;
 }

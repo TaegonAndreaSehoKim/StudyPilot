@@ -69,7 +69,7 @@ def test_section_workflow_generates_outputs_from_multiple_documents(client: Test
     explanation = explanation_response.json()
     assert explanation["section_id"] == section["id"]
     assert explanation["summary_type"] == "explanation"
-    assert explanation["title"] == "Midterm 1 - Additional Explanation"
+    assert explanation["title"] == "Midterm 1 - Detailed Explanation"
     assert explanation["key_points"]
 
 
@@ -105,10 +105,10 @@ def test_section_summaries_stay_scoped_with_duplicate_filenames(client: TestClie
 
     assert movement_summary["document_id"] == movement_document["id"]
     assert movement_summary["section_id"] == movement["id"]
-    assert movement_summary["title"] == "02_Basic Agent Movement - Detailed Review Notes"
+    assert movement_summary["title"] == "02_Basic Agent Movement - Detailed Explanation"
     assert intro_summary["document_id"] == intro_document["id"]
     assert intro_summary["section_id"] == intro["id"]
-    assert intro_summary["title"] == "01_Introduction to Game AI - Detailed Review Notes"
+    assert intro_summary["title"] == "01_Introduction to Game AI - Detailed Explanation"
 
     movement_list = client.get(f"/sections/{movement['id']}/summaries").json()
     intro_list = client.get(f"/sections/{intro['id']}/summaries").json()

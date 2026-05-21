@@ -14,7 +14,7 @@ export function summaryToHtml(summary: Summary): string {
     quote: cleanDisplayText(item.quote, 'No quote available.'),
     reason: cleanDisplayText(item.reason, 'Representative source excerpt.'),
   }));
-  const pointHeading = summary.summary_type === 'explanation' ? 'Additional Explanation' : 'What to Remember';
+  const pointHeading = summary.summary_type === 'explanation' ? 'Detailed Explanation' : 'What to Remember';
   const conceptHeading = summary.summary_type === 'explanation' ? 'Concepts Explained' : 'Key Concepts';
 
   return `<!doctype html>
@@ -92,7 +92,7 @@ export function summaryToHtml(summary: Summary): string {
 
 export function summaryToMarkdown(summary: Summary): string {
   const type = summaryTypeLabel(summary.summary_type);
-  const pointHeading = summary.summary_type === 'explanation' ? 'Additional Explanation' : 'Key Points';
+  const pointHeading = summary.summary_type === 'explanation' ? 'Detailed Explanation' : 'Key Points';
   const conceptHeading = summary.summary_type === 'explanation' ? 'Concepts Explained' : 'Key Terms';
   const lines = [
     `# ${cleanDisplayText(summary.title, 'Study Summary')}`,
@@ -152,13 +152,13 @@ function summaryTypeLabel(value: string): string {
     return 'Quick Review';
   }
   if (value === 'detailed') {
-    return 'Deep Review';
+    return 'Detailed Explanation';
   }
   if (value === 'exam') {
     return 'Exam Prep';
   }
   if (value === 'explanation') {
-    return 'Additional Explanation';
+    return 'Detailed Explanation';
   }
   return cleanDisplayText(value, 'Review');
 }

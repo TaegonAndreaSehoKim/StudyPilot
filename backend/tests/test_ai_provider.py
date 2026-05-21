@@ -155,7 +155,7 @@ def test_openai_provider_rejects_thin_detailed_summary() -> None:
     )
 
     assert result["title"] != "Agent Movement"
-    assert "Detailed Summary" in result["title"]
+    assert "Detailed Explanation" in result["title"]
 
 
 def test_openai_provider_accepts_wrapped_flashcards() -> None:
@@ -219,10 +219,11 @@ def test_summary_prompt_teaches_from_source_order_with_scaffolding() -> None:
     prompt = provider._summary_prompt("Linear programming introduces constraints before rounding.", "detailed")
 
     assert "source's own teaching path as the backbone" in prompt
-    assert "study guide, not a transcript summary" in prompt
+    assert "detailed study explanation, not a transcript summary" in prompt
+    assert "Remove filler aggressively" in prompt
     assert "mini-lesson" in prompt
     assert "source-consistent teaching explanation" in prompt
-    assert "at least 45 words" in prompt
+    assert "at least 60 words" in prompt
     assert "Do not treat context as source evidence" in prompt
 
 
@@ -232,7 +233,8 @@ def test_explanation_prompt_expands_beyond_compression() -> None:
     prompt = provider._summary_prompt("Discrete movement uses adjacency while continuous movement uses vectors.", "explanation")
 
     assert "expanded explanatory guide" in prompt
-    assert "Do not compress" in prompt
+    assert "Do not compress the useful teaching content" in prompt
+    assert "Remove casual filler and transcript chatter" in prompt
     assert "4-7 sentences and at least 65 words" in prompt
     assert "background explanations, analogies, or intuition" in prompt
 

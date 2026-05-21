@@ -89,6 +89,7 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
     source = result if isinstance(result, dict) else {}
     sentences = _sentences(document_text)
     fallback_overview = " ".join(sentences[:2]) or _excerpt(document_text)
+    fallback_title = "Study Notes (Detailed Explanation)" if summary_type in {"detailed", "explanation"} else f"Study Notes ({summary_type.title()} Summary)"
     key_points = source.get("key_points") if isinstance(source.get("key_points"), list) else []
     normalized_points = [_clean_summary_point(point) for point in key_points]
     normalized_points = [point for point in normalized_points if point and not _looks_like_internal_summary_label(point)]
@@ -143,9 +144,9 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
         source_quotes = [{"quote": _excerpt(document_text), "reason": "Representative source excerpt."}]
 
     return {
-        "title": _clean_text(source.get("title"), f"Study Notes ({summary_type.title()} Summary)")
+        "title": _clean_text(source.get("title"), fallback_title)
         if not _looks_like_internal_summary_label(_clean_text(source.get("title"), ""))
-        else f"Study Notes ({summary_type.title()} Summary)",
+        else fallback_title,
         "overview": _clean_text(source.get("overview"), fallback_overview)
         if not _looks_like_internal_summary_label(_clean_text(source.get("overview"), ""))
         else fallback_overview,

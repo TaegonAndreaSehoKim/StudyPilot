@@ -596,13 +596,13 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
     if summary_type == "detailed":
         return (
             f"The lecture develops {topic_text} as a sequence of ideas for understanding {scope}. "
-            f"This detailed summary explains the general principles, conceptual roles, relationships, assumptions, and implementation tradeoffs "
-            f"needed to study without rereading the full source. {concrete_flow}"
+            f"This detailed explanation preserves the source's teaching logic, concept-bearing examples, comparisons, caveats, and implementation tradeoffs "
+            f"while removing casual filler that does not help learning. {concrete_flow}"
         )
     if summary_type == "explanation":
         return (
             f"These notes explain {topic_text} as a learning path for understanding {scope}. "
-            f"The explanation slows down the source's progression, defines the important ideas, and connects each concept to the surrounding game AI problem. "
+            f"The explanation keeps the source's useful teaching details, removes casual filler, defines the important ideas, and connects each concept to the surrounding game AI problem. "
             f"{concrete_flow}"
         )
     return (
@@ -618,6 +618,12 @@ def _scope_from_sections(sections: list[SourceSection]) -> str:
     if {"AI definition and scope", "Game AI design space"} & titles:
         return "the foundations and design space of game AI"
     return "the course topic"
+
+
+def _summary_mode_label(summary_type: str) -> str:
+    if summary_type in {"detailed", "explanation"}:
+        return "Detailed Explanation"
+    return f"{summary_type.title()} Summary"
 
 
 def _concise_point(section: SourceSection) -> str:
@@ -707,7 +713,7 @@ class FakeAIProvider(AIProvider):
         if _is_insufficient(source_text):
             excerpt = _excerpt(source_text) or "The uploaded source text is limited."
             return {
-                "title": f"{title} ({summary_type.title()} Summary)",
+                "title": f"{title} ({_summary_mode_label(summary_type)})",
                 "overview": "The uploaded material is too short for a reliable generated summary. Review the original document for context.",
                 "key_points": [
                     "StudyPilot found limited source text and avoided adding unsupported details.",
@@ -735,7 +741,7 @@ class FakeAIProvider(AIProvider):
             key_terms.append({"term": topic, "definition": definition})
 
         return {
-            "title": f"{title} ({summary_type.title()} Summary)",
+            "title": f"{title} ({_summary_mode_label(summary_type)})",
             "overview": _overview_from_sections(sections, summary_type),
             "key_points": key_points[:8],
             "key_terms": key_terms[:8],
@@ -873,7 +879,7 @@ class OpenAIProvider(AIProvider):
         if any(_looks_like_meta_summary(point) or _looks_like_pdf_artifact(point) for point in value["key_points"]):
             return False
         if summary_type == "detailed":
-            if not all(_word_count(point) >= 45 for point in value["key_points"][:5]):
+            if not all(_word_count(point) >= 60 for point in value["key_points"][:5]):
                 return False
             if not _has_teaching_depth(value["key_points"]):
                 return False
@@ -1048,9 +1054,10 @@ class OpenAIProvider(AIProvider):
                 "source's learning sequence, not just list topics."
             ),
             "detailed": (
-                "Create a full conceptual study guide. Each key point should be a mini-lesson that explains what the "
-                "concept means, why it matters, how it connects to surrounding concepts, and what assumption, limit, "
-                "or implementation consequence the source attaches to it."
+                "Create a detailed explanation, not a detailed summary. Remove filler such as greetings, agenda chatter, "
+                "speaker asides, repeated transition phrases, and obvious transcript noise, but preserve as much of the "
+                "concept-bearing explanation as possible: source examples, comparisons, definitions, caveats, causal reasoning, "
+                "implementation consequences, and the source's teaching order."
             ),
             "exam": (
                 "Create exam-prep notes. Emphasize testable definitions, likely comparisons, common confusions, "
@@ -1058,31 +1065,33 @@ class OpenAIProvider(AIProvider):
             ),
             "explanation": (
                 "Create an expanded explanatory guide for a learner who found the lecture hard to understand. "
-                "Do not compress. Rebuild the lecture concepts from the ground up, add source-consistent background "
-                "explanations, plain-language bridges, causal reasoning, and practical intuition beyond the terse source wording."
+                "Do not compress the useful teaching content. Remove casual filler and transcript chatter, then rebuild the lecture "
+                "concepts from the ground up with source-consistent background explanations, plain-language bridges, causal reasoning, "
+                "and practical intuition beyond the terse source wording."
             ),
         }.get(summary_type, "Write a source-grounded study summary.")
         return (
             "You are StudyPilot's senior course-note writer.\n"
-            "Your output is a study guide, not a transcript summary, slide recap, topic index, or table of contents.\n"
+            "Your output is a detailed study explanation, not a transcript summary, slide recap, topic index, or table of contents.\n"
             "A learner should be able to use only the generated notes for first-pass learning, then return to the original source only for verification and examples.\n"
             "Before writing, infer the actual lecture/topic scope from Course Context, Section Context, and Source Material. Ignore file names, page numbers, timestamps, extraction markers, slide wrappers, and bullet artifacts.\n"
-            "Use the source's own teaching path as the backbone: preserve how the source introduces prerequisites, motivates distinctions, sequences algorithms, compares alternatives, and states caveats.\n"
+            "Use the source's own teaching path as the backbone: preserve how the source introduces prerequisites, motivates distinctions, sequences algorithms, gives useful examples, compares alternatives, and states caveats.\n"
+            "Remove filler aggressively, including greetings, agenda setup, repeated transition phrases, speaker asides, and transcript noise, but do not remove useful examples or explanatory steps just because they are verbose.\n"
             "Base every claim on the uploaded source. You may add source-consistent teaching explanation and source-consistent explanatory scaffolding for concepts that appear in the source, but do not introduce unrelated facts, new algorithms, or unsupported examples.\n"
             "Return only a valid JSON object with keys: title, overview, key_points, key_terms, source_quotes.\n"
             "Required output contract:\n"
             "- title: name the actual lecture topic or section scope. Do not use the first slide heading, page label, file name, or source wrapper.\n"
             "- overview: 4-6 sentences. It must teach the main topic, explain the source's conceptual progression, and name the most important distinctions or tradeoffs.\n"
             "- key_points: return 6-9 items for detailed/exam/explanation outputs and 4-6 items for concise summaries.\n"
-            "- For detailed summaries, each key_points item must be 3-5 sentences and at least 45 words. Treat each item as a mini-lesson, not a bullet label.\n"
+            "- For detailed explanation outputs, each key_points item must be 4-6 sentences and at least 60 words. Treat each item as a mini-lesson, not a bullet label or compressed recap.\n"
             "- For explanation outputs, each key_points item must be 4-7 sentences and at least 65 words. It should slow down, define prerequisites, explain intuition, and connect the idea to why the learner should care.\n"
-            "- Each key_points item should include: the concept, what it means, why it matters, how it connects to the previous/next idea, and any condition, caveat, tradeoff, or failure mode from the source.\n"
+            "- Each key_points item should include: the concept, what it means, why it matters, how it connects to the previous/next idea, and any useful source example, condition, caveat, tradeoff, or failure mode from the source.\n"
             "- key_terms: return 8-12 concrete course terms when the source supports them. Each definition should be 1-3 teaching sentences, not a dictionary fragment.\n"
             "- source_quotes: return 3-5 objects, each with quote and reason. quote must be a short verbatim snippet copied from the source. Quotes should support major claims; do not put long copied source text in key_points.\n"
             "Quality rules:\n"
             "- Use only facts supported by the notes.\n"
             "- If Course Context or Section Context is provided, use it to understand scope, terminology, and emphasis. Do not treat context as source evidence or quote it in source_quotes.\n"
-            "- Follow the source's explanation order by default. Reorganize only when it clearly improves learning, and never hide prerequisites, definitions, or caveats that the source gives earlier.\n"
+            "- Follow the source's explanation order by default. Reorganize only when it clearly improves learning, and never hide prerequisites, examples, definitions, or caveats that the source gives earlier.\n"
             "- If notes are insufficient, say that explicitly.\n"
             "- Do not write vague meta summaries such as 'these notes discuss...' or 'this section covers...' without explaining the actual ideas.\n"
             "- Do not use Chunk, Source Part, Source Material, Source Notes, Concrete study points, Concept definitions, Source evidence, uploaded notes, section, slide, or page as key concepts unless those are actual course concepts.\n"

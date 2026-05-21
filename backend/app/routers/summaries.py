@@ -14,9 +14,9 @@ router = APIRouter(tags=["summaries"])
 
 SUMMARY_TYPE_LABELS = {
     "concise": "Concise Review Notes",
-    "detailed": "Detailed Review Notes",
+    "detailed": "Detailed Explanation",
     "exam": "Exam Review Notes",
-    "explanation": "Additional Explanation",
+    "explanation": "Detailed Explanation",
 }
 
 
@@ -100,8 +100,9 @@ def create_explanation(document_id: int, payload: ExplanationCreate | None = Non
     document = _document_ready(db, document_id)
     focus = payload.focus if payload else None
     learner_request = (
-        "The learner is struggling to understand this lecture. Create an expanded additional explanation that teaches "
-        "the concepts more slowly and richly than a summary."
+        "The learner is struggling to understand this lecture. Create a detailed explanation, not a compressed summary. "
+        "Remove casual filler, greetings, agenda chatter, and repeated transition phrases, but preserve as much concept-bearing "
+        "explanation, examples, comparisons, caveats, and source teaching order as possible."
     )
     if focus:
         learner_request += f" Pay special attention to: {focus}"
