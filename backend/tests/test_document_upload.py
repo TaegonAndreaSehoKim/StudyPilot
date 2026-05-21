@@ -37,6 +37,27 @@ def test_upload_txt_document(client: TestClient, course_id: int) -> None:
     assert download_response.content == b"Search uses states, actions, and transition models."
 
 
+def test_list_documents_returns_recent_sources(client: TestClient, course_id: int) -> None:
+    first = client.post(
+        "/documents/upload",
+        data={"course_id": str(course_id)},
+        files={"file": ("first.txt", b"First source material.", "text/plain")},
+    )
+    second = client.post(
+        "/documents/upload",
+        data={"course_id": str(course_id)},
+        files={"file": ("second.txt", b"Second source material.", "text/plain")},
+    )
+    assert first.status_code == 201
+    assert second.status_code == 201
+
+    response = client.get("/documents")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [document["id"] for document in body] == [second.json()["id"], first.json()["id"]]
+
+
 def test_upload_md_document(client: TestClient, course_id: int) -> None:
     response = client.post(
         "/documents/upload",

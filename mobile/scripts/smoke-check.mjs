@@ -53,6 +53,7 @@ check('Setup guide documents preview update command', () => setupDoc.includes('n
   'app/courses/new.tsx',
   'app/courses/[courseId].tsx',
   'app/sections/[sectionId].tsx',
+  'app/documents/index.tsx',
   'app/documents/[documentId].tsx',
   'app/documents/[documentId]/text.tsx',
   'app/summaries/[summaryId].tsx',

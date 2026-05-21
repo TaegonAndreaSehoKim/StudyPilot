@@ -113,6 +113,7 @@ export const api = {
   updateSection: (sectionId: number, payload: { title?: string; description?: string | null }) =>
     request<CourseSection>(`/sections/${sectionId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteSection: (sectionId: number) => request<void>(`/sections/${sectionId}`, { method: 'DELETE' }),
+  documents: () => request<Document[]>('/documents'),
   courseDocuments: (courseId: number) => request<Document[]>(`/courses/${courseId}/documents`),
   sectionDocuments: (sectionId: number) => request<Document[]>(`/sections/${sectionId}/documents`),
   document: (documentId: number) => request<DocumentDetail>(`/documents/${documentId}`),

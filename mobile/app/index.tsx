@@ -1,7 +1,7 @@
 import { Link, router, useFocusEffect } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api } from '@/api/client';
 import type { Dashboard, GlobalScheduleItem } from '@/api/types';
@@ -138,7 +138,7 @@ export default function DashboardScreen() {
 
           <View style={styles.grid}>
             <Metric label="Courses" value={dashboard.course_count} />
-            <Metric label="Sources" value={dashboard.document_count} />
+            <Metric label="Sources" value={dashboard.document_count} onPress={() => router.push('/documents' as Href)} />
             <Metric label="Review Notes" value={dashboard.summary_count} />
             <Metric label="Practice" value={dashboard.quiz_count} />
           </View>
@@ -232,11 +232,30 @@ export default function DashboardScreen() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={styles.metric}>
+function Metric({ label, value, onPress }: { label: string; value: number; onPress?: () => void }) {
+  const content = (
+    <>
       <Text style={styles.metricValue}>{value}</Text>
       <Text style={styles.metricLabel}>{label}</Text>
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${label}`}
+        onPress={onPress}
+        style={({ pressed }) => [styles.metric, styles.metricButton, pressed && styles.metricPressed]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.metric}>
+      {content}
     </View>
   );
 }
@@ -419,6 +438,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minWidth: '47%',
     padding: 14,
+  },
+  metricButton: {
+    borderColor: colors.primarySurface,
+  },
+  metricPressed: {
+    borderColor: colors.primary,
+    opacity: 0.9,
+    transform: [{ translateY: 1 }],
   },
   metricValue: {
     color: colors.text,

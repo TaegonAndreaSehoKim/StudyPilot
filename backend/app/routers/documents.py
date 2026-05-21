@@ -73,6 +73,11 @@ async def upload_document(
     return document
 
 
+@router.get("/documents", response_model=list[DocumentOut])
+def list_documents(db: Session = Depends(get_db)) -> list[Document]:
+    return db.query(Document).order_by(Document.created_at.desc()).all()
+
+
 @router.get("/documents/{document_id}", response_model=DocumentDetailOut)
 def get_document(document_id: int, db: Session = Depends(get_db)) -> DocumentDetailOut:
     document = get_document_or_404(db, document_id)
