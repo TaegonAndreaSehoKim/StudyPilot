@@ -12,13 +12,28 @@ from app.services.study_generator import StudyGenerator
 router = APIRouter(tags=["summaries"])
 
 
+SUMMARY_TYPE_LABELS = {
+    "concise": "Concise Review Notes",
+    "detailed": "Detailed Review Notes",
+    "exam": "Exam Review Notes",
+    "explanation": "Additional Explanation",
+}
+
+
+def _summary_title(summary: Summary) -> str:
+    if summary.section is not None:
+        label = SUMMARY_TYPE_LABELS.get(summary.summary_type, "Review Notes")
+        return f"{summary.section.title} - {label}"
+    return summary.title
+
+
 def _summary_out(summary: Summary) -> SummaryOut:
     return SummaryOut(
         id=summary.id,
         document_id=summary.document_id,
         section_id=summary.section_id,
         summary_type=summary.summary_type,
-        title=summary.title,
+        title=_summary_title(summary),
         overview=summary.overview,
         key_points=json.loads(summary.key_points_json),
         key_terms=json.loads(summary.key_terms_json),
@@ -49,12 +64,13 @@ def _save_summary(
     result: dict,
     summary_type: str,
     section_id: int | None = None,
+    title: str | None = None,
 ) -> SummaryOut:
     summary = Summary(
         document_id=document_id,
         section_id=section_id,
         summary_type=summary_type,
-        title=str(result.get("title") or "Study Notes"),
+        title=title or str(result.get("title") or "Study Notes"),
         overview=str(result.get("overview") or ""),
         key_points_json=json.dumps(result.get("key_points") or []),
         key_terms_json=json.dumps(result.get("key_terms") or []),

@@ -6,7 +6,7 @@ from app.database import get_db
 from app.deps import get_ai_provider
 from app.models import Course, CourseSection, Document, Quiz, Summary
 from app.routers.quizzes import _quiz_out, _save_quiz
-from app.routers.summaries import _save_summary, _summary_out
+from app.routers.summaries import SUMMARY_TYPE_LABELS, _save_summary, _summary_out
 from app.schemas import CourseSectionCreate, CourseSectionOut, CourseSectionUpdate, ExplanationCreate, QuizCreate, QuizOut, SummaryCreate, SummaryOut
 from app.services.study_generator import StudyGenerator
 
@@ -53,6 +53,11 @@ def _section_source_text(documents: list[Document]) -> str:
         f"Document {index}: {document.filename}\n\n{document.extracted_text}"
         for index, document in enumerate(documents, start=1)
     )
+
+
+def _section_output_title(section: CourseSection, summary_type: str) -> str:
+    label = SUMMARY_TYPE_LABELS.get(summary_type, "Review Notes")
+    return f"{section.title} - {label}"
 
 
 @router.post("/courses/{course_id}/sections", response_model=CourseSectionOut, status_code=status.HTTP_201_CREATED)
@@ -113,7 +118,14 @@ def create_section_summary(section_id: int, payload: SummaryCreate, db: Session 
         section_title=section.title,
         section_description=section.description,
     )
-    return _save_summary(db, documents[0].id, result, payload.summary_type, section_id=section.id)
+    return _save_summary(
+        db,
+        documents[0].id,
+        result,
+        payload.summary_type,
+        section_id=section.id,
+        title=_section_output_title(section, payload.summary_type),
+    )
 
 
 @router.post("/sections/{section_id}/explanations", response_model=SummaryOut, status_code=status.HTTP_201_CREATED)
@@ -137,7 +149,14 @@ def create_section_explanation(section_id: int, payload: ExplanationCreate | Non
         section_description=section.description,
         learner_request=learner_request,
     )
-    return _save_summary(db, documents[0].id, result, "explanation", section_id=section.id)
+    return _save_summary(
+        db,
+        documents[0].id,
+        result,
+        "explanation",
+        section_id=section.id,
+        title=_section_output_title(section, "explanation"),
+    )
 
 
 @router.get("/sections/{section_id}/summaries", response_model=list[SummaryOut])
