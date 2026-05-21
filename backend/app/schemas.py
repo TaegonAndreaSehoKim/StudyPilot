@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.services.filenames import display_filename
 
 
 SummaryType = Literal["concise", "detailed", "exam", "explanation"]
@@ -110,6 +112,11 @@ class DocumentOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("filename")
+    @classmethod
+    def decode_filename(cls, value: str) -> str:
+        return display_filename(value)
 
 
 class DocumentDetailOut(DocumentOut):

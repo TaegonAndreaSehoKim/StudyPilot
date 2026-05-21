@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import Course, CourseSection, Document, OcrJob, utc_now
 from app.schemas import DocumentDetailOut, DocumentOut, DocumentTextOut, OcrJobOut
 from app.services.document_extractor import extract_text_from_path, save_upload_file, validate_upload
+from app.services.filenames import display_filename
 from app.services.ocr_provider import OCRProviderError, get_ocr_provider
 from app.services.storage_cleanup import remove_document_files
 
@@ -42,8 +43,9 @@ async def upload_document(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Section not found")
 
     content = await file.read()
+    filename = display_filename(file.filename or "")
     extension = validate_upload(
-        filename=file.filename or "",
+        filename=filename,
         content_type=file.content_type,
         file_size=len(content),
         max_upload_mb=settings.max_upload_mb,
@@ -55,7 +57,7 @@ async def upload_document(
     document = Document(
         course_id=course_id,
         section_id=section_id,
-        filename=file.filename or path.name,
+        filename=filename or path.name,
         file_type=extension,
         storage_path=str(path),
         extracted_text=extraction.text,
@@ -197,8 +199,9 @@ def download_document(
 ) -> FileResponse:
     document = get_document_or_404(db, document_id)
     path = _safe_stored_document_path(document, Path(settings.storage_dir))
-    media_type = mimetypes.guess_type(document.filename)[0] or "application/octet-stream"
-    return FileResponse(path=path, media_type=media_type, filename=document.filename)
+    filename = display_filename(document.filename)
+    media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return FileResponse(path=path, media_type=media_type, filename=filename)
 
 
 @router.get("/courses/{course_id}/documents", response_model=list[DocumentOut])

@@ -37,6 +37,26 @@ def test_upload_txt_document(client: TestClient, course_id: int) -> None:
     assert download_response.content == b"Search uses states, actions, and transition models."
 
 
+def test_upload_decodes_percent_encoded_filename(client: TestClient, course_id: int) -> None:
+    response = client.post(
+        "/documents/upload",
+        data={"course_id": str(course_id)},
+        files={"file": ("01%20intro%20to%20game%20ai.txt", b"Game AI introduces agents.", "text/plain")},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["filename"] == "01 intro to game ai.txt"
+
+    list_response = client.get("/documents")
+    assert list_response.status_code == 200
+    assert list_response.json()[0]["filename"] == "01 intro to game ai.txt"
+
+    detail_response = client.get(f"/documents/{body['id']}")
+    assert detail_response.status_code == 200
+    assert detail_response.json()["filename"] == "01 intro to game ai.txt"
+
+
 def test_list_documents_returns_recent_sources(client: TestClient, course_id: int) -> None:
     first = client.post(
         "/documents/upload",
