@@ -49,8 +49,18 @@ def _sentences(document_text: str) -> list[str]:
     return [part.strip() for part in parts if part.strip()]
 
 
-def _excerpt(document_text: str, max_len: int = 180) -> str:
+def _fallback_source_text(document_text: str) -> str:
     clean = normalize_inline_text(document_text)
+    clean = re.sub(r"\bSource Part\s+\d+\b", " ", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"\bDocument\s+\d+:\s*[^.!?]{0,160}", " ", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"\bSection:\s*Source Notes\b", " ", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"\bSection:\s*", " ", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"\bNote:\s*the slides were originally produced by[^.!?]*[.!?]", " ", clean, flags=re.IGNORECASE)
+    return normalize_inline_text(clean)
+
+
+def _excerpt(document_text: str, max_len: int = 180) -> str:
+    clean = _fallback_source_text(document_text)
     return clean[:max_len].rstrip() or "The uploaded source text is limited."
 
 
@@ -91,7 +101,8 @@ def _keywords(document_text: str, limit: int) -> list[str]:
 
 def normalize_summary_result(result: Any, document_text: str, summary_type: str) -> dict[str, Any]:
     source = result if isinstance(result, dict) else {}
-    sentences = _sentences(document_text)
+    fallback_text = _fallback_source_text(document_text)
+    sentences = _sentences(fallback_text)
     fallback_overview = " ".join(sentences[:2]) or _excerpt(document_text)
     fallback_title = "Study Notes (Detailed Explanation)" if summary_type in {"detailed", "explanation"} else f"Study Notes ({summary_type.title()} Summary)"
     key_points = source.get("key_points") if isinstance(source.get("key_points"), list) else []

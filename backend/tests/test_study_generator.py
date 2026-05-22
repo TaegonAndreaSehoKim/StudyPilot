@@ -149,6 +149,23 @@ def test_large_summary_compacts_context_without_recursive_ai_calls() -> None:
     assert len(provider.last_summary_input) < len(large_source)
 
 
+def test_large_summary_fallback_hides_internal_source_labels() -> None:
+    generator = StudyGenerator(MalformedAIProvider())
+    large_source = (
+        "Document 1: lecture.pdf\n"
+        "Note: the slides were originally produced by an instructor. "
+        "Dynamic programming replaces repeated recursive work with a table of solved subproblems. "
+        "The recurrence defines how a larger problem depends on smaller already-solved cases. "
+    ) * 500
+
+    summary = generator.generate_summary(large_source, "explanation")
+
+    assert "Source Part" not in summary["overview"]
+    assert "Document 1" not in summary["overview"]
+    assert "slides were originally produced" not in summary["overview"]
+    assert "Dynamic programming" in summary["overview"]
+
+
 def test_summary_generation_includes_course_context_without_using_it_as_source_quote() -> None:
     provider = CapturingFakeAIProvider()
     generator = StudyGenerator(provider)
