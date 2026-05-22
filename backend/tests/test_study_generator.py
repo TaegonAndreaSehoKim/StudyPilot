@@ -59,9 +59,11 @@ class CapturingFakeAIProvider(FakeAIProvider):
     def __init__(self) -> None:
         self.last_summary_input = ""
         self.last_quiz_input = ""
+        self.summary_call_count = 0
         super().__init__()
 
     def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
+        self.summary_call_count += 1
         self.last_summary_input = document_text
         return super().generate_summary(document_text, summary_type)
 
@@ -133,6 +135,18 @@ def test_summary_uses_direct_source_context_for_medium_length_documents() -> Non
     assert "convex feasible region" in provider.last_summary_input
     assert "unbounded" in provider.last_summary_input.lower()
     assert "convex" in " ".join(summary["key_points"]).lower()
+
+
+def test_large_summary_compacts_context_without_recursive_ai_calls() -> None:
+    provider = CapturingFakeAIProvider()
+    generator = StudyGenerator(provider)
+    large_source = _linear_programming_source() * 500
+
+    generator.generate_summary(large_source, "explanation")
+
+    assert provider.summary_call_count == 1
+    assert "Source Part 1" in provider.last_summary_input
+    assert len(provider.last_summary_input) < len(large_source)
 
 
 def test_summary_generation_includes_course_context_without_using_it_as_source_quote() -> None:

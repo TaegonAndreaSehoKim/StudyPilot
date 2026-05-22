@@ -9,6 +9,7 @@ from app.services.study_outputs import normalize_flashcards_result, normalize_qu
 DIRECT_STUDY_CONTEXT_MAX_CHARS = 80000
 CHUNKED_STUDY_CONTEXT_MAX_CHARS = 24000
 CHUNKED_STUDY_CONTEXT_OVERLAP_CHARS = 1000
+COMPACTED_STUDY_CONTEXT_MAX_CHARS = 70000
 COURSE_CONTEXT_MAX_CHARS = 1200
 
 
@@ -28,28 +29,33 @@ class StudyGenerator:
         )
         if len(chunks) <= 1:
             return study_context
-        intermediate = []
-        for index, chunk in enumerate(chunks, start=1):
-            summary = self.ai_provider.generate_summary(chunk, "detailed")
-            normalized = normalize_summary_result(summary, chunk, "detailed")
-            terms = "\n".join(
-                f"- {term['term']}: {term['definition']}" for term in normalized["key_terms"][:8]
-            )
-            points = "\n".join(f"- {point}" for point in normalized["key_points"][:8])
-            quotes = "\n".join(
-                f"- {quote['quote']} ({quote['reason']})" for quote in normalized["source_quotes"][:4]
-            )
-            intermediate.append(
-                f"Source Part {index}\n"
-                f"Part overview: {normalized['overview']}\n"
-                f"Concrete study points:\n{points}\n"
-                f"Concept definitions:\n{terms}\n"
-                f"Source evidence:\n{quotes}"
-            )
+        return self._compact_large_context(chunks, focus_topics)
+
+    def _compact_large_context(self, chunks: list[str], focus_topics: list[str] | None = None) -> str:
         prefix = ""
         if focus_topics:
             prefix = "Review Focus Topics: " + ", ".join(focus_topics) + "\n\n"
-        return prefix + "\n\n".join(intermediate)
+
+        available = max(COMPACTED_STUDY_CONTEXT_MAX_CHARS - len(prefix), 10000)
+        per_chunk_budget = max(3000, available // len(chunks))
+        compacted_parts = []
+        for index, chunk in enumerate(chunks, start=1):
+            compacted_parts.append(
+                f"Source Part {index}\n"
+                f"{self._balanced_excerpt(chunk, per_chunk_budget)}"
+            )
+        return (prefix + "\n\n".join(compacted_parts))[:COMPACTED_STUDY_CONTEXT_MAX_CHARS]
+
+    def _balanced_excerpt(self, text: str, max_chars: int) -> str:
+        cleaned = " ".join(text.split())
+        if len(cleaned) <= max_chars:
+            return cleaned
+        marker = "\n[...]\n"
+        head_chars = max_chars * 2 // 3
+        tail_chars = max_chars - head_chars - len(marker)
+        head = cleaned[:head_chars].rsplit(" ", 1)[0].strip()
+        tail = cleaned[-tail_chars:].split(" ", 1)[-1].strip()
+        return f"{head}{marker}{tail}"
 
     def _with_generation_context(
         self,

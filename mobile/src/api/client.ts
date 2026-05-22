@@ -23,7 +23,7 @@ import type {
 const API_BASE_URL_KEY = 'studypilot.apiBaseUrl';
 const ACCESS_TOKEN_KEY = 'studypilot.accessToken';
 const REQUEST_TIMEOUT_MS = 10000;
-const AI_REQUEST_TIMEOUT_MS = 120000;
+const AI_REQUEST_TIMEOUT_MS = 300000;
 export const DEFAULT_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 
 type ApiRequestOptions = RequestInit & {
