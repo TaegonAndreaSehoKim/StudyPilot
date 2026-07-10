@@ -45,7 +45,7 @@ Copy `.env.example` to `.env` if you want custom values.
 DATABASE_URL=sqlite:///./studypilot.db
 STORAGE_DIR=app/storage
 OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.5
+OPENAI_MODEL=gpt-5.6
 USE_FAKE_AI=false
 BACKEND_ACCESS_TOKEN=
 CORS_ORIGINS=*

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./studypilot.db"
     storage_dir: Path = Path("app/storage")
     openai_api_key: str | None = None
-    openai_model: str = "gpt-5.5"
+    openai_model: str = "gpt-5.6"
     use_fake_ai: bool = False
     backend_access_token: str | None = None
     cors_origins: str = "*"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
@@ -56,6 +57,7 @@ TOPIC_WORD_STOP = {
 }
 
 SOURCE_MATERIAL_MARKER = "\n\nSource Material:\n"
+logger = logging.getLogger(__name__)
 
 
 def _source_material_text(text: str) -> str:
@@ -81,6 +83,8 @@ def _first_line(text: str) -> str:
 
 def _summary_title(source_text: str, fallback: str) -> str:
     lower = source_text.lower()
+    if _looks_like_complexity_notes(lower):
+        return "NP Problems and Complexity Classes"
     if _looks_like_game_ai_intro(lower):
         return "Introduction to Game AI"
     if ("discrete movement" in lower and "continuous movement" in lower) or (
@@ -102,6 +106,22 @@ def _looks_like_game_ai_intro(lower_text: str) -> bool:
     game_context = "video games" in lower_text or "game ai" in lower_text or "games" in lower_text
     movement_specific = "discrete movement" in lower_text and "continuous movement" in lower_text
     return ai_definition and game_context and not movement_specific
+
+
+def _looks_like_complexity_notes(lower_text: str) -> bool:
+    complexity_signals = (
+        "np-complete",
+        "np complete",
+        "np-hard",
+        "np hard",
+        "class np",
+        " in np",
+        "polynomial reduction",
+        "polynomial-time reduction",
+        "certificate",
+        "verifier",
+    )
+    return "np" in lower_text and any(signal in lower_text for signal in complexity_signals)
 
 
 def _source_sections(text: str) -> list[SourceSection]:
@@ -152,6 +172,8 @@ def _append_source_section(sections: list[SourceSection], title: str, lines: lis
     sentences = _sentences(content)
     if content and sentences:
         clean_title = re.sub(r"^Section:\s*", "", title).strip() or "Source Notes"
+        if clean_title == "Source Notes":
+            clean_title = _concept_title(content, set()) or clean_title
         sections.append(SourceSection(title=clean_title, content=content, sentences=sentences))
 
 
@@ -165,6 +187,12 @@ def _is_source_metadata_title(value: str) -> bool:
 
 
 CONCEPT_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Decision problems", ("decision problem", "yes or no", "yes/no", "accept", "reject")),
+    ("Polynomial time", ("polynomial time", "polynomial-time", "efficient algorithm", "class p", " in p ")),
+    ("NP and verification", ("class np", " in np", "non-deterministic polynomial", "certificate", "verifier", "verify")),
+    ("Polynomial reductions", ("polynomial reduction", "polynomial-time reduction", "reduce", "reduction", "mapping")),
+    ("NP-completeness", ("np-complete", "np complete", "np-completeness", "complete for np", "every problem in np", "reduces to it")),
+    ("NP-hardness", ("np-hard", "np hard", "at least as hard", "hard for np")),
     ("AI definition and scope", ("what is ai", "artificial intelligence", "conventional algorithms", "modern view")),
     ("Agent movement foundations", ("agent movement", "basic agent can move", "movement serve as a foundation")),
     ("Game AI design space", ("video games", "game ai", "game environments", "gameplay", "support gameplay", "practical question", "useful behavior")),
@@ -188,6 +216,24 @@ CONCEPT_PATTERNS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 CONCEPT_EXPLANATIONS = {
+    "Decision problems": (
+        "Decision problems ask for a yes-or-no answer, which lets complexity theory compare different computational tasks using a common format."
+    ),
+    "Polynomial time": (
+        "Polynomial time is used as the course's practical boundary for efficient solvability: if an algorithm's running time is bounded by a polynomial in the input size, the problem is treated as tractable for complexity-class comparisons."
+    ),
+    "NP and verification": (
+        "NP is best understood through verification: for a yes-instance, a proposed certificate or witness can be checked in polynomial time, even if finding that certificate may be difficult."
+    ),
+    "Polynomial reductions": (
+        "A polynomial-time reduction translates instances of one problem into instances of another while preserving the answer, so it lets the notes compare problem difficulty without solving each problem from scratch."
+    ),
+    "NP-completeness": (
+        "NP-complete problems sit inside NP and are also hard enough that every problem in NP can be reduced to them, making them central evidence for why many problems appear difficult."
+    ),
+    "NP-hardness": (
+        "NP-hardness means a problem is at least as hard as the problems in NP under the reduction being discussed; unlike NP-completeness, it does not by itself require the problem to be in NP."
+    ),
     "AI definition and scope": (
         "The introduction frames AI as a shifting category: earlier definitions treated AI as machine performance of tasks once thought to require humans, while a more useful modern view focuses on problems that cannot be solved realistically with straightforward conventional algorithms."
     ),
@@ -257,10 +303,10 @@ def _auto_source_sections(content: str) -> list[SourceSection]:
         return timestamp_sections
 
     sentences = _sentences(content)
-    if len(sentences) < 8:
+    if len(sentences) < 4:
         return []
     section_count = min(8, max(6, len(content) // 7000))
-    group_size = max(3, (len(sentences) + section_count - 1) // section_count)
+    group_size = 1 if len(sentences) <= 8 else max(3, (len(sentences) + section_count - 1) // section_count)
     sections: list[SourceSection] = []
     used_titles: set[str] = set()
     for index, start in enumerate(range(0, len(sentences), group_size), start=1):
@@ -607,7 +653,7 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
     if summary_type == "explanation":
         return (
             f"These notes explain {topic_text} as a learning path for understanding {scope}. "
-            f"The explanation keeps the source's useful teaching details, removes casual filler, defines the important ideas, and connects each concept to the surrounding game AI problem. "
+            f"The explanation keeps the source's useful teaching details, removes casual filler, defines the important ideas, and connects each concept to the surrounding course problem. "
             f"{concrete_flow}"
         )
     return (
@@ -618,6 +664,9 @@ def _overview_from_sections(sections: list[SourceSection], summary_type: str) ->
 
 def _scope_from_sections(sections: list[SourceSection]) -> str:
     titles = {section.title for section in sections}
+    combined_text = " ".join(section.content for section in sections).lower()
+    if {"Polynomial time", "NP and verification", "NP-completeness", "NP-hardness"} & titles or _looks_like_complexity_notes(combined_text):
+        return "computational complexity and NP problem classification"
     if {"Discrete movement", "Continuous movement"} & titles:
         return "basic game-agent movement"
     if {"AI definition and scope", "Game AI design space"} & titles:
@@ -641,7 +690,7 @@ def _detailed_point(section: SourceSection) -> str:
 
 def _explanation_point(section: SourceSection) -> str:
     explanation = _teaching_summary(section, 3)
-    reflection_context = "real-time game loop" if section.title in CONCEPT_EXPLANATIONS and "movement" in section.title.lower() else "game AI design problem"
+    reflection_context = "real-time game loop" if section.title in CONCEPT_EXPLANATIONS and "movement" in section.title.lower() else "source's problem setting"
     return (
         f"{explanation} "
         "This part should be studied as a causal explanation, not as a term to memorize in isolation. "
@@ -838,6 +887,7 @@ class OpenAIProvider(AIProvider):
         data = self._json_response(prompt)
         if self._valid_summary(data, summary_type):
             return data
+        logger.warning("OpenAI summary response failed validation; falling back to FakeAIProvider.")
         return self.fallback.generate_summary(document_text, summary_type)
 
     def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
@@ -846,6 +896,7 @@ class OpenAIProvider(AIProvider):
         cards = data.get("flashcards") if isinstance(data, dict) else data
         if self._valid_flashcards(cards):
             return cards[:count]
+        logger.warning("OpenAI flashcard response failed validation; falling back to FakeAIProvider.")
         return self.fallback.generate_flashcards(document_text, count)
 
     def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
@@ -853,6 +904,7 @@ class OpenAIProvider(AIProvider):
         data = self._json_response(prompt)
         if self._valid_quiz(data):
             return data
+        logger.warning("OpenAI quiz response failed validation; falling back to FakeAIProvider.")
         return self.fallback.generate_quiz(document_text, question_count, difficulty)
 
     def _valid_summary(self, value: Any, summary_type: str = "concise") -> bool:
@@ -865,25 +917,25 @@ class OpenAIProvider(AIProvider):
         if _looks_like_pdf_artifact(value["title"], value["overview"]):
             return False
         overview = value["overview"].strip()
-        if len(overview) < 120:
+        if len(overview) < 80:
             return False
-        if summary_type in {"detailed", "exam"} and _word_count(overview) < 70:
+        if summary_type in {"detailed", "exam"} and _word_count(overview) < 35:
             return False
-        if summary_type == "explanation" and _word_count(overview) < 90:
+        if summary_type == "explanation" and _word_count(overview) < 45:
             return False
         if not isinstance(value.get("key_points"), list):
             return False
         key_points = [point.strip() for point in value["key_points"] if isinstance(point, str) and point.strip()]
-        if any(len(point) < 60 and not _looks_like_summary_structure_label(point) for point in key_points):
+        if any(len(point) < 40 and not _looks_like_summary_structure_label(point) for point in key_points):
             return False
         key_points = [point for point in key_points if not _looks_like_summary_structure_label(point)]
         if len(key_points) < 3:
             return False
-        if summary_type == "detailed" and len(key_points) < 5:
+        if summary_type == "detailed" and len(key_points) < 4:
             return False
-        if summary_type == "exam" and len(key_points) < 5:
+        if summary_type == "exam" and len(key_points) < 4:
             return False
-        if summary_type == "explanation" and len(key_points) < 6:
+        if summary_type == "explanation" and len(key_points) < 4:
             return False
         artifact_point_count = sum(
             1 for point in key_points if _looks_like_meta_summary(point) or _looks_like_pdf_artifact(point)
@@ -891,17 +943,13 @@ class OpenAIProvider(AIProvider):
         if artifact_point_count >= max(2, len(key_points) // 2):
             return False
         if summary_type == "detailed":
-            if not all(_word_count(point) >= 60 for point in key_points[:5]):
-                return False
-            if not _has_teaching_depth(key_points):
+            if not all(_word_count(point) >= 18 for point in key_points[:4]):
                 return False
         if summary_type == "exam":
-            if not all(_word_count(point) >= 30 for point in key_points[:5]):
+            if not all(_word_count(point) >= 16 for point in key_points[:4]):
                 return False
         if summary_type == "explanation":
-            if not all(_word_count(point) >= 65 for point in key_points[:6]):
-                return False
-            if not _has_teaching_depth(key_points):
+            if not all(_word_count(point) >= 24 for point in key_points[:4]):
                 return False
         key_terms = value.get("key_terms")
         if key_terms is not None:
@@ -914,9 +962,9 @@ class OpenAIProvider(AIProvider):
                     return False
                 if _looks_like_meta_summary(item["term"]) or _looks_like_pdf_artifact(item["term"], item["definition"]):
                     return False
-                if summary_type in {"detailed", "exam"} and _word_count(item["definition"]) < 18:
+                if summary_type in {"detailed", "exam"} and _word_count(item["definition"]) < 8:
                     return False
-                if summary_type == "explanation" and _word_count(item["definition"]) < 25:
+                if summary_type == "explanation" and _word_count(item["definition"]) < 10:
                     return False
         source_quotes = value.get("source_quotes")
         if source_quotes is not None:
@@ -977,7 +1025,11 @@ class OpenAIProvider(AIProvider):
             response = self._create_json_response(prompt)
             text = self._response_text(response)
             return self._parse_json(text)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "OpenAI response request failed with %s; falling back to FakeAIProvider.",
+                exc.__class__.__name__,
+            )
             return None
 
     def _create_json_response(self, prompt: str) -> Any:

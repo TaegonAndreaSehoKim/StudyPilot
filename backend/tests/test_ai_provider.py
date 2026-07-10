@@ -191,6 +191,57 @@ def test_openai_provider_keeps_strong_summary_with_missing_terms_and_quotes() ->
     assert normalized["source_quotes"]
 
 
+def test_openai_provider_accepts_compact_source_aligned_detailed_summary() -> None:
+    points = [
+        "Decision problems give complexity theory a common yes-or-no format, so the notes can compare different computational tasks without mixing optimization goals and decision goals.",
+        "NP is framed through verification: a certificate may be hard to find, but once proposed it can be checked in polynomial time by a verifier.",
+        "Polynomial reductions preserve answers while translating one problem into another, which makes them the tool for comparing relative difficulty across problems.",
+        "NP-completeness combines membership in NP with hardness for all NP problems, so proving completeness requires both verification and reduction arguments.",
+    ]
+    provider = provider_with_response(
+        DummyResponse(
+            '{"title":"NP Problems and Complexity Classes",'
+            '"overview":"The notes explain NP problems by moving from decision-problem form to polynomial-time verification, then to reductions and NP-completeness. The important distinction is that verifying a proposed certificate can be efficient even when finding one is not known to be efficient. Reductions then let the course compare problem difficulty by translating instances while preserving yes-or-no answers.",'
+            f'"key_points":{json.dumps(points)},'
+            '"key_terms":[{"term":"NP","definition":"NP contains decision problems whose yes-instances have certificates checkable in polynomial time."},'
+            '{"term":"Polynomial reduction","definition":"A polynomial reduction translates one decision problem to another while preserving the answer."}],'
+            '"source_quotes":[{"quote":"certificate can be verified in polynomial time","reason":"Supports the definition of NP."}]}'
+        )
+    )
+
+    result = provider.generate_summary("NP problems use certificates, polynomial verification, and reductions.", "detailed")
+
+    assert result["title"] == "NP Problems and Complexity Classes"
+
+
+def test_fake_provider_does_not_inject_game_ai_for_np_notes() -> None:
+    source_text = (
+        "NP problems are decision problems where a proposed certificate can be verified in polynomial time. "
+        "A polynomial-time reduction maps one problem to another while preserving yes and no answers. "
+        "A problem is NP-complete when it is in NP and every problem in NP reduces to it. "
+        "NP-hard problems are at least as hard as NP-complete problems and may not be in NP."
+    )
+
+    result = FakeAIProvider().generate_summary(source_text, "explanation")
+    combined = " ".join(
+        [
+            result["title"],
+            result["overview"],
+            *result["key_points"],
+            *(term["term"] for term in result["key_terms"]),
+            *(term["definition"] for term in result["key_terms"]),
+        ]
+    ).lower()
+
+    assert "np problems" in combined
+    assert "polynomial" in combined
+    assert "np-complete" in combined
+    assert "game ai" not in combined
+    assert "game loop" not in combined
+    assert "gameplay" not in combined
+    assert "player" not in combined
+
+
 def test_openai_provider_rejects_thin_detailed_summary() -> None:
     provider = provider_with_response(
         DummyResponse(

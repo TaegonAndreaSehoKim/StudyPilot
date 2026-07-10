@@ -29,7 +29,7 @@ def make_client(
     if token:
         monkeypatch.setenv("BACKEND_ACCESS_TOKEN", token)
     else:
-        monkeypatch.delenv("BACKEND_ACCESS_TOKEN", raising=False)
+        monkeypatch.setenv("BACKEND_ACCESS_TOKEN", "")
 
     from app.config import get_settings
     from app.database import configure_database, create_db_and_tables
