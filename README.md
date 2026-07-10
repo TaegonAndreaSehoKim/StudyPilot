@@ -6,6 +6,14 @@ It is built as an early-stage product MVP with a React Native Expo app, a FastAP
 
 The project works without an OpenAI API key. When `OPENAI_API_KEY` is missing, the backend uses a deterministic fake AI provider so the full demo flow and test suite can run locally without paid API calls.
 
+## Demo
+
+[![Watch the 42-second StudyPilot demo](demo/studypilot-demo-cover.png)](https://www.linkedin.com/feed/update/urn:li:activity:7481476257537523712/)
+
+**Demo workflow:** Five course PDFs to one source-grounded exam review
+
+The recorded generation completed in 50 seconds. Only the waiting segment is shown at 5x speed.
+
 ## What It Does
 
 ```text
