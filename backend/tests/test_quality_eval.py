@@ -100,7 +100,8 @@ def test_eval_quiz_has_specific_topics_and_distractor_rationales() -> None:
     assert all("\nSource quote:" in question["explanation"] for question in quiz["questions"])
     assert all("\nWhy other choices are wrong:" in question["explanation"] for question in quiz["questions"])
     assert all("Section:" not in choice for question in quiz["questions"] for choice in question["choices"])
-    assert all("source claim" in question["choices"][ord(question["correct_answer"]) - ord("A")] for question in quiz["questions"])
+    assert all("source claim" not in choice.lower() for question in quiz["questions"] for choice in question["choices"])
+    assert all("not directly supported" not in choice.lower() for question in quiz["questions"] for choice in question["choices"])
 
 
 def test_eval_review_quiz_prioritizes_weak_topics() -> None:
@@ -120,6 +121,35 @@ def test_eval_fake_ai_outputs_contextual_questions_not_raw_sentence_lookup() -> 
 
     assert any("how the notes frame" in question for question in questions)
     assert any("surrounding study material" in question for question in questions)
+
+
+def test_eval_np_quiz_choices_do_not_reveal_correct_answer_by_template() -> None:
+    generator = StudyGenerator(FakeAIProvider())
+    notes = (
+        "NP problems are decision problems where a proposed certificate can be verified in polynomial time. "
+        "A polynomial-time reduction maps one problem to another while preserving yes and no answers. "
+        "A problem is NP-complete when it is in NP and every problem in NP reduces to it. "
+        "NP-hard problems are at least as hard as NP-complete problems and may not be in NP."
+    )
+
+    quiz = generator.generate_quiz(notes, 4, "mixed")
+
+    assert {question["topic"] for question in quiz["questions"]} >= {
+        "Decision problems",
+        "Polynomial reductions",
+        "NP-completeness",
+        "NP-hardness",
+    }
+    for question in quiz["questions"]:
+        choices = question["choices"]
+        correct_index = ord(question["correct_answer"]) - ord("A")
+        correct_choice = choices[correct_index].lower()
+        wrong_choices = [choice.lower() for index, choice in enumerate(choices) if index != correct_index]
+
+        assert "source claim" not in correct_choice
+        assert not correct_choice.startswith(("a. np", "b. np", "c. np", "d. np"))
+        assert all("does not provide enough evidence" not in choice for choice in wrong_choices)
+        assert all("not the source detail tied" not in choice for choice in wrong_choices)
 
 
 def _agent_movement_transcript_excerpt() -> str:

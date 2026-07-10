@@ -554,10 +554,14 @@ def _best_sentence_for_topic(topic: str, sentences: list[str]) -> str:
     topic_words = _topic_words(topic)
     if not topic_words:
         return sentences[0] if sentences else "The uploaded source text is limited."
+    best: tuple[int, str] | None = None
     for sentence in sentences:
         sentence_words = _topic_words(sentence)
-        if topic_words & sentence_words:
-            return sentence
+        score = len(topic_words & sentence_words)
+        if score and (best is None or score > best[0]):
+            best = (score, sentence)
+    if best:
+        return best[1]
     return sentences[0] if sentences else "The uploaded source text is limited."
 
 
@@ -715,22 +719,108 @@ def _exam_points(sections: list[SourceSection]) -> list[str]:
     return points
 
 
+QUIZ_FACTS: dict[str, tuple[str, tuple[str, str, str]]] = {
+    "Decision problems": (
+        "They put the material into a yes-or-no format so different computational tasks can be compared using the same kind of answer.",
+        (
+            "They ask the algorithm to output the best possible solution value rather than a yes-or-no answer.",
+            "They describe the evidence used to verify a proposed solution after it has already been found.",
+            "They prove that every problem with this format can be solved efficiently.",
+        ),
+    ),
+    "Polynomial time": (
+        "It marks the notes' working boundary for efficient algorithms by bounding running time with a polynomial in the input size.",
+        (
+            "It means the algorithm may use any amount of time as long as the answer is eventually correct.",
+            "It is the same as checking a certificate for a yes-instance, regardless of how the algorithm finds one.",
+            "It proves that NP-complete problems are easy once their inputs are written compactly.",
+        ),
+    ),
+    "NP and verification": (
+        "It separates finding a solution from checking a proposed certificate, with the checking step required to run in polynomial time.",
+        (
+            "It says every NP problem already has a known polynomial-time algorithm for finding the certificate.",
+            "It only applies to optimization problems where the goal is to maximize a numeric objective.",
+            "It replaces the need for reductions by directly proving a problem is NP-hard.",
+        ),
+    ),
+    "Polynomial reductions": (
+        "They translate instances of one problem into another in polynomial time while preserving the yes-or-no answer.",
+        (
+            "They verify a single proposed certificate without changing the problem instance.",
+            "They show the target problem is easy because the source problem can be ignored after translation.",
+            "They compare two algorithms only by measuring which one has the smaller constant factor.",
+        ),
+    ),
+    "NP-completeness": (
+        "It combines membership in NP with the hardness condition that every problem in NP can reduce to the problem.",
+        (
+            "It only means a problem has appeared in many examples, without requiring reductions from other NP problems.",
+            "It means the problem is outside NP because no certificate can ever be checked efficiently.",
+            "It proves the problem has a polynomial-time solving algorithm whenever a verifier exists.",
+        ),
+    ),
+    "NP-hardness": (
+        "It marks a problem as at least as hard as the relevant NP problems under the reduction notion being used.",
+        (
+            "It means the problem must be in NP and must have certificates that are easy to verify.",
+            "It is weaker than being solvable in polynomial time because it only describes a faster implementation.",
+            "It says the problem becomes easy once it is converted into a decision-problem format.",
+        ),
+    ),
+}
+
+QUIZ_FOURTH_DISTRACTORS = {
+    "Decision problems": "They are mainly a formatting trick for writing inputs shorter, not a way to define the answer a problem asks for.",
+    "Polynomial time": "It measures whether the output is short, rather than how the running time grows with input size.",
+    "NP and verification": "It means a verifier can guess the right answer without needing a certificate from the solution.",
+    "Polynomial reductions": "They preserve the wording of the original problem instead of preserving the answer across instances.",
+    "NP-completeness": "It only proves membership in NP and leaves the comparison to other NP problems for a separate argument.",
+    "NP-hardness": "It requires both hardness and membership in NP, so it is identical to NP-completeness.",
+}
+
+
+def _quiz_fact(topic: str) -> tuple[str, tuple[str, str, str]] | None:
+    topic_key = topic.lower()
+    for known_topic, fact in QUIZ_FACTS.items():
+        known_key = known_topic.lower()
+        if topic_key == known_key or topic_key in known_key or known_key in topic_key:
+            return fact
+    return None
+
+
 def _distractors(topic: str, topics: list[str], sentence: str) -> list[str]:
+    fact = _quiz_fact(topic)
+    if fact:
+        return list(fact[1])
     alternatives = [candidate for candidate in topics if candidate.lower() != topic.lower()]
     first = alternatives[0] if alternatives else "a nearby concept"
     second = alternatives[1] if len(alternatives) > 1 else "a broader course theme"
     return [
-        f"It primarily describes {first}, not the source detail tied to {topic}.",
-        f"It adds a stronger claim about {topic} than the uploaded notes support.",
-        f"It confuses {topic} with {second} instead of using the cited section.",
+        f"It treats {topic} as interchangeable with {first}, even though the notes separate those ideas.",
+        f"It turns {topic} into a stronger guarantee than the notes justify.",
+        f"It reverses the relationship between {topic} and {second}.",
     ]
 
 
+def _fourth_distractor(topic: str) -> str:
+    if _quiz_fact(topic):
+        topic_key = topic.lower()
+        for known_topic, distractor in QUIZ_FOURTH_DISTRACTORS.items():
+            known_key = known_topic.lower()
+            if topic_key == known_key or topic_key in known_key or known_key in topic_key:
+                return distractor
+    return "It focuses on a related-sounding detail but changes the condition that makes the statement true in the notes."
+
+
 def _conceptual_answer(topic: str, sentence: str) -> str:
+    fact = _quiz_fact(topic)
+    if fact:
+        return fact[0]
     clean = _excerpt(sentence, 150)
     if clean.lower().startswith("section:"):
         clean = clean.split(".", 1)[1].strip() if "." in clean else clean
-    return f"{topic} is best understood through this source claim: {clean}"
+    return f"It treats {topic} as this source-supported idea: {clean}"
 
 
 def _question_for_topic(topic: str, index: int) -> str:
@@ -816,7 +906,9 @@ class FakeAIProvider(AIProvider):
         for index in range(count):
             topic = topics[index % len(topics)] if topics else f"Concept {index + 1}"
             section = _section_for_topic(topic, sections)
-            sentence = _section_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
+            sentence = _best_sentence_for_topic(topic, sentences)
+            if section is not None and sentence == (sentences[0] if sentences else "The uploaded source text is limited."):
+                sentence = _section_summary(section, 2)
             difficulty = ["easy", "medium", "hard"][index % 3]
             front_templates = [
                 f"How would you explain {topic} using the uploaded notes?",
@@ -850,12 +942,7 @@ class FakeAIProvider(AIProvider):
             correct_choice_text = "The source is too limited to support a detailed answer." if insufficient else _conceptual_answer(topic, sentence)
             correct_choice = f"{correct_letter}. {correct_choice_text}"
             distractors = _distractors(topic, topics, sentence)
-            choices = [
-                f"A. {distractors[0]}",
-                f"B. {distractors[1]}",
-                f"C. {distractors[2]}",
-                "D. The source does not provide enough evidence for this claim.",
-            ]
+            choices = [f"{letter}. {choice}" for letter, choice in zip(["A", "B", "C", "D"], [*distractors, _fourth_distractor(topic)])]
             choices[index % 4] = correct_choice
             question_difficulty = difficulty if difficulty in {"easy", "medium", "hard"} else ["easy", "medium", "hard"][index % 3]
             source_quote = _excerpt(sentence if not insufficient else source_text)
@@ -871,7 +958,7 @@ class FakeAIProvider(AIProvider):
                 }
             )
 
-        return {"title": f"{_first_line(source_text)} Quiz", "questions": questions}
+        return {"title": f"{_summary_title(source_text, _first_line(source_text))} Quiz", "questions": questions}
 
 
 class OpenAIProvider(AIProvider):
@@ -989,7 +1076,7 @@ class OpenAIProvider(AIProvider):
                 return False
             if not all(isinstance(item.get(key), str) and item[key].strip() for key in required):
                 return False
-            if item["difficulty"] not in {"easy", "medium", "hard"}:
+            if item["difficulty"] not in {"easy", "medium", "hard", "mixed"}:
                 return False
         return True
 
