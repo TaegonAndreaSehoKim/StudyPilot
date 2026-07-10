@@ -7,6 +7,9 @@ from app.services.text_normalization import normalize_extracted_text, normalize_
 
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
 VALID_ANSWERS = {"A", "B", "C", "D"}
+SUMMARY_KEY_POINT_LIMIT = 30
+SUMMARY_KEY_TERM_LIMIT = 24
+SUMMARY_SOURCE_QUOTE_LIMIT = 10
 SUMMARY_META_PATTERNS = (
     "source part",
     "source material",
@@ -168,9 +171,9 @@ def normalize_summary_result(result: Any, document_text: str, summary_type: str)
         "overview": _clean_text(source.get("overview"), fallback_overview)
         if not _looks_like_internal_summary_label(_clean_text(source.get("overview"), ""))
         else fallback_overview,
-        "key_points": normalized_points[:8],
-        "key_terms": key_terms[:8],
-        "source_quotes": source_quotes[:5],
+        "key_points": normalized_points[:SUMMARY_KEY_POINT_LIMIT],
+        "key_terms": key_terms[:SUMMARY_KEY_TERM_LIMIT],
+        "source_quotes": source_quotes[:SUMMARY_SOURCE_QUOTE_LIMIT],
     }
 
 

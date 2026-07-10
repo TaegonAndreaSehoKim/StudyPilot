@@ -184,6 +184,39 @@ def test_summary_generation_includes_course_context_without_using_it_as_source_q
     assert all("OMSCS" not in quote["quote"] for quote in summary["source_quotes"])
 
 
+def test_summary_normalization_preserves_longer_generated_notes() -> None:
+    class LongSummaryProvider(AIProvider):
+        def generate_summary(self, document_text: str, summary_type: str) -> dict[str, Any]:
+            return {
+                "title": "Long Study Guide",
+                "overview": "This overview explains the source progression with enough context for a learner to use the notes as a substantial study guide.",
+                "key_points": [
+                    f"Point {index} explains a source-grounded concept with enough detail to remain useful after normalization."
+                    for index in range(20)
+                ],
+                "key_terms": [
+                    {"term": f"Term {index}", "definition": "A source-supported term definition with teaching context."}
+                    for index in range(15)
+                ],
+                "source_quotes": [
+                    {"quote": f"source quote {index}", "reason": "Supports a major claim."}
+                    for index in range(8)
+                ],
+            }
+
+        def generate_flashcards(self, document_text: str, count: int) -> list[dict[str, Any]]:
+            return []
+
+        def generate_quiz(self, document_text: str, question_count: int, difficulty: str) -> dict[str, Any]:
+            return {"title": "Quiz", "questions": []}
+
+    summary = StudyGenerator(LongSummaryProvider()).generate_summary(_source_text(), "explanation")
+
+    assert len(summary["key_points"]) == 20
+    assert len(summary["key_terms"]) == 15
+    assert len(summary["source_quotes"]) == 8
+
+
 def test_quiz_generation_includes_course_context() -> None:
     provider = CapturingFakeAIProvider()
     generator = StudyGenerator(provider)

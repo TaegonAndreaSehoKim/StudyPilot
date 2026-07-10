@@ -57,6 +57,7 @@ TOPIC_WORD_STOP = {
 }
 
 SOURCE_MATERIAL_MARKER = "\n\nSource Material:\n"
+SUMMARY_PROMPT_NOTES_MAX_CHARS = 160000
 logger = logging.getLogger(__name__)
 
 
@@ -305,7 +306,7 @@ def _auto_source_sections(content: str) -> list[SourceSection]:
     sentences = _sentences(content)
     if len(sentences) < 4:
         return []
-    section_count = min(8, max(6, len(content) // 7000))
+    section_count = min(24, max(8, len(content) // 3500))
     group_size = 1 if len(sentences) <= 8 else max(3, (len(sentences) + section_count - 1) // section_count)
     sections: list[SourceSection] = []
     used_titles: set[str] = set()
@@ -870,16 +871,16 @@ class FakeAIProvider(AIProvider):
         if summary_type == "exam":
             key_points = _exam_points(sections)
         elif summary_type == "explanation":
-            key_points = [_explanation_point(section) for section in sections[:8]]
+            key_points = [_explanation_point(section) for section in sections[:24]]
         elif summary_type == "detailed":
-            key_points = [_detailed_point(section) for section in sections[:8]]
+            key_points = [_detailed_point(section) for section in sections[:24]]
         else:
-            key_points = [_concise_point(section) for section in sections[:8]]
+            key_points = [_concise_point(section) for section in sections[:18]]
         if not key_points:
             key_points = sentences[:6] or ["The source material is limited; review the original document for more detail."]
 
         key_terms = []
-        for topic in topics[:8]:
+        for topic in topics[:24]:
             section = _section_for_topic(topic, sections)
             definition = _teaching_summary(section, 2) if section else _best_sentence_for_topic(topic, sentences)
             key_terms.append({"term": topic, "definition": definition})
@@ -887,11 +888,11 @@ class FakeAIProvider(AIProvider):
         return {
             "title": f"{title} ({_summary_mode_label(summary_type)})",
             "overview": _overview_from_sections(sections, summary_type),
-            "key_points": key_points[:8],
-            "key_terms": key_terms[:8],
+            "key_points": key_points[:30],
+            "key_terms": key_terms[:24],
             "source_quotes": [
                 {"quote": _excerpt(_section_summary(section, 1)), "reason": f"Representative source detail for {section.title}."}
-                for section in (sections[:5] or [])
+                for section in (sections[:10] or [])
             ],
         }
 
@@ -1234,15 +1235,16 @@ class OpenAIProvider(AIProvider):
             "Return only a valid JSON object with keys: title, overview, key_points, key_terms, source_quotes.\n"
             "Required output contract:\n"
             "- title: name the actual lecture topic or section scope. Do not use the first slide heading, page label, file name, or source wrapper.\n"
-            "- overview: 4-6 sentences. It must teach the main topic, explain the source's conceptual progression, and name the most important distinctions or tradeoffs.\n"
-            "- key_points: return 6-9 items for detailed/exam/explanation outputs and 4-6 items for concise summaries.\n"
-            "- For detailed explanation outputs, each key_points item must be 4-6 sentences and at least 60 words. Treat each item as a mini-lesson, not a bullet label or compressed recap.\n"
-            "- For explanation outputs, each key_points item must be 4-7 sentences and at least 65 words. It should slow down, define prerequisites, explain intuition, and connect the idea to why the learner should care.\n"
+            "- overview: 6-10 sentences for detailed/exam/explanation outputs and 3-6 sentences for concise summaries. It must teach the main topic, explain the source's conceptual progression, and name the most important distinctions or tradeoffs.\n"
+            "- key_points: return as many source-supported teaching points as the material needs. Aim for 12-20 items for detailed/exam/explanation outputs and 6-10 items for concise summaries; use fewer only when the source is genuinely short.\n"
+            "- For detailed explanation outputs, each key_points item should usually be 4-8 sentences and at least 80 words. Treat each item as a mini-lesson, not a bullet label or compressed recap.\n"
+            "- For explanation outputs, each key_points item should usually be 5-10 sentences and at least 90 words. It should slow down, define prerequisites, explain intuition, and connect the idea to why the learner should care.\n"
             "- Each key_points item should include: the concept, what it means, why it matters, how it connects to the previous/next idea, and any useful source example, condition, caveat, tradeoff, or failure mode from the source.\n"
-            "- key_terms: return 8-12 concrete course terms when the source supports them. Each definition should be 1-3 teaching sentences, not a dictionary fragment.\n"
-            "- source_quotes: return 3-5 objects, each with quote and reason. quote must be a short verbatim snippet copied from the source. Quotes should support major claims; do not put long copied source text in key_points.\n"
+            "- key_terms: return 12-20 concrete course terms when the source supports them. Each definition should be 2-4 teaching sentences, not a dictionary fragment.\n"
+            "- source_quotes: return 4-8 objects, each with quote and reason. quote must be a short verbatim snippet copied from the source. Quotes should support major claims; do not put long copied source text in key_points.\n"
             "Quality rules:\n"
             "- Use only facts supported by the notes.\n"
+            "- Do not shorten the notes just to fit an assumed app card length. The mobile app can scroll; prioritize complete, useful coverage over brevity.\n"
             "- If Course Context or Section Context is provided, use it to understand scope, terminology, and emphasis. Do not treat context as source evidence or quote it in source_quotes.\n"
             "- Follow the source's explanation order by default. Reorganize only when it clearly improves learning, and never hide prerequisites, examples, definitions, or caveats that the source gives earlier.\n"
             "- If notes are insufficient, say that explicitly.\n"
@@ -1256,7 +1258,7 @@ class OpenAIProvider(AIProvider):
             "- Prefer explanatory phrases like 'This means...', 'The reason this matters is...', and 'The key distinction is...' when they make the concept clearer.\n"
             "- For explanation outputs, it is acceptable to add general background explanations, analogies, or intuition that help the learner understand a source concept, as long as they do not contradict the source or introduce unrelated course material.\n"
             f"- Summary mode: {summary_type}. {guidance}\n\n"
-            f"Notes:\n{document_text[:80000]}"
+            f"Notes:\n{document_text[:SUMMARY_PROMPT_NOTES_MAX_CHARS]}"
         )
 
     def _flashcard_prompt(self, document_text: str, count: int) -> str:

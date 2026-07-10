@@ -333,7 +333,8 @@ def test_summary_prompt_teaches_from_source_order_with_scaffolding() -> None:
     assert "Remove filler aggressively" in prompt
     assert "mini-lesson" in prompt
     assert "source-consistent teaching explanation" in prompt
-    assert "at least 60 words" in prompt
+    assert "at least 80 words" in prompt
+    assert "mobile app can scroll" in prompt
     assert "Do not treat context as source evidence" in prompt
 
 
@@ -345,7 +346,7 @@ def test_explanation_prompt_expands_beyond_compression() -> None:
     assert "expanded explanatory guide" in prompt
     assert "Do not compress the useful teaching content" in prompt
     assert "Remove casual filler and transcript chatter" in prompt
-    assert "4-7 sentences and at least 65 words" in prompt
+    assert "5-10 sentences and at least 90 words" in prompt
     assert "background explanations, analogies, or intuition" in prompt
 
 
